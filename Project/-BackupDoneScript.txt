@@ -1,0 +1,19 @@
+-BackupDoneScript=[
+
+set BackupDriveToken=[This is my GoPC backup drive.]
+set   BackupFilename=KristyFiles.zip
+
+set DoneOne=
+for %%d in (C: D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) do call :DoCopy %%d
+goto :EOF
+
+:DoCopy
+dir %1 > nul 2> nul
+if ERRORLEVEL 1 goto :EOF
+if not exist %1\"%BackupDriveToken%" goto :EOF
+echo.
+echo Copying to drive %1 ...
+copy "{ArchivePathFile}" "%1\%BackupFilename%"
+set DoneOne=true
+
+-BackupDoneScript=]
