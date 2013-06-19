@@ -189,6 +189,22 @@
                             </StackPanel>
                             </Viewbox>
                         </TabItem>
+                        <TabItem  Name="tabStep4" Header="Setup Step 4." Style="{StaticResource ConfigWizardTabItems}">
+                            <Viewbox>
+                            <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
+<TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextTop}">
+4. Select the additional drives to which you would like to copy your backups.
+</TextBlock>
+<Border Style="{StaticResource ConfigWizardTextBorder}">
+    <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
+    Type the name of the file to contain all of the files in your backup. <LineBreak/><LineBreak/>
+    Note: No folder path or filename extention is necessary.
+    </TextBlock>
+</Border>
+<StackPanel Name="CheckBoxStackPanel"> </StackPanel>
+                            </StackPanel>
+                            </Viewbox>
+                        </TabItem>
                         <TabItem Name="tabFinishSetup" Header="Finish Setup" Style="{StaticResource ConfigWizardTabItems}">
                             <Viewbox>
                             <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">

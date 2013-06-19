@@ -681,6 +681,18 @@ namespace GoPcBackup
             if ( "" == this.txtArchivePath.Text )
                 this.txtArchivePath.Text = moDoGoPcBackup.sArchivePath();
 
+            //Step 4
+            DriveInfo[] allDrives = DriveInfo.GetDrives();
+            CheckBoxStackPanel.Children.Clear();
+
+            foreach (DriveInfo d in allDrives)
+            {
+                CheckBox checkbox = new CheckBox();
+                checkbox.Content = d.Name;
+
+                CheckBoxStackPanel.Children.Add(checkbox);
+            }
+
             // Finish
             this.txtReviewBackupFolder.Text = this.txtBackupFolder.Text;
             this.txtReviewOutputFilename.Text = this.txtBackupOutputFilename.Text;
