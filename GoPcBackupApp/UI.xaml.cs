@@ -683,14 +683,14 @@ namespace GoPcBackup
 
             //Step 4
             DriveInfo[] allDrives = DriveInfo.GetDrives();
-            CheckBoxStackPanel.Children.Clear();
+            pnlBackupDevices.Children.Clear();
 
             foreach (DriveInfo d in allDrives)
             {
                 CheckBox checkbox = new CheckBox();
                 checkbox.Content = d.Name;
 
-                CheckBoxStackPanel.Children.Add(checkbox);
+                pnlBackupDevices.Children.Add(checkbox);
             }
 
             // Finish
