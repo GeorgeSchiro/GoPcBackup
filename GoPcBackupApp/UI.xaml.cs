@@ -682,15 +682,21 @@ namespace GoPcBackup
                 this.txtArchivePath.Text = moDoGoPcBackup.sArchivePath();
 
             //Step 4
-            DriveInfo[] allDrives = DriveInfo.GetDrives();
+            DriveInfo[] loDrivesArray = DriveInfo.GetDrives();
+
+            // Remove any checkboxes already there.
             pnlBackupDevices.Children.Clear();
 
-            foreach (DriveInfo d in allDrives)
+            // Add each drive (after C:) to the list of checkboxes.
+            foreach (DriveInfo loDrive in loDrivesArray)
             {
-                CheckBox checkbox = new CheckBox();
-                checkbox.Content = d.Name;
+                if (loDrive.Name != "A:\\" && loDrive.Name != "B:\\")
+                {
+                    CheckBox loCheckbox = new CheckBox();
+                    loCheckbox.Content = loDrive.Name;
 
-                pnlBackupDevices.Children.Add(checkbox);
+                    pnlBackupDevices.Children.Add(loCheckbox);
+                }
             }
 
             // Finish
