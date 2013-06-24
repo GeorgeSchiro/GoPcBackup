@@ -687,13 +687,13 @@ namespace GoPcBackup
             // Remove any checkboxes already there.
             pnlBackupDevices.Children.Clear();
 
-            // Add each drive (after C:) to the list of checkboxes.
+            // Add each drive (after B:) to the list of checkboxes.
             foreach (DriveInfo loDrive in loDrivesArray)
             {
-                if (loDrive.Name != "A:\\" && loDrive.Name != "B:\\")
+                if ( String.Compare(loDrive.Name, "B:\\") > 0 )
                 {
-                    CheckBox loCheckbox = new CheckBox();
-                    loCheckbox.Content = loDrive.Name;
+                    CheckBox    loCheckbox = new CheckBox();
+                                loCheckbox.Content = loDrive.Name;
 
                     pnlBackupDevices.Children.Add(loCheckbox);
                 }
