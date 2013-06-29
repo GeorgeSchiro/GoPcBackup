@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -683,19 +684,52 @@ namespace GoPcBackup
 
             //Step 4
             DriveInfo[] loDrivesArray = DriveInfo.GetDrives();
+            ArrayList loDrivesArrayList = new ArrayList();
+            ArrayList loValidityOfDrives = new ArrayList();
 
             // Remove any checkboxes already there.
             pnlBackupDevices.Children.Clear();
 
-            // Add each drive (after C:) to the list of checkboxes.
-            foreach (DriveInfo loDrive in loDrivesArray)
+            // Add each drive (after B:) to the list of checkboxes.
+            for (int i = 0; i < loDrivesArray.Length; ++i)
             {
-                if (loDrive.Name != "A:\\" && loDrive.Name != "B:\\")
+                if (loDrivesArray[i].Name != "A:\\" && loDrivesArray[i].Name != "B:\\")
                 {
-                    CheckBox loCheckbox = new CheckBox();
-                    loCheckbox.Content = loDrive.Name;
+                    loDrivesArrayList.Add(loDrivesArray[i].Name);
 
+                    string fileName = System.IO.Path.GetRandomFileName();
+                    string pathName = System.IO.Path.Combine(loDrivesArray[i].Name, fileName);
+                    string directoryName = System.IO.Path.Combine(loDrivesArray[i].Name, "directory");
+
+                    try
+                    {
+                        System.IO.File.Create(pathName).Close();
+                    }
+                    catch
+                    {
+                    }
+
+                    if (System.IO.File.Exists(pathName))
+                    {
+                        loValidityOfDrives.Add(true);
+                    }
+                    else
+                    {
+                        loValidityOfDrives.Add(false);
+                    }
+
+                    
+                    CheckBox loCheckbox = new CheckBox();
+                    loCheckbox.Content = loDrivesArray[i].Name + loValidityOfDrives[i-1];
                     pnlBackupDevices.Children.Add(loCheckbox);
+
+                    try
+                    {
+                        System.IO.File.Delete(pathName);
+                    }
+                    catch
+                    {
+                    }
                 }
             }
 
