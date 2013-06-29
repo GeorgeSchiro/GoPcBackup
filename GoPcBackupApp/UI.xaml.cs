@@ -245,8 +245,9 @@ namespace GoPcBackup
         private void Window_Closed(object sender, EventArgs e)
         {
             this.bMainLoopStopped = true;
-
-            moNotifyIcon.Dispose();
+			//This statement causes a NullReferenceException when debugging in Windows 7.
+			//The application runs find without it in both Windows 7 and Windows XP.
+            //moNotifyIcon.Dispose();
 
             if ( null != moHelpWindow )
                 moHelpWindow.Close();
@@ -686,6 +687,7 @@ namespace GoPcBackup
             DriveInfo[] loDrivesArray = DriveInfo.GetDrives();
             ArrayList loDrivesArrayList = new ArrayList();
             ArrayList loValidityOfDrives = new ArrayList();
+            int numberOfAOrBDrives = 0;
 
             // Remove any checkboxes already there.
             pnlBackupDevices.Children.Clear();
@@ -699,8 +701,8 @@ namespace GoPcBackup
 
                     string fileName = System.IO.Path.GetRandomFileName();
                     string pathName = System.IO.Path.Combine(loDrivesArray[i].Name, fileName);
-                    string directoryName = System.IO.Path.Combine(loDrivesArray[i].Name, "directory");
-
+                    
+                    //Validate each drive by creating a temporary file.
                     try
                     {
                         System.IO.File.Create(pathName).Close();
@@ -709,6 +711,7 @@ namespace GoPcBackup
                     {
                     }
 
+                    //If the file exists, the drive is valid.
                     if (System.IO.File.Exists(pathName))
                     {
                         loValidityOfDrives.Add(true);
@@ -718,9 +721,8 @@ namespace GoPcBackup
                         loValidityOfDrives.Add(false);
                     }
 
-                    
                     CheckBox loCheckbox = new CheckBox();
-                    loCheckbox.Content = loDrivesArray[i].Name + loValidityOfDrives[i-1];
+                    loCheckbox.Content = loDrivesArray[i].Name + loValidityOfDrives[i - numberOfAOrBDrives];
                     pnlBackupDevices.Children.Add(loCheckbox);
 
                     try
@@ -731,6 +733,12 @@ namespace GoPcBackup
                     {
                     }
                 }
+                //This else statement is used to help display whether each drive is or is not valid. It will be removed soon.
+                else
+                {
+                    numberOfAOrBDrives++;
+                }
+
             }
 
             // Finish
