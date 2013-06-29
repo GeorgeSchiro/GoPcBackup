@@ -245,9 +245,9 @@ namespace GoPcBackup
         private void Window_Closed(object sender, EventArgs e)
         {
             this.bMainLoopStopped = true;
-			//This statement causes a NullReferenceException when debugging in Windows 7.
-			//The application runs find without it in both Windows 7 and Windows XP.
-            //moNotifyIcon.Dispose();
+
+            if ( null != moNotifyIcon )
+                moNotifyIcon.Dispose();
 
             if ( null != moHelpWindow )
                 moHelpWindow.Close();
