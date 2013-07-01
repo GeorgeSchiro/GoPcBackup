@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -685,9 +685,10 @@ namespace GoPcBackup
 
             //Step 4
             DriveInfo[] loDrivesArray = DriveInfo.GetDrives();
-            ArrayList loDrivesArrayList = new ArrayList();
-            ArrayList loValidityOfDrives = new ArrayList();
-            int numberOfAOrBDrives = 0;
+            List<String> loDrivesArrayList = new List<String>();
+            List<bool> loValidityOfDrives = new List<bool>();
+            int r = 0;
+            int c = 0;
 
             // Remove any checkboxes already there.
             pnlBackupDevices.Children.Clear();
@@ -699,8 +700,8 @@ namespace GoPcBackup
                 {
                     loDrivesArrayList.Add(loDrivesArray[i].Name);
 
-                    string fileName = System.IO.Path.GetRandomFileName();
-                    string pathName = System.IO.Path.Combine(loDrivesArray[i].Name, fileName);
+                    //string fileName = System.IO.Path.GetRandomFileName();
+                    string pathName = System.IO.Path.Combine(loDrivesArray[i].Name, moDoGoPcBackup.sBackupDriveToken);
                     
                     //Validate each drive by creating a temporary file.
                     try
@@ -722,8 +723,20 @@ namespace GoPcBackup
                     }
 
                     CheckBox loCheckbox = new CheckBox();
-                    loCheckbox.Content = loDrivesArray[i].Name + loValidityOfDrives[i - numberOfAOrBDrives];
+                    loCheckbox.Content = loDrivesArrayList[i];
                     pnlBackupDevices.Children.Add(loCheckbox);
+                    Grid.SetRow(loCheckbox, r);
+                    Grid.SetColumn(loCheckbox, c);
+
+                    if ( r < 5 )
+                    {
+                        r++;
+                    }
+                    else
+                    {
+                        r = 0;
+                        c ++;
+                    }
 
                     try
                     {
@@ -733,12 +746,6 @@ namespace GoPcBackup
                     {
                     }
                 }
-                //This else statement is used to help display whether each drive is or is not valid. It will be removed soon.
-                else
-                {
-                    numberOfAOrBDrives++;
-                }
-
             }
 
             // Finish

@@ -199,11 +199,28 @@
     <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
     Your backups will be copied to each of the devices you select. You will be reminded
     after each backup if one of your backup devices is missing. <LineBreak/><LineBreak/>
-
+swz
+        
     Note: only your latest backup will remain on each backup device.
     </TextBlock>
 </Border>
-<StackPanel Name="pnlBackupDevices" Margin="25"> </StackPanel>
+<Grid Name="pnlBackupDevices" Margin="25">
+    <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+    </Grid.ColumnDefinitions>
+        
+</Grid>
                             </StackPanel>
                             </Viewbox>
                         </TabItem>
