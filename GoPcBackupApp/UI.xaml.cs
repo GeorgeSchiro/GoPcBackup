@@ -685,65 +685,61 @@ namespace GoPcBackup
 
             //Step 4
             DriveInfo[] loDrivesArray = DriveInfo.GetDrives();
-            List<String> loDrivesArrayList = new List<String>();
-            List<bool> loValidityOfDrives = new List<bool>();
-            int r = 0;
-            int c = 0;
 
-            // Remove any checkboxes already there.
-            pnlBackupDevices.Children.Clear();
+            //This code could be improved by allowing the user to remove or insert external drives without
+            //recreating the CheckBoxes (thus erasing the user's selections)
+            if ( 0 == gridBackupDevices.Children.Count || (loDrivesArray.Length != gridBackupDevices.Children.Count) )
+            {                
+                List<String> loDrivesArrayList = new List<String>();
+                int r = 0;
+                int c = 0;
 
-            // Add each drive (after B:) to the list of checkboxes.
-            for (int i = 0; i < loDrivesArray.Length; ++i)
-            {
-                if (loDrivesArray[i].Name != "A:\\" && loDrivesArray[i].Name != "B:\\")
+                // Remove any checkboxes already there.
+                gridBackupDevices.Children.Clear();
+
+                // Add each drive (after B:) to the list of checkboxes.
+                for (int i = 0; i < loDrivesArray.Length; ++i)
                 {
-                    loDrivesArrayList.Add(loDrivesArray[i].Name);
+                    if (loDrivesArray[i].Name != "A:\\" && loDrivesArray[i].Name != "B:\\")
+                    {
+                        loDrivesArrayList.Add(loDrivesArray[i].Name);
+                        
+                        CheckBox loCheckbox = new CheckBox();
+                        loCheckbox.Content = loDrivesArrayList[i];
+                        gridBackupDevices.Children.Add(loCheckbox);
+                        Grid.SetRow(loCheckbox, r);
+                        Grid.SetColumn(loCheckbox, c);
+                        loCheckbox.Width = 200;
+                        //loCheckbox.Checked += new RoutedEventHandler(loCheckBox_Checked);
+                        
+                        if ( r < 5 )
+                        {
+                            r++;
+                        }
+                        else
+                        {
+                            r = 0;
+                            c ++;
+                        }
+                    }
+                }
 
-                    //string fileName = System.IO.Path.GetRandomFileName();
-                    string pathName = System.IO.Path.Combine(loDrivesArray[i].Name, moDoGoPcBackup.sBackupDriveToken);
-                    
+                for ( int i = 0; i < gridBackupDevices.Children.Count; ++i )
+                {
+                    CheckBox checkbox = (CheckBox)gridBackupDevices.Children[i];
+
+                    string pathName = System.IO.Path.Combine((String)checkbox.Content, moDoGoPcBackup.sBackupDriveToken);
+                        
                     //Validate each drive by creating a temporary file.
                     try
                     {
                         System.IO.File.Create(pathName).Close();
-                    }
-                    catch
-                    {
-                    }
-
-                    //If the file exists, the drive is valid.
-                    if (System.IO.File.Exists(pathName))
-                    {
-                        loValidityOfDrives.Add(true);
-                    }
-                    else
-                    {
-                        loValidityOfDrives.Add(false);
-                    }
-
-                    CheckBox loCheckbox = new CheckBox();
-                    loCheckbox.Content = loDrivesArrayList[i];
-                    pnlBackupDevices.Children.Add(loCheckbox);
-                    Grid.SetRow(loCheckbox, r);
-                    Grid.SetColumn(loCheckbox, c);
-
-                    if ( r < 5 )
-                    {
-                        r++;
-                    }
-                    else
-                    {
-                        r = 0;
-                        c ++;
-                    }
-
-                    try
-                    {
                         System.IO.File.Delete(pathName);
                     }
                     catch
                     {
+                        checkbox.Foreground = Brushes.Red;
+                        checkbox.IsEnabled = false;
                     }
                 }
             }
@@ -860,6 +856,7 @@ namespace GoPcBackup
 
 
             return null == lsMessage;
+            
         }
 
         private void ConfigWizardTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -870,6 +867,11 @@ namespace GoPcBackup
             miPreviousConfigWizardSelectedIndex = this.ConfigWizardTabs.SelectedIndex;
         }
 
+        private void loCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            (sender as CheckBox).Content = "test";
+        }
+        
         private void btnSetupDone_Click(object sender, RoutedEventArgs e)
         {
             if ( this.ValidateConfigurationWizardValues(true)

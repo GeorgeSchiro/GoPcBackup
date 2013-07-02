@@ -199,12 +199,13 @@
     <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
     Your backups will be copied to each of the devices you select. You will be reminded
     after each backup if one of your backup devices is missing. <LineBreak/><LineBreak/>
-swz
         
-    Note: only your latest backup will remain on each backup device.
+    Notes: <LineBreak/>
+            -Only your latest backup will remain on each backup device.<LineBreak/>
+            -Drives in<Run Foreground="Red" Text=" red "/>are invalid storage devices.
     </TextBlock>
 </Border>
-<Grid Name="pnlBackupDevices" Margin="25">
+<Grid Name="gridBackupDevices" Margin="50, 0, 0, 0">
     <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
