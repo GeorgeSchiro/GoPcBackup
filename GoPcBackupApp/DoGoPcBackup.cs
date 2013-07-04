@@ -1620,7 +1620,7 @@ No file cleanup will be done until you update the configuration.
 echo.                    > ""{BackupDoneScriptOutputPathFile}""
 
 echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
-echo This backs-up the backup software:                         >> ""{BackupDoneScriptOutputPathFile}""
+echo This backs up the backup software:                         >> ""{BackupDoneScriptOutputPathFile}""
 
 echo.                   >> ""{BackupDoneScriptOutputPathFile}""
 echo xcopy /y %6 %4\%5\ >> ""{BackupDoneScriptOutputPathFile}""
