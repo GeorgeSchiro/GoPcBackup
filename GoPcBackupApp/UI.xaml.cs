@@ -699,25 +699,29 @@ namespace GoPcBackup
                 // Add each drive (after B:) to the list of checkboxes.
                 for (int i = 0; i < loDrivesArray.Length; ++ i)
                 {
-                    if ( String.Compare(loDrivesArray[i].Name, "B:\\") > 0 )
-                    {                        
-                        CheckBox loCheckbox = new CheckBox();
-                        loCheckbox.Content = loDrivesArray[i].Name;
-                        gridBackupDevices.Children.Add(loCheckbox);
-                        Grid.SetRow(loCheckbox, liRowNumber);
-                        Grid.SetColumn(loCheckbox, liColumnNumber);
-                        loCheckbox.Width = 200;
+                    try
+                    {
+                        if (String.Compare(loDrivesArray[i].Name, "B:\\") > 0)
+                        {
+                            CheckBox loCheckbox = new CheckBox();
+                            loCheckbox.Content = loDrivesArray[i].Name;
+                            gridBackupDevices.Children.Add(loCheckbox);
+                            Grid.SetRow(loCheckbox, liRowNumber);
+                            Grid.SetColumn(loCheckbox, liColumnNumber);
+                            loCheckbox.Width = 200;
 
-                        if ( liRowNumber < 5 )
-                        {
-                            ++liRowNumber;
-                        }
-                        else
-                        {
-                            liRowNumber = 0;
-                            ++liColumnNumber;
+                            if (liRowNumber < 5)
+                            {
+                                ++liRowNumber;
+                            }
+                            else
+                            {
+                                liRowNumber = 0;
+                                ++liColumnNumber;
+                            }
                         }
                     }
+                    catch { }
                 }
 
                 foreach (CheckBox loCheckbox in gridBackupDevices.Children)
@@ -851,6 +855,7 @@ namespace GoPcBackup
 
 
             return null == lsMessage;
+            
         }
 
         private void ConfigWizardTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -861,6 +866,11 @@ namespace GoPcBackup
             miPreviousConfigWizardSelectedIndex = this.ConfigWizardTabs.SelectedIndex;
         }
 
+        private void loCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            (sender as CheckBox).Content = "test";
+        }
+        
         private void btnSetupDone_Click(object sender, RoutedEventArgs e)
         {
             if (this.ValidateConfigurationWizardValues(true)
