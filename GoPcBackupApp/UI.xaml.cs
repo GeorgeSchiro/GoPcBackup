@@ -690,56 +690,67 @@ namespace GoPcBackup
             // removes or inserts external drives.
             if ( 0 == gridBackupDevices.Children.Count )
             {   
-                int liRowNumber = 0;
-                int liColumnNumber = 0;
+                int liRow = 0;
+                int liColumn = 0;
 
                 // Remove any checkboxes already there.
                 gridBackupDevices.Children.Clear();
 
                 // Add each drive (after B:) to the list of checkboxes.
-                for (int i = 0; i < loDrivesArray.Length; ++ i)
+                foreach (DriveInfo loDrive in loDrivesArray)
                 {
                     try
                     {
-                        if (String.Compare(loDrivesArray[i].Name, "B:\\") > 0)
+                        if ( String.Compare(loDrive.Name, "B:\\") > 0 )
                         {
-                            CheckBox loCheckbox = new CheckBox();
-                            loCheckbox.Content = loDrivesArray[i].Name;
-                            gridBackupDevices.Children.Add(loCheckbox);
-                            Grid.SetRow(loCheckbox, liRowNumber);
-                            Grid.SetColumn(loCheckbox, liColumnNumber);
-                            loCheckbox.Width = 200;
-
-                            if (liRowNumber < 5)
+                            CheckBox    loCheckBox = new CheckBox();
+                                        loCheckBox.Width = 200;
+                            
+                            // If the drive has a valid volume label, display it alongside the drive name.
+                            try
                             {
-                                ++liRowNumber;
+                                loCheckBox.Content = "(" + loDrive.Name.Substring(0, 2) + ") " + loDrive.VolumeLabel;
+                            }
+                            // Otherwise, display the drive name alongside the word "DISK".
+                            catch
+                            {
+                                loCheckBox.Content = "(" + loDrive.Name.Substring(0, 2) + ") " + "DISK";
+                            }
+
+                            // Add a CheckBox to the tab to represent the drive.
+                            gridBackupDevices.Children.Add(loCheckBox);
+                            Grid.SetRow(loCheckBox, liRow);
+                            Grid.SetColumn(loCheckBox, liColumn);
+
+                            // Arrange the CheckBoxes such that a new column is formed for every six CheckBoxes.
+                            if (liRow < 5)
+                            {
+                                ++liRow;
                             }
                             else
                             {
-                                liRowNumber = 0;
-                                ++liColumnNumber;
+                                liRow = 0;
+                                ++liColumn;
+                            }
+                        
+                            //Validate each drive by creating a temporary file.
+                            string lsPathName = System.IO.Path.Combine(loCheckBox.Content.ToString().Substring(1, 2), 
+                                                                        moDoGoPcBackup.sBackupDriveToken);
+
+                            try
+                            {
+                                System.IO.File.Create(lsPathName).Close();
+                                System.IO.File.Delete(lsPathName);
+                                loCheckBox.Foreground = Brushes.DarkGreen;
+                            }
+                            catch
+                            {
+                                loCheckBox.Foreground = Brushes.Red;
+                                loCheckBox.IsEnabled = false;
                             }
                         }
                     }
                     catch { }
-                }
-
-                foreach (CheckBox loCheckbox in gridBackupDevices.Children)
-                {
-                    string lsPathName = System.IO.Path.Combine((String)loCheckbox.Content, moDoGoPcBackup.sBackupDriveToken);
-                        
-                    //Validate each drive by creating a temporary file.
-                    try
-                    {
-                        System.IO.File.Create(lsPathName).Close();
-                        System.IO.File.Delete(lsPathName);
-                        loCheckbox.Foreground = Brushes.DarkGreen;
-                    }
-                    catch
-                    {
-                        loCheckbox.Foreground = Brushes.Red;
-                        loCheckbox.IsEnabled = false;
-                    }
                 }
             }
 
@@ -748,6 +759,19 @@ namespace GoPcBackup
             this.txtReviewOutputFilename.Text = this.txtBackupOutputFilename.Text;
             this.txtReviewArchivePath.Text = this.txtArchivePath.Text;
             this.txtReviewBackupTime.Text = this.txtBackupTime.Text;
+
+            string lsSelectedDrives = "";
+
+            // Generate a string with the content of each CheckBox that the user checked in Step 4.
+            foreach (CheckBox loCheckBox in gridBackupDevices.Children)
+            {
+                if ((bool)loCheckBox.IsChecked)
+                {
+                    lsSelectedDrives += loCheckBox.Content + " ";
+                }
+            }
+
+            this.txtReviewAdditionalDrives.Text = lsSelectedDrives;
 
             loBackupSet1Profile["-FolderToBackup"] = this.txtReviewBackupFolder.Text;
             loBackupSet1Profile["-OutputFilename"] = this.txtReviewOutputFilename.Text;
@@ -817,7 +841,7 @@ namespace GoPcBackup
                     )
             {
                 try
-                {                           // Don't use "Path.Combine()" here since we want
+                {   // Don't use "Path.Combine()" here since we want
                     // to test for path separators in the filename.
                     string lsPathfile = Path.GetDirectoryName(moProfile.sLoadedPathFile)
                                             + Path.DirectorySeparatorChar + txtBackupOutputFilename.Text;
@@ -884,6 +908,16 @@ You can continue this later wherever you left off. "
                     , "Run Backup", tvMessageBoxButtons.YesNo, tvMessageBoxIcons.Question)
                     )
             {
+                //Create the token file in each additional drive that was selected from Step 4.
+                foreach (CheckBox loCheckBox in gridBackupDevices.Children)
+                {
+                    string lsPathName = loCheckBox.Content.ToString().Substring(1, 2) + "\\" + moDoGoPcBackup.sBackupDriveToken;
+
+                    if ( (bool)loCheckBox.IsChecked && !System.IO.File.Exists(lsPathName) )
+                    {
+                        System.IO.File.Create(lsPathName).Close();
+                    }
+                }
 
                 moProfile["-AllConfigWizardStepsCompleted"] = true;
                 moProfile.Save();
