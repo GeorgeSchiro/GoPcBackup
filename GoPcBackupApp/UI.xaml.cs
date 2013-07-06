@@ -722,8 +722,8 @@ namespace GoPcBackup
                             Grid.SetRow(loCheckBox, liRow);
                             Grid.SetColumn(loCheckBox, liColumn);
 
-                            // Arrange the CheckBoxes such that a new column is formed for every six CheckBoxes.
-                            if (liRow < 5)
+                            // Arrange the CheckBoxes such that a new column is formed for every 8 CheckBoxes.
+                            if (liRow < 7)
                             {
                                 ++liRow;
                             }
@@ -771,7 +771,7 @@ namespace GoPcBackup
                 }
             }
 
-            this.txtReviewAdditionalDrives.Text = lsSelectedDrives;
+            this.txtReviewAdditionalDevices.Text = lsSelectedDrives;
 
             loBackupSet1Profile["-FolderToBackup"] = this.txtReviewBackupFolder.Text;
             loBackupSet1Profile["-OutputFilename"] = this.txtReviewOutputFilename.Text;
