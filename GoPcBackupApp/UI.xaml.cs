@@ -773,11 +773,18 @@ namespace GoPcBackup
 
             this.txtReviewAdditionalDevices.Text = lsSelectedDrives;
 
-            loBackupSet1Profile["-FolderToBackup"] = this.txtReviewBackupFolder.Text;
+            // Replace any embedded folder name hyphen with an ASCII 1.
+            const string lcsHideHyphen = "\u0001";
+
+            loBackupSet1Profile["-FolderToBackup"] = this.txtReviewBackupFolder.Text.Replace("-", lcsHideHyphen);
             loBackupSet1Profile["-OutputFilename"] = this.txtReviewOutputFilename.Text;
 
             // Make the backup set a multi-line block by inserting newlines before hyphens.
-            moProfile["-BackupSet"] = loBackupSet1Profile.sCommandLine().Replace("-", "\r\n    -") + "\r\n\r\n";
+            moProfile["-BackupSet"] = loBackupSet1Profile.sCommandLine()
+                    .Replace("-", "\r\n    -")
+                    .Replace(lcsHideHyphen, "-")
+                    + "\r\n\r\n"
+                    ;
 
             moProfile["-ArchivePath"] = this.txtReviewArchivePath.Text;
             moProfile["-BackupTime"] = this.txtReviewBackupTime.Text;
