@@ -193,17 +193,54 @@
                             <Viewbox>
                             <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
 <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextTop}">
-4. Select the additional backup devices that you would like to copy your backups to.
+4. Select the additional backup devices you would like to copy your backups to.
 </TextBlock>
-<Border Style="{StaticResource ConfigWizardTextBorder}">
+<Border Margin="10,10,10,30" Style="{StaticResource ConfigWizardTextBorder}">
     <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
-    Your backups will be copied to each of the devices you select. You will be reminded
-    after each backup if one of your backup devices is missing. <LineBreak/><LineBreak/>
-
-    Note: only your latest backup will remain on each backup device.
+    Your backups will be copied to the root folder of each device you select. After each backup,
+    you will be reminded if any of your backup devices was missing. <LineBreak/><LineBreak/>
+        
+    Notes:  <LineBreak/>
+            <Label Width="75" /> Only your latest backup will remain on each additional backup device.<LineBreak/>
+            <Label Width="75" /> Devices in <Run Foreground="Red" Text="red"/> are invalid for backups
+                                    (ie. they can't be written to).
     </TextBlock>
 </Border>
-<StackPanel Name="pnlBackupDevices" Margin="25"> </StackPanel>
+<Grid Name="gridBackupDevices" Margin="150, 0, 0, 10">
+    <Grid.RowDefinitions>
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="200" />
+        <ColumnDefinition />
+        <ColumnDefinition />
+        <ColumnDefinition />
+    </Grid.ColumnDefinitions>
+        
+</Grid>
                             </StackPanel>
                             </Viewbox>
                         </TabItem>
@@ -227,18 +264,20 @@
     <Grid.RowDefinitions>
         <RowDefinition />
         <RowDefinition />
+        <RowDefinition />
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto" />
         <ColumnDefinition />
-        <ColumnDefinition Width="10" />
-        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition />
+        <ColumnDefinition />
+        <ColumnDefinition />
         <ColumnDefinition />
     </Grid.ColumnDefinitions>
-    <Label Grid.Row="0" Grid.Column="0">Folder to Backup:</Label>  <TextBox Grid.Row="0" Grid.Column="1" Name="txtReviewBackupFolder" Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
-    <Label Grid.Row="1" Grid.Column="0">Output Filename:</Label><TextBox Grid.Row="1" Grid.Column="1" Name="txtReviewOutputFilename" Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
-    <Label Grid.Row="0" Grid.Column="3">Archive Folder:</Label> <TextBox Grid.Row="0" Grid.Column="4" Name="txtReviewArchivePath" Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
-    <Label Grid.Row="1" Grid.Column="3">Backup Time:</Label>    <TextBox Grid.Row="1" Grid.Column="4" Name="txtReviewBackupTime" Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
+    <Label Grid.Row="0" Grid.Column="0">Folder to Backup:</Label>   <TextBox Grid.Row="0" Grid.Column="1" Name="txtReviewBackupFolder"      Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
+    <Label Grid.Row="1" Grid.Column="0">Output Filename:</Label>    <TextBox Grid.Row="1" Grid.Column="1" Name="txtReviewOutputFilename"    Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
+    <Label Grid.Row="0" Grid.Column="3">Archive Folder:</Label>     <TextBox Grid.Row="0" Grid.Column="4" Name="txtReviewArchivePath"       Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
+    <Label Grid.Row="1" Grid.Column="3">Backup Time:</Label>        <TextBox Grid.Row="1" Grid.Column="4" Name="txtReviewBackupTime"        Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
+    <Label Grid.Row="2" Grid.Column="0">Additional Devices:</Label> <TextBox Grid.Row="2" Grid.Column="1" Name="txtReviewAdditionalDevices" Style="{StaticResource ConfigWizardTextReadOnly}" Grid.ColumnSpan="5"></TextBox>
 </Grid>
 <Button Name="btnSetupDone" Click="btnSetupDone_Click" Margin="5" Style="{StaticResource ConfigWizardButton}">
     Setup Done - Run Backup

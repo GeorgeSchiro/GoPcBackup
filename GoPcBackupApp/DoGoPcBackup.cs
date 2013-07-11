@@ -610,16 +610,8 @@ Note:   There may be various other settings that can be adjusted also (user
         /// </summary>
         public bool bMainLoopStopped
         {
-            get
-            {
-                return mbMainLoopStopped;
-            }
-            set
-            {
-                mbMainLoopStopped = value;
-            }
+            get;set;
         }
-        private bool mbMainLoopStopped;
 
         /// <summary>
         /// Returns the current "LogPathFile" name.
@@ -648,7 +640,18 @@ Note:   There may be various other settings that can be adjusted also (user
                         + "Log.txt");
             }
         }
-        
+
+        public string sBackupDriveToken
+        {
+            get
+            {
+                return moProfile.sValue("-BackupDriveToken", "(This is my GoPC backup drive.)");
+            }
+            set
+            {
+                moProfile["-BackupDriveToken"] = value;
+            }
+        }
         /// <summary>
         /// Returns the current "DeletedFileListOutputPathFile" name.
         /// </summary>
@@ -1617,7 +1620,7 @@ No file cleanup will be done until you update the configuration.
 echo.                    > ""{BackupDoneScriptOutputPathFile}""
 
 echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
-echo This backs-up the backup software:                         >> ""{BackupDoneScriptOutputPathFile}""
+echo This backs up the backup software:                         >> ""{BackupDoneScriptOutputPathFile}""
 
 echo.                   >> ""{BackupDoneScriptOutputPathFile}""
 echo xcopy /y %6 %4\%5\ >> ""{BackupDoneScriptOutputPathFile}""
@@ -1697,7 +1700,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
 )                       .Replace("{ProfileFile}", Path.GetFileName(moProfile.sLoadedPathFile))
                         .Replace("{BackupDoneScriptOutputPathFile}", Path.GetFileName(lsBackupDoneScriptOutputPathFile))
                         .Replace("{MainHostArchive}", lsMainhostArchivePath)
-                        .Replace("{BackupDriveToken}", moProfile.sValue("-BackupDriveToken", "(This is my GoPC backup drive.)"))
+                        .Replace("{BackupDriveToken}", this.sBackupDriveToken)
                         );
 
                 // Write the default "backup done" script if its
