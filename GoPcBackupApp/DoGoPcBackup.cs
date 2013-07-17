@@ -111,15 +111,15 @@ This utility will run in the background unless its timer is turned off. Its
 simple user interface (UI) is usually minimized to the system tray.
 
 
-Command Line Usage
+Command-Line Usage
 
 
 Open this utility's profile file to see additional options available. It is
 usually located in the same folder as ""{EXE}"" and it typically has
 the same name with "".txt"" added (see ""{INI}"").
 
-Profile file options can be overridden with command line arguments. The
-keys for any ""-key=value"" pairs passed on the command line must match
+Profile file options can be overridden with command-line arguments. The
+keys for any ""-key=value"" pairs passed on the command-line must match
 those that appear in the profile (with the exception of the ""-ini"" key).
 
 For example, the following invokes the use of an alternative profile file:
@@ -154,13 +154,13 @@ A brief description of each feature follows.
 
     This tells the software to run in automatic mode. Set this switch False
     and the main loop in the UI will only start manually. The software will
-    also vacate memory after the UI window closes.
+    also vacate memory after the UI window closes. This is the timer switch.
 
 -BackupDoneScriptHelp= SEE PROFILE FOR DEFAULT VALUE
 
     This is the default content of the DOS script that is initially written to
     -BackupDoneScriptPathFile and run after each successful backup. It contains
-    a description of the command line arguments passed to the script at runtime.
+    a description of the command-line arguments passed to the script at runtime.
 
 -BackupDoneScriptInit=False
 
@@ -399,13 +399,13 @@ A brief description of each feature follows.
 
 -LogFileDateFormat=-yyyy-MM-dd
 
-    This format string is used to form the variable part of each cleanup / backup
+    This format string is used to form the variable part of each backup / cleanup
     log file output filename (see -LogPathFile below). It is inserted between the
     filename and the extension.
 
 -LogPathFile=Log.txt
 
-    This is the output path\file that will contain the cleanp / backup process
+    This is the output path\file that will contain the backup / cleanup process
     log. The profile file name will be prepended to the default and the current
     date (see -LogFileDateFormat) will be inserted between the filename and the
     extension (see -LogFileDateFormat above).
@@ -423,11 +423,11 @@ A brief description of each feature follows.
 
 -PreviousBackupOk= NO DEFAULT VALUE
 
-    This is the True or False ""Ok"" status of the previous cleanup / backup run.
+    This is the True or False ""Ok"" status of the previous backup / cleanup run.
 
 -PreviousBackupTime= NO DEFAULT VALUE
 
-    This is the timestamp of the previous cleanup / backup run.
+    This is the timestamp of the previous backup / cleanup run.
 
 -RunOnce=False
 
@@ -465,13 +465,13 @@ A brief description of each feature follows.
 
 -ZipToolEXEargs=a -r -spf -ssw ""{{BackupOutputPathFile}}"" @""{{BackupPathFiles}}"" -w""{{BackupOutputPath}}""
 
-    These are the command line arguments passed to the ZIP compression tool
-    (see -ZipToolEXE above). The tokens (in curley brackets) are self-evident
+    These are the command-line arguments passed to the ZIP compression tool
+    (see -ZipToolEXE above). The tokens (in curly brackets) are self-evident
     and they are replaced at runtime.
 
 -ZipToolLastRun= NO DEFAULT VALUE
 
-    This shows the last executed ZIP command line (see -ZipToolEXE and 
+    This shows the last executed ZIP command-line (see -ZipToolEXE and 
     -ZipToolEXEargs above).
 
 -ZipToolLastRunCmdPathFile=Run Last Backup.cmd
@@ -1301,7 +1301,7 @@ No file cleanup will be done until you update the configuration.
                     // Increment the backup set counter.
                     miBackupSetsRun++;
 
-                    // Convert the current backup set from a command line string to a profile oject.
+                    // Convert the current backup set from a command-line string to a profile oject.
                     moCurrentBackupSet = new tvProfile(loEntry.Value.ToString());
 
                     // Get the list of folders to backup within the current backup set.
@@ -1552,7 +1552,7 @@ No file cleanup will be done until you update the configuration.
 :: You can also create and edit another DOS script file and reference that
 :: instead (see ""-BackupDoneScriptPathFile"" in ""{ProfileFile}""). You
 :: can access several parameters from the completed backup via the DOS shell
-:: command line:
+:: command-line:
 ::
 :: %1 = ""BackupOutputPathFile""
 ::
@@ -1941,7 +1941,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                             , Path.Combine(this.sArchivePath(), "*" + Path.GetExtension(lsBackupOutputPathFileBase))
                             ));
 
-                    // Set the cleanup of cleanup / backup log files to 30 days.
+                    // Set the cleanup of backup / cleanup log files to 30 days.
                     moProfile.Add("-CleanupSet", string.Format(@"
     -AgeDays=30
     -FilesToDelete={0}*{1}
@@ -1964,7 +1964,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                     if ( this.bMainLoopStopped )
                         break;
 
-                    // Convert the current cleanup set from a command line string to a profile oject.
+                    // Convert the current cleanup set from a command-line string to a profile oject.
                     tvProfile loCurrentCleanupSet = new tvProfile(loEntry.Value.ToString());
 
                     // The default "LastWriteTime" is the last modified datetime.
