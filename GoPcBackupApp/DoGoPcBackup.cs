@@ -1541,6 +1541,7 @@ No file cleanup will be done until you update the configuration.
                 string  lsMainhostArchivePath = moProfile.sValue("-VirtualMachineHostArchivePath", "\\\\Mainhost\\Archive");
                 string  lsBackupDoneScript = (moProfile.sValue("-BackupDoneScriptHelp", @"
 @echo off
+if ""%1""=="""" goto :EOF
 ::
 :: *** Backup finished successfully script goes here. ***
 ::
@@ -1626,7 +1627,7 @@ echo.                   >> ""{BackupDoneScriptOutputPathFile}""
 echo xcopy /y %6 %4\%5\ >> ""{BackupDoneScriptOutputPathFile}""
      xcopy /y %6 %4\%5\ >> ""{BackupDoneScriptOutputPathFile}""
 
-     if ErrorLevel 1 set /a CopyFailures += 1
+     if ERRORLEVEL 1 set /A CopyFailures += 1
 
 echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
 echo This copies the backup software's current profile file     >> ""{BackupDoneScriptOutputPathFile}""
@@ -1636,7 +1637,7 @@ echo.                                          >> ""{BackupDoneScriptOutputPathF
 echo echo F : xcopy  /y  %7 %4\%5\%3\%8.%2.txt >> ""{BackupDoneScriptOutputPathFile}""
      echo F | xcopy  /y  %7 %4\%5\%3\%8.%2.txt >> ""{BackupDoneScriptOutputPathFile}""
 
-     if ErrorLevel 1 set /a CopyFailures += 1
+     if ERRORLEVEL 1 set /A CopyFailures += 1
 "
 +
 (!lbUseMainhostArchive ? "" :
@@ -1648,7 +1649,7 @@ echo.                              >> ""{BackupDoneScriptOutputPathFile}""
 echo copy %1 ""{MainHostArchive}"" >> ""{BackupDoneScriptOutputPathFile}""
      copy %1 ""{MainHostArchive}"" >> ""{BackupDoneScriptOutputPathFile}""
 
-     if ErrorLevel 1 set /a CopyFailures += 1
+     if ERRORLEVEL 1 set /A CopyFailures += 1
 "
 )
 +
@@ -1661,24 +1662,30 @@ set BackupOutputPathFile=%1
 set BackupBaseOutputFilename=%3
 set BackupToolPath=%4\%5
 set BackupToolName=%5
-set DriveDecimalBitField=0
-set count=-1
 
+set BackupDeviceDecimalBitField  = 0
+set BackupDevicePositionExponent = -1
 
 for %%d in (C: D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) do call :DoCopy %%d
-set /a CompositeNumber = (DriveDecimalBitField * 100) + CopyFailures
-exit %CompositeNumber%
+
+:: Combine the bit field and the copy failures into a single composite value.
+:: The factor of 100 means that there can be a maximum of 99 copy failures.
+
+set /A CompositeNumber = 100 * BackupDeviceDecimalBitField + CopyFailures
+exit  %CompositeNumber%
 
 :DoCopy
-set /a count+=1
+set /A BackupDevicePositionExponent += 1
 dir %1 > nul 2> nul
 if ERRORLEVEL 1 goto :EOF
 if not exist %1\""{BackupDriveToken}"" goto :EOF
-set numberToAdd=1
-for /l %%x in (1, 1, count) do (
-set /a numberToAdd*=2
-)
-set /a DriveDecimalBitField+=%numberToAdd%
+
+:: Determine the bit position (and the corresponding decimal value) from the exponent.
+set BitFieldDevicePosition = 1
+for /L %%x in (1, 1, BackupDevicePositionExponent) do (set /A BitFieldDevicePosition *= 2)
+
+:: Add the calculated positional value to the bit field for the current backup device.
+set /A BackupDeviceDecimalBitField += %BitFieldDevicePosition%
 
 echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
 echo This copies the backup to %1 (overwriting previous backup):>> ""{BackupDoneScriptOutputPathFile}""
@@ -1687,7 +1694,10 @@ echo.                                                           >> ""{BackupDone
 echo copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%  >> ""{BackupDoneScriptOutputPathFile}""
      copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%  >> ""{BackupDoneScriptOutputPathFile}""
 
-     if ErrorLevel 1 set /a CopyFailures += 1
+     if ERRORLEVEL 1 set /A CopyFailures += 1
+
+:: Exit if the following variables are both empty.
+if ""%BackupToolName%%BackupBaseOutputFilename%""=="""" goto :EOF
 
 echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
 echo This removes the previous backup software profile files:   >> ""{BackupDoneScriptOutputPathFile}""
@@ -1703,7 +1713,7 @@ echo.                                                           >> ""{BackupDone
 echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDoneScriptOutputPathFile}""
      xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDoneScriptOutputPathFile}""
 
-     if ErrorLevel 1 set /a CopyFailures += 1
+     if ERRORLEVEL 1 set /A CopyFailures += 1
 
 "
 )                       .Replace("{ProfileFile}", Path.GetFileName(moProfile.sLoadedPathFile))
@@ -1780,11 +1790,13 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
 
                 if ( !this.bMainLoopStopped )
                 {
-                    // The exit code is defined in the script as a combination of two numbers-
-                    // the number of backup drives found and the number of copy failures.
-                    string liCompositeNumber = "" + (loProcess.ExitCode / 100.0);
-                    liCompositeNumber = Convert.ToInt32(liCompositeNumber) % 1 == 0 ? "0" : liCompositeNumber.Substring(liCompositeNumber.IndexOf(".") + 1);
-                    liBackupDoneScriptCopyFailures = Convert.ToInt32(liCompositeNumber);
+                    // The exit code is defined in the script as a combination of two integers-
+                    // a bit field of found backup devices and a count of copy failures (99 max).
+                    double  ldCompositeNumber = loProcess.ExitCode / 100.0;
+                    int     liBackupDevicesBitField = (int)ldCompositeNumber;   // The integer part is the bit field.
+
+                    // The fractional part (x 100) is the number of copy failures.
+                    liBackupDoneScriptCopyFailures = (int)(100.0 * (ldCompositeNumber - (double)liBackupDevicesBitField));
 
                     if ( 0 == liBackupDoneScriptCopyFailures )
                     {
