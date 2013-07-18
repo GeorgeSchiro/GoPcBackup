@@ -711,10 +711,10 @@ namespace GoPcBackup
                             {
                                 loCheckBox.Content = "(" + loDrive.Name.Substring(0, 2) + ") " + loDrive.VolumeLabel;
                             }
-                            // Otherwise, display the drive name alongside the word "DISK".
+                            // Otherwise, display the drive name by itself.
                             catch
                             {
-                                loCheckBox.Content = "(" + loDrive.Name.Substring(0, 2) + ") " + "DISK";
+                                loCheckBox.Content = "(" + loDrive.Name.Substring(0, 2) + ") ";
                             }
 
                             // Add a CheckBox to the tab to represent the drive.

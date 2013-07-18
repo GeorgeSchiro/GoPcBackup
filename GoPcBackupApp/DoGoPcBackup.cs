@@ -1626,7 +1626,7 @@ echo.                   >> ""{BackupDoneScriptOutputPathFile}""
 echo xcopy /y %6 %4\%5\ >> ""{BackupDoneScriptOutputPathFile}""
      xcopy /y %6 %4\%5\ >> ""{BackupDoneScriptOutputPathFile}""
 
-     set /a CopyFailures+=%ErrorLevel%
+     if ErrorLevel 1 set /a CopyFailures += 1
 
 echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
 echo This copies the backup software's current profile file     >> ""{BackupDoneScriptOutputPathFile}""
@@ -1636,7 +1636,7 @@ echo.                                          >> ""{BackupDoneScriptOutputPathF
 echo echo F : xcopy  /y  %7 %4\%5\%3\%8.%2.txt >> ""{BackupDoneScriptOutputPathFile}""
      echo F | xcopy  /y  %7 %4\%5\%3\%8.%2.txt >> ""{BackupDoneScriptOutputPathFile}""
 
-     set /a CopyFailures+=%ErrorLevel%
+     if ErrorLevel 1 set /a CopyFailures += 1
 "
 +
 (!lbUseMainhostArchive ? "" :
@@ -1648,7 +1648,7 @@ echo.                              >> ""{BackupDoneScriptOutputPathFile}""
 echo copy %1 ""{MainHostArchive}"" >> ""{BackupDoneScriptOutputPathFile}""
      copy %1 ""{MainHostArchive}"" >> ""{BackupDoneScriptOutputPathFile}""
 
-     set /a CopyFailures+=%ErrorLevel%
+     if ErrorLevel 1 set /a CopyFailures += 1
 "
 )
 +
@@ -1661,15 +1661,24 @@ set BackupOutputPathFile=%1
 set BackupBaseOutputFilename=%3
 set BackupToolPath=%4\%5
 set BackupToolName=%5
+set DriveDecimalBitField=0
+set count=-1
+
 
 for %%d in (C: D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) do call :DoCopy %%d
-
-exit /b %CopyFailures%
+set /a CompositeNumber = (DriveDecimalBitField * 100) + CopyFailures
+exit %CompositeNumber%
 
 :DoCopy
+set /a count+=1
 dir %1 > nul 2> nul
 if ERRORLEVEL 1 goto :EOF
 if not exist %1\""{BackupDriveToken}"" goto :EOF
+set numberToAdd=1
+for /l %%x in (1, 1, count) do (
+set /a numberToAdd*=2
+)
+set /a DriveDecimalBitField+=%numberToAdd%
 
 echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
 echo This copies the backup to %1 (overwriting previous backup):>> ""{BackupDoneScriptOutputPathFile}""
@@ -1678,7 +1687,7 @@ echo.                                                           >> ""{BackupDone
 echo copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%  >> ""{BackupDoneScriptOutputPathFile}""
      copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%  >> ""{BackupDoneScriptOutputPathFile}""
 
-     set /a CopyFailures+=%ErrorLevel%
+     if ErrorLevel 1 set /a CopyFailures += 1
 
 echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
 echo This removes the previous backup software profile files:   >> ""{BackupDoneScriptOutputPathFile}""
@@ -1694,7 +1703,7 @@ echo.                                                           >> ""{BackupDone
 echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDoneScriptOutputPathFile}""
      xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDoneScriptOutputPathFile}""
 
-     set /a CopyFailures+=%ErrorLevel%
+     if ErrorLevel 1 set /a CopyFailures += 1
 
 "
 )                       .Replace("{ProfileFile}", Path.GetFileName(moProfile.sLoadedPathFile))
@@ -1771,9 +1780,11 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
 
                 if ( !this.bMainLoopStopped )
                 {
-                    // The exit code is defined in the script
-                    // to be the count of file copy failures.
-                    liBackupDoneScriptCopyFailures = loProcess.ExitCode;
+                    // The exit code is defined in the script as a combination of two numbers-
+                    // the number of backup drives found and the number of copy failures.
+                    string liCompositeNumber = "" + (loProcess.ExitCode / 100.0);
+                    liCompositeNumber = Convert.ToInt32(liCompositeNumber) % 1 == 0 ? "0" : liCompositeNumber.Substring(liCompositeNumber.IndexOf(".") + 1);
+                    liBackupDoneScriptCopyFailures = Convert.ToInt32(liCompositeNumber);
 
                     if ( 0 == liBackupDoneScriptCopyFailures )
                     {
