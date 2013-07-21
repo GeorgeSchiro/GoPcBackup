@@ -1794,6 +1794,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                     // a bit field of found backup devices and a count of copy failures (99 max).
                     double  ldCompositeNumber = loProcess.ExitCode / 100.0;
                     int     liBackupDevicesBitField = (int)ldCompositeNumber;   // The integer part is the bit field.
+                    string  lsBackupDevicesBitField = Convert.ToString(liBackupDevicesBitField, 2);
 
                     // The fractional part (x 100) is the number of copy failures.
                     liBackupDoneScriptCopyFailures = (int)(100.0 * (ldCompositeNumber - (double)liBackupDevicesBitField));

@@ -705,6 +705,8 @@ namespace GoPcBackup
                         {
                             CheckBox    loCheckBox = new CheckBox();
                                         loCheckBox.Width = 200;
+                                        loCheckBox.Checked += new RoutedEventHandler(CheckboxStateChanged);
+                                        loCheckBox.Unchecked += new RoutedEventHandler(CheckboxStateChanged);
                             
                             // If the drive has a valid volume label, display it alongside the drive name.
                             try
@@ -767,7 +769,7 @@ namespace GoPcBackup
             {
                 if ((bool)loCheckBox.IsChecked)
                 {
-                    lsSelectedDrives += loCheckBox.Content + " ";
+                    lsSelectedDrives += loCheckBox.Content.ToString().Substring(0, 5);
                 }
             }
 
@@ -897,9 +899,13 @@ namespace GoPcBackup
             miPreviousConfigWizardSelectedIndex = this.ConfigWizardTabs.SelectedIndex;
         }
 
-        private void loCheckBox_Checked(object sender, RoutedEventArgs e)
+        private void CheckboxStateChanged(object sender, RoutedEventArgs e)
         {
-            (sender as CheckBox).Content = "test";
+            string lsPathName = (sender as CheckBox).Content.ToString().Substring(1, 2) + "\\" + moDoGoPcBackup.sBackupDriveToken;
+            if ( !File.Exists(lsPathName) )
+                System.IO.File.Create(lsPathName).Close();
+            else
+                System.IO.File.Delete(lsPathName);
         }
         
         private void btnSetupDone_Click(object sender, RoutedEventArgs e)
@@ -915,16 +921,21 @@ You can continue this later wherever you left off. "
                     , "Run Backup", tvMessageBoxButtons.YesNo, tvMessageBoxIcons.Question)
                     )
             {
-                //Create the token file in each additional drive that was selected from Step 4.
-                foreach (CheckBox loCheckBox in gridBackupDevices.Children)
+                // Save user's preferences for additional backup devices by creating a decimal bit field.
+                int liBackupDeviceSelectionsBitField = 0;
+                foreach (CheckBox checkBox in gridBackupDevices.Children)
                 {
-                    string lsPathName = loCheckBox.Content.ToString().Substring(1, 2) + "\\" + moDoGoPcBackup.sBackupDriveToken;
-
-                    if ( (bool)loCheckBox.IsChecked && !System.IO.File.Exists(lsPathName) )
+                    if ((bool)checkBox.IsChecked)
                     {
-                        System.IO.File.Create(lsPathName).Close();
+                        // Subtract 67 from the ASCII value of each drive letter to obtain the correct power of two.
+                        int liPowerOfTwo = (int)checkBox.Content.ToString().Substring(1, 1).ToCharArray()[0] - 67;
+
+                        liBackupDeviceSelectionsBitField += (int)Math.Pow(2, liPowerOfTwo);
                     }
                 }
+                // Convert the decimal bit field to a binary bit field.
+                string lsBackupDeviceSelectionsBitField = Convert.ToString(liBackupDeviceSelectionsBitField, 2);
+                moProfile["-BackupDeviceSelectionsBitField"] = lsBackupDeviceSelectionsBitField;
 
                 moProfile["-AllConfigWizardStepsCompleted"] = true;
                 moProfile.Save();
