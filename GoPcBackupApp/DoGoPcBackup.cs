@@ -1801,7 +1801,39 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
 
                     if ( 0 == liBackupDoneScriptCopyFailures )
                     {
-                        this.LogIt("The \"backup done\" script finished successfully.");
+                        // Compare the bit field of writeable drives to the bit field of backup devices 
+                        // selected by the user.
+                        List<char> loMissingDrives = new List<char>();
+                        int liASCIIValueOfDrive = 67;
+                        for (int i = moProfile["-BackupDeviceSelectionsBitField"].ToString().Length - 1; i >= 0; --i)
+                        {
+                            try
+                            {
+                                if (moProfile["-BackupDeviceSelectionsBitField"].ToString()[i] < lsBackupDevicesBitField[i])
+                                {
+                                    loMissingDrives.Add((char)liASCIIValueOfDrive);
+                                }
+                                liASCIIValueOfDrive++;
+                            }
+                            catch
+                            {
+                                loMissingDrives.Add((char)liASCIIValueOfDrive);
+                                liASCIIValueOfDrive++;
+                            }
+
+                        };
+
+                        if (loMissingDrives.Count > 0)
+                        {
+                            string message = "List of missing drives:";
+                            foreach (char drive in loMissingDrives)
+                            {
+                                message += "\n(" + drive + ":)";
+                            }
+                            tvMessageBox.ShowWarning(oUI, message);
+                        }
+                        else
+                            this.LogIt("The \"backup done\" script finished successfully.");
                     }
                     else
                     {
