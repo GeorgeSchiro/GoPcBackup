@@ -705,8 +705,6 @@ namespace GoPcBackup
                         {
                             CheckBox    loCheckBox = new CheckBox();
                                         loCheckBox.Width = 200;
-                                        loCheckBox.Checked += new RoutedEventHandler(CheckboxStateChanged);
-                                        loCheckBox.Unchecked += new RoutedEventHandler(CheckboxStateChanged);
                             
                             // If the drive has a valid volume label, display it alongside the drive name.
                             try
@@ -735,14 +733,14 @@ namespace GoPcBackup
                                 ++liColumn;
                             }
                         
-                            //Validate each drive by creating a temporary file.
-                            string lsPathName = System.IO.Path.Combine(loCheckBox.Content.ToString().Substring(1, 2), 
-                                                                        moDoGoPcBackup.sBackupDriveToken);
-
+                            // Validate each drive by creating a temporary file. For an unknown reason, Path.Combine() 
+                            // does not work here.
+                            string lsPathName = loCheckBox.Content.ToString().Substring(1, 2) + "\\" + moDoGoPcBackup.sBackupDriveToken;
+                            
                             try
                             {
-                                System.IO.File.Create(lsPathName).Close();
-                                System.IO.File.Delete(lsPathName);
+                                System.IO.File.Create(lsPathName + "test").Close();
+                                System.IO.File.Delete(lsPathName + "test");
                                 loCheckBox.Foreground = Brushes.DarkGreen;
                             }
                             catch
@@ -750,6 +748,14 @@ namespace GoPcBackup
                                 loCheckBox.Foreground = Brushes.Red;
                                 loCheckBox.IsEnabled = false;
                             }
+
+                            // If the BackupDriveToken is already on a drive, set the drive's CheckBox to 'checked.'
+                            if (File.Exists(lsPathName))
+                                loCheckBox.IsChecked = true;
+
+                            // Create or delete the BackupDriveToken from the drive whenever it is checked or unchecked.
+                            loCheckBox.Checked += new RoutedEventHandler(CheckboxStateChanged);
+                            loCheckBox.Unchecked += new RoutedEventHandler(CheckboxStateChanged);
                         }
                     }
                     catch { }
