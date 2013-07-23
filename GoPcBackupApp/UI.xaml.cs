@@ -663,10 +663,12 @@ namespace GoPcBackup
         {
             tvProfile loBackupSet1Profile = new tvProfile(moProfile.sValue("-BackupSet", "(not set)"));
 
+
             // Step 1
             if ("" == this.txtBackupFolder.Text)
                 this.txtBackupFolder.Text = loBackupSet1Profile.sValue("-FolderToBackup",
                         Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
+
 
             // Step 2
             if ("" == this.txtBackupTime.Text)
@@ -674,6 +676,7 @@ namespace GoPcBackup
                 this.txtBackupTime.Text = moProfile.sValue("-BackupTime", "12:00 AM");
                 this.sldBackupTime_ValueFromString(this.txtBackupTime.Text);
             }
+
 
             // Step 3
             if ("" == this.txtBackupOutputFilename.Text)
@@ -683,11 +686,12 @@ namespace GoPcBackup
             if ("" == this.txtArchivePath.Text)
                 this.txtArchivePath.Text = moDoGoPcBackup.sArchivePath();
 
-            // Step 4
-            DriveInfo[] loDrivesArray = DriveInfo.GetDrives();
 
-            // This code could be improved by updating the CheckBoxes when the user 
-            // removes or inserts external drives.
+            // Step 4
+
+            // This code can be improved by updating the CheckBoxes
+            // when the user removes or inserts external drives.
+
             if ( 0 == gridBackupDevices.Children.Count )
             {   
                 int liRow = 0;
@@ -697,7 +701,7 @@ namespace GoPcBackup
                 gridBackupDevices.Children.Clear();
 
                 // Add each drive (after B:) to the list of checkboxes.
-                foreach (DriveInfo loDrive in loDrivesArray)
+                foreach (DriveInfo loDrive in DriveInfo.GetDrives())
                 {
                     try
                     {
@@ -710,6 +714,7 @@ namespace GoPcBackup
                             try
                             {
                                 loCheckBox.Content = "(" + loDrive.Name.Substring(0, 2) + ") " + loDrive.VolumeLabel;
+                                loCheckBox.Tag = loDrive;
                             }
                             // Otherwise, display the drive name by itself.
                             catch
@@ -733,14 +738,12 @@ namespace GoPcBackup
                                 ++liColumn;
                             }
                         
-                            // Validate each drive by creating a temporary file. For an unknown reason, Path.Combine() 
-                            // does not work here.
-                            string lsPathName = loCheckBox.Content.ToString().Substring(1, 2) + "\\" + moDoGoPcBackup.sBackupDriveToken;
-                            
+                            string lsTokenPathFile = Path.Combine((loCheckBox.Tag as DriveInfo).Name, moDoGoPcBackup.sBackupDriveToken);
+
                             try
                             {
-                                System.IO.File.Create(lsPathName + "test").Close();
-                                System.IO.File.Delete(lsPathName + "test");
+                                File.Create(lsTokenPathFile + ".test").Close();
+                                File.Delete(lsTokenPathFile + ".test");
                                 loCheckBox.Foreground = Brushes.DarkGreen;
                             }
                             catch
@@ -750,17 +753,46 @@ namespace GoPcBackup
                             }
 
                             // If the BackupDriveToken is already on a drive, set the drive's CheckBox to 'checked.'
-                            if (File.Exists(lsPathName))
+                            if (File.Exists(lsTokenPathFile))
                                 loCheckBox.IsChecked = true;
 
                             // Create or delete the BackupDriveToken from the drive whenever it is checked or unchecked.
-                            loCheckBox.Checked += new RoutedEventHandler(CheckboxStateChanged);
-                            loCheckBox.Unchecked += new RoutedEventHandler(CheckboxStateChanged);
+                            loCheckBox.Checked += new RoutedEventHandler(BackupDeviceCheckboxStateChanged);
+                            loCheckBox.Unchecked += new RoutedEventHandler(BackupDeviceCheckboxStateChanged);
                         }
                     }
                     catch { }
                 }
             }
+
+            // Save user's preferences for additional backup devices by creating a bit field.
+
+            StringBuilder   lsbBackupDeviceSelectionsBitField = new StringBuilder();
+            char            lcCurrentDriveLetter = 'C';
+
+            foreach ( CheckBox loCheckBox in gridBackupDevices.Children )
+            {
+                string lsCheckBoxDriveLetter = (loCheckBox.Tag as DriveInfo).Name.Substring(0, 1);
+
+                // Fill in zeros for all drives prior to or between each drive selected.
+                while ( String.Compare(lsCheckBoxDriveLetter, lcCurrentDriveLetter.ToString()) > 0 )
+                {
+                    lsbBackupDeviceSelectionsBitField.Append('0');
+                    ++lcCurrentDriveLetter;
+                }
+
+                lsbBackupDeviceSelectionsBitField.Append((bool)loCheckBox.IsChecked ? '1' : '0');
+                ++lcCurrentDriveLetter;
+            }
+
+            // Fill in zeros for all the drives after the last drive found.
+            for ( char c = lcCurrentDriveLetter; c <= 'Z'; ++c )
+            {
+                lsbBackupDeviceSelectionsBitField.Append('0');
+            }
+
+            moProfile["-BackupDeviceSelectionsBitField"] = lsbBackupDeviceSelectionsBitField.ToString();
+
 
             // Finish
             this.txtReviewBackupFolder.Text = this.txtBackupFolder.Text;
@@ -905,13 +937,21 @@ namespace GoPcBackup
             miPreviousConfigWizardSelectedIndex = this.ConfigWizardTabs.SelectedIndex;
         }
 
-        private void CheckboxStateChanged(object sender, RoutedEventArgs e)
+        private void BackupDeviceCheckboxStateChanged(object sender, RoutedEventArgs e)
         {
-            string lsPathName = (sender as CheckBox).Content.ToString().Substring(1, 2) + "\\" + moDoGoPcBackup.sBackupDriveToken;
-            if ( !File.Exists(lsPathName) )
-                System.IO.File.Create(lsPathName).Close();
+            CheckBox    loCheckBox = (CheckBox)sender;
+            string      lsTokenPathFile = Path.Combine((loCheckBox.Tag as DriveInfo).Name, moDoGoPcBackup.sBackupDriveToken);
+
+            if ( (bool)loCheckBox.IsChecked )
+            {
+                if ( !File.Exists(lsTokenPathFile) )
+                    File.Create(lsTokenPathFile).Close();
+            }
             else
-                System.IO.File.Delete(lsPathName);
+            {
+                if ( File.Exists(lsTokenPathFile) )
+                    File.Delete(lsTokenPathFile);
+            }
         }
         
         private void btnSetupDone_Click(object sender, RoutedEventArgs e)
@@ -927,22 +967,6 @@ You can continue this later wherever you left off. "
                     , "Run Backup", tvMessageBoxButtons.YesNo, tvMessageBoxIcons.Question)
                     )
             {
-                // Save user's preferences for additional backup devices by creating a decimal bit field.
-                int liBackupDeviceSelectionsBitField = 0;
-                foreach (CheckBox checkBox in gridBackupDevices.Children)
-                {
-                    if ((bool)checkBox.IsChecked)
-                    {
-                        // Subtract 67 from the ASCII value of each drive letter to obtain the correct power of two.
-                        int liPowerOfTwo = (int)checkBox.Content.ToString().Substring(1, 1).ToCharArray()[0] - 67;
-
-                        liBackupDeviceSelectionsBitField += (int)Math.Pow(2, liPowerOfTwo);
-                    }
-                }
-                // Convert the decimal bit field to a binary bit field.
-                string lsBackupDeviceSelectionsBitField = Convert.ToString(liBackupDeviceSelectionsBitField, 2);
-                moProfile["-BackupDeviceSelectionsBitField"] = lsBackupDeviceSelectionsBitField;
-
                 moProfile["-AllConfigWizardStepsCompleted"] = true;
                 moProfile.Save();
 
