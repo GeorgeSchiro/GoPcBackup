@@ -1616,6 +1616,7 @@ if ""%1""=="""" goto :EOF
 ::                      ^^  Replace brackets with darts.
 
 :: The ""CopyFailures"" environment variable is used to keep count of errors to be returned.
+set CopyFailures=0
 
 :: Initialize the ""backup done"" script log file. It's for this run only.
 echo.                    > ""{BackupDoneScriptOutputPathFile}""
@@ -1663,26 +1664,26 @@ set BackupBaseOutputFilename=%3
 set BackupToolPath=%4\%5
 set BackupToolName=%5
 
-set BackupDeviceDecimalBitField  = 0
-set BackupDevicePositionExponent = -1
+set BackupDeviceDecimalBitField=0
+set BackupDevicePositionExponent=23
 
 for %%d in (C: D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) do call :DoCopy %%d
 
 :: Combine the bit field and the copy failures into a single composite value.
 :: The factor of 100 means that there can be a maximum of 99 copy failures.
 
-set /A CompositeNumber = 100 * BackupDeviceDecimalBitField + CopyFailures
+set /A CompositeNumber = 100 * %BackupDeviceDecimalBitField% + %CopyFailures%
 exit  %CompositeNumber%
 
 :DoCopy
-set /A BackupDevicePositionExponent += 1
+set /A BackupDevicePositionExponent -= 1
 dir %1 > nul 2> nul
 if ERRORLEVEL 1 goto :EOF
 if not exist %1\""{BackupDriveToken}"" goto :EOF
 
 :: Determine the bit position (and the corresponding decimal value) from the exponent.
-set BitFieldDevicePosition = 1
-for /L %%x in (1, 1, BackupDevicePositionExponent) do (set /A BitFieldDevicePosition *= 2)
+set BitFieldDevicePosition=1
+for /L %%x in (0, 1, %BackupDevicePositionExponent%) do set /A BitFieldDevicePosition *= 2
 
 :: Add the calculated positional value to the bit field for the current backup device.
 set /A BackupDeviceDecimalBitField += %BitFieldDevicePosition%
