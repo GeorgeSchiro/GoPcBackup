@@ -1806,22 +1806,16 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                         // selected by the user.
                         List<char> loMissingDrives = new List<char>();
                         int liASCIIValueOfDrive = 67;
-                        for (int i = moProfile["-BackupDeviceSelectionsBitField"].ToString().Length - 1; i >= 0; --i)
+                        string liBackupDeviceSelectionsBitField = moProfile["-BackupDeviceSelectionsBitField"].ToString();
+                        for (int i = 0; i < liBackupDeviceSelectionsBitField.Length; ++i)
                         {
-                            try
-                            {
-                                if (moProfile["-BackupDeviceSelectionsBitField"].ToString()[i] < lsBackupDevicesBitField[i])
-                                {
-                                    loMissingDrives.Add((char)liASCIIValueOfDrive);
-                                }
-                                liASCIIValueOfDrive++;
-                            }
-                            catch
+                            
+                            if (Convert.ToInt32(liBackupDeviceSelectionsBitField[i]) > Convert.ToInt32(lsBackupDevicesBitField[i]))
                             {
                                 loMissingDrives.Add((char)liASCIIValueOfDrive);
-                                liASCIIValueOfDrive++;
                             }
-
+                            
+                            liASCIIValueOfDrive++;
                         };
 
                         if (loMissingDrives.Count > 0)
@@ -1831,7 +1825,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                             {
                                 message += "\n(" + drive + ":)";
                             }
-                            tvMessageBox.ShowWarning(oUI, message);
+                            tvMessageBox.ShowWarning(oUI, message, "Missing Drives");
                         }
                         else
                             this.LogIt("The \"backup done\" script finished successfully.");

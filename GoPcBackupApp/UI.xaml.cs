@@ -709,12 +709,12 @@ namespace GoPcBackup
                         {
                             CheckBox    loCheckBox = new CheckBox();
                                         loCheckBox.Width = 200;
-                            
+                                        loCheckBox.Tag = loDrive;
+
                             // If the drive has a valid volume label, display it alongside the drive name.
                             try
                             {
                                 loCheckBox.Content = "(" + loDrive.Name.Substring(0, 2) + ") " + loDrive.VolumeLabel;
-                                loCheckBox.Tag = loDrive;
                             }
                             // Otherwise, display the drive name by itself.
                             catch
