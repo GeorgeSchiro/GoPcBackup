@@ -253,6 +253,9 @@ namespace GoPcBackup
                 moHelpWindow.Close();
         }
 
+        // This method is called before anything else (after init & load events).
+        // Most of the UI initialization code goes here.
+
         private void LogoImageAnimation_Completed(object sender, EventArgs e)
         {
             if (!moProfile.bValue("-AllConfigWizardStepsCompleted", false))
