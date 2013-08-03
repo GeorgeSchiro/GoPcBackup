@@ -1800,70 +1800,88 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                     // The fractional part (x 100) is the number of copy failures.
                     liBackupDoneScriptCopyFailures = (int)(100.0 * (ldCompositeNumber - (double)liBackupDevicesBitField));
 
-                    if ( 0 == liBackupDoneScriptCopyFailures )
-                    {
-                        // Compare the bit field of writeable drives to the bit field of backup devices 
-                        // selected by the user.
-                        List<char> loMissingDrives = new List<char>();
-                        int liASCIIValueOfDrive = 67;
-                        string liBackupDeviceSelectionsBitField = moProfile["-BackupDeviceSelectionsBitField"].ToString();
-                        for (int i = 0; i < liBackupDeviceSelectionsBitField.Length; ++i)
-                        {
-                            
-                            if (Convert.ToInt32(liBackupDeviceSelectionsBitField[i]) > Convert.ToInt32(lsBackupDevicesBitField[i]))
-                            {
-                                loMissingDrives.Add((char)liASCIIValueOfDrive);
-                            }
-                            
-                            liASCIIValueOfDrive++;
-                        };
+                    // Compare the bit field of writeable drives to the bit field of backup devices 
+                    // selected by the user.
+                    List<char> loMissingDrives = new List<char>();
+                    int liASCIIValueOfDrive = 67;
+                    string liBackupDeviceSelectionsBitField = null == moProfile["-BackupDeviceSelectionsBitField"]
+                                                              ? "000000000000000000000000"
+                                                              : moProfile["-BackupDeviceSelectionsBitField"].ToString();
 
-                        if (loMissingDrives.Count > 0)
+                    while (lsBackupDevicesBitField.Length < 24)
+                    {
+                        lsBackupDevicesBitField = "0" + lsBackupDevicesBitField;
+                    }
+
+                    for (int i = 0; i < 24; ++i)
+                    {
+                        if (Convert.ToInt32(liBackupDeviceSelectionsBitField[i]) > Convert.ToInt32(lsBackupDevicesBitField[i]))
                         {
-                            string message = "List of missing drives:";
-                            foreach (char drive in loMissingDrives)
-                            {
-                                message += "\n(" + drive + ":)";
-                            }
-                            tvMessageBox.ShowWarning(oUI, message, "Missing Drives");
+                            loMissingDrives.Add((char)liASCIIValueOfDrive);
                         }
-                        else
-                            this.LogIt("The \"backup done\" script finished successfully.");
+
+                        liASCIIValueOfDrive++;
+                    };
+
+                    if (0 == liBackupDoneScriptCopyFailures && 0 == loMissingDrives.Count)
+                    {
+                        this.LogIt("The \"backup done\" script finished successfully.");
                     }
                     else
                     {
-                        this.LogIt(string.Format("The \"backup done\" script had {0} copy failure{1}.\r\n"
-                                , liBackupDoneScriptCopyFailures
-                                , 1 == liBackupDoneScriptCopyFailures ? "" : "s")
-                                );
+                        string lsMessage = "";
+                        string lsMessageCaption = "";
 
-                        // Get the output from the "backup done" script.
-
-                        StreamReader    loStreamReader = null;
-                        string          lsFileAsStream = null;
-
-                        try
+                        if (0 < liBackupDoneScriptCopyFailures)
                         {
-                            loStreamReader = new StreamReader(lsBackupDoneScriptOutputPathFile);
-                            lsFileAsStream = loStreamReader.ReadToEnd();
-                        }
-                        catch (Exception ex)
-                        {
-                            this.ShowError(string.Format("File Read Failure: \"{0}\"\r\n"
-                                    , lsBackupDoneScriptOutputPathFile) + ex.Message
-                                    , "Failed Reading File"
-                                    );
-                        }
-                        finally
-                        {
-                            if ( null != loStreamReader )
-                                loStreamReader.Close();
+                            lsMessageCaption += "Copy Failures";
+                            lsMessage += String.Format("The \"backup done\" script had {0} copy failure{1}.\r\n"
+                                    , liBackupDoneScriptCopyFailures
+                                    , 1 == liBackupDoneScriptCopyFailures ? "" : "s");
+
+                            this.LogIt(lsMessage);
+
+                            // Get the output from the "backup done" script.
+
+                            StreamReader loStreamReader = null;
+                            string lsFileAsStream = null;
+
+                            try
+                            {
+                                loStreamReader = new StreamReader(lsBackupDoneScriptOutputPathFile);
+                                lsFileAsStream = loStreamReader.ReadToEnd();
+                            }
+                            catch (Exception ex)
+                            {
+                                this.ShowError(string.Format("File Read Failure: \"{0}\"\r\n"
+                                        , lsBackupDoneScriptOutputPathFile) + ex.Message
+                                        , "Failed Reading File"
+                                        );
+                            }
+                            finally
+                            {
+                                if (null != loStreamReader)
+                                    loStreamReader.Close();
+                            }
+
+                            this.LogIt("Here's output from the \"backup done script\":\r\n\r\n" + lsFileAsStream);
+
+                            if (moProfile.bValue("-ShowBackupDoneScriptErrors", true))
+                                this.DisplayFile(lsBackupDoneScriptOutputPathFile);
                         }
 
-                        this.LogIt("Here's output from the \"backup done script\":\r\n\r\n" + lsFileAsStream);
+                        if (0 < loMissingDrives.Count)
+                        {
+                            lsMessageCaption += "" == lsMessageCaption ? "Missing Backup Devices" : " and Missing Backup Devices";
+                            lsMessage += "List of missing backup devices:";
+                            foreach (char drive in loMissingDrives)
+                            {
+                                lsMessage += "\n(" + drive + ":)";
+                            }
+                        }
 
-                        if ( moProfile.bValue("-ShowBackupDoneScriptErrors", true) )
-                            this.DisplayFile(lsBackupDoneScriptOutputPathFile);
+                        if ("" != lsMessage)
+                            tvMessageBox.ShowWarning(oUI, lsMessage, lsMessageCaption);
                     }
                 }
             }

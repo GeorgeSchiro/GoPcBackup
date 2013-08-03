@@ -130,44 +130,8 @@
                         <TabItem Name="tabStep2" Header="Setup Step 2." Style="{StaticResource ConfigWizardTabItems}">
                             <Viewbox>
                             <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
-<TextBlock Style="{StaticResource ConfigWizardTextTop}">
-    2. Select the time you would like to run the backup each day.
-</TextBlock>
-<Border Style="{StaticResource ConfigWizardTextBorder}">
-        <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
-    Slide the "GoPC" logo below to select the daily backup time.<LineBreak/><LineBreak/>
-
-    Selecting a daily backup time implies that your PC will be running at that time.
-    If not, you can always run the backup manually by hitting the "Run Now" button.
-</TextBlock></Border>
-<StackPanel Margin="20">
-    <Label HorizontalAlignment="Center">Backup Time</Label>
-    <Slider Name="sldBackupTime" ValueChanged="sldBackupTime_ValueChanged"
-            Minimum="0" Value="0" Maximum="95"
-            Margin="10" Width="Auto"
-            ToolTip="Slide right or left"
-            Orientation="Horizontal"
-            SmallChange="1"
-            LargeChange="1"
-            TickFrequency="1"
-            IsSnapToTickEnabled="True"
-            TickPlacement="None"
-            Style="{StaticResource LogoSliderStyle}"
-            />
-</StackPanel>
-<StackPanel Style="{StaticResource ConfigWizardStackPanelBottom}">
-    <Label>Selected Time:</Label>
-    <TextBox Name="txtBackupTime" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
-</StackPanel>
-<Label Height="10"></Label>
-                            </StackPanel>
-                            </Viewbox>
-                        </TabItem>
-                        <TabItem Name="tabStep3" Header="Setup Step 3." Style="{StaticResource ConfigWizardTabItems}">
-                            <Viewbox>
-                            <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
 <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextTop}">
-    3. Select your backup output filename and archive location (ie. where all of your backups go).
+    2. Select your backup output filename and archive location (ie. where all of your backups go).
 </TextBlock>
 <Border Style="{StaticResource ConfigWizardTextBorder}">
         <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
@@ -178,7 +142,7 @@
     <Label>Output Filename:</Label>
     <TextBox Name="txtBackupOutputFilename" IsReadOnly="False" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
 </StackPanel>
-<Button Name="btnSetupStep3" Click="btnSetupStep3_Click" Margin="30" Style="{StaticResource ConfigWizardButton}">
+<Button Name="btnSetupStep2" Click="btnSetupStep2_Click" Margin="30" Style="{StaticResource ConfigWizardButton}">
     Select Archive Folder
 </Button>
 <StackPanel Style="{StaticResource ConfigWizardStackPanelBottom}">
@@ -186,14 +150,32 @@
     <TextBox Name="txtArchivePath" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
 </StackPanel>
 <Label Height="10"></Label>
+<CheckBox Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content=" Back up to a virtual machine?" Checked="UseVirtualMachineHostArchive_Checked"
+                                                                                     Unchecked="UseVirtualMachineHostArchive_Unchecked"/>
+<Grid Name="VirtualMachineHostGrid" Loaded="VirtualMachineHostGrid_Loaded" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
+    <Grid.RowDefinitions>
+        <RowDefinition />
+        <RowDefinition />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition/>
+        <ColumnDefinition/>
+        <ColumnDefinition/>
+    </Grid.ColumnDefinitions>
+    <Label Grid.Row="0" Grid.Column="0" >Name:</Label>    <TextBox Width="300" Grid.Row="0" Grid.Column="1" Name="txtVirtualMachineHostOutputFilename" IsReadOnly="False" Style="{StaticResource ConfigWizardTextSelected}" />
+    <Label Grid.Row="1" Grid.Column="0">Archive:</Label>    <TextBox Width="300" Grid.Row="1" Grid.Column="1" Name="txtVirtualMachineHostArchivePath"    Style="{StaticResource ConfigWizardTextSelected}"  />
+    <Button Name="btnSetupStep3" Grid.Row="1" Grid.Column="2" Click="btnSetupStep3_Click" Margin="10,0,0,0"  Height="30" Style="{StaticResource ConfigWizardButton}">
+    Select Archive Folder
+    </Button>
+</Grid>                                
                             </StackPanel>
                             </Viewbox>
                         </TabItem>
-                        <TabItem  Name="tabStep4" Header="Setup Step 4." Style="{StaticResource ConfigWizardTabItems}">
+                        <TabItem Name="tabStep3" Header="Setup Step 3." Style="{StaticResource ConfigWizardTabItems}">
                             <Viewbox>
                             <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
 <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextTop}">
-4. Select the additional backup devices you would like to copy your backups to.
+3. Select the additional backup devices you would like to copy your backups to.
 </TextBlock>
 <Border Margin="10,10,10,30" Style="{StaticResource ConfigWizardTextBorder}">
     <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
@@ -241,6 +223,44 @@
     </Grid.ColumnDefinitions>
         
 </Grid>
+
+
+                            </StackPanel>
+                            </Viewbox>
+                        </TabItem>
+                        <TabItem  Name="tabStep4" Header="Setup Step 4." Style="{StaticResource ConfigWizardTabItems}">
+                            <Viewbox>
+                            <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
+<TextBlock Style="{StaticResource ConfigWizardTextTop}">
+    4. Select the time you would like to run the backup each day.
+</TextBlock>
+<Border Style="{StaticResource ConfigWizardTextBorder}">
+        <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
+    Slide the "GoPC" logo below to select the daily backup time.<LineBreak/><LineBreak/>
+
+    Selecting a daily backup time implies that your PC will be running at that time.
+    If not, you can always run the backup manually by hitting the "Run Now" button.
+</TextBlock></Border>
+<StackPanel Margin="20">
+    <Label HorizontalAlignment="Center">Backup Time</Label>
+    <Slider Name="sldBackupTime" ValueChanged="sldBackupTime_ValueChanged"
+            Minimum="0" Value="0" Maximum="95"
+            Margin="10" Width="Auto"
+            ToolTip="Slide right or left"
+            Orientation="Horizontal"
+            SmallChange="1"
+            LargeChange="1"
+            TickFrequency="1"
+            IsSnapToTickEnabled="True"
+            TickPlacement="None"
+            Style="{StaticResource LogoSliderStyle}"
+            />
+</StackPanel>
+<StackPanel Style="{StaticResource ConfigWizardStackPanelBottom}">
+    <Label>Selected Time:</Label>
+    <TextBox Name="txtBackupTime" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
+</StackPanel>
+<Label Height="10"></Label>  
                             </StackPanel>
                             </Viewbox>
                         </TabItem>
@@ -273,11 +293,11 @@
         <ColumnDefinition />
         <ColumnDefinition />
     </Grid.ColumnDefinitions>
-    <Label Grid.Row="0" Grid.Column="0">Folder to Backup:</Label>   <TextBox Grid.Row="0" Grid.Column="1" Name="txtReviewBackupFolder"      Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
-    <Label Grid.Row="1" Grid.Column="0">Output Filename:</Label>    <TextBox Grid.Row="1" Grid.Column="1" Name="txtReviewOutputFilename"    Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
-    <Label Grid.Row="0" Grid.Column="3">Archive Folder:</Label>     <TextBox Grid.Row="0" Grid.Column="4" Name="txtReviewArchivePath"       Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
-    <Label Grid.Row="1" Grid.Column="3">Backup Time:</Label>        <TextBox Grid.Row="1" Grid.Column="4" Name="txtReviewBackupTime"        Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
-    <Label Grid.Row="2" Grid.Column="0">Additional Devices:</Label> <TextBox Grid.Row="2" Grid.Column="1" Name="txtReviewAdditionalDevices" Style="{StaticResource ConfigWizardTextReadOnly}" Grid.ColumnSpan="5"></TextBox>
+    <Label Grid.Row="0" Grid.Column="0">Folder to Backup:</Label>   <TextBox Grid.Row="0" Grid.Column="1" Name="txtReviewBackupFolder"      Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="1" Grid.Column="0">Output Filename:</Label>    <TextBox Grid.Row="1" Grid.Column="1" Name="txtReviewOutputFilename"    Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="0" Grid.Column="3">Archive Folder:</Label>     <TextBox Grid.Row="0" Grid.Column="4" Name="txtReviewArchivePath"       Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="1" Grid.Column="3">Backup Time:</Label>        <TextBox Grid.Row="1" Grid.Column="4" Name="txtReviewBackupTime"        Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="2" Grid.Column="0">Additional Devices:</Label> <TextBox Grid.Row="2" Grid.Column="1" Name="txtReviewAdditionalDevices" Style="{StaticResource ConfigWizardTextReadOnly}" Grid.ColumnSpan="5" />
 </Grid>
 <Button Name="btnSetupDone" Click="btnSetupDone_Click" Margin="5" Style="{StaticResource ConfigWizardButton}">
     Setup Done - Run Backup
@@ -291,7 +311,7 @@
                 </Grid>
                 <Grid Name="MiddlePanelConfigDetails" Visibility="Collapsed">
                     <Border Style="{StaticResource ConfigWizardBorder}">
-                    <TabControl Name="ConfigDetailsTabs" SelectionChanged="ConfigDetailsTabs_SelectionChanged"  Style="{StaticResource ConfigWizardTab}">
+                    <TabControl Name="ConfigDetailsTabs" Style="{StaticResource ConfigWizardTab}">
                         <TabItem Name="tabSetupGeneral" Header="General" Style="{StaticResource ConfigWizardTabItems}">
                             <Viewbox>
                             <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">

@@ -502,7 +502,7 @@ namespace GoPcBackup
                 this.txtBackupFolder.Text = loOpenDialog.SelectedPath;
         }
 
-        private void btnSetupStep3_Click(object sender, RoutedEventArgs e)
+        private void btnSetupStep2_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.Forms.FolderBrowserDialog loOpenDialog = new System.Windows.Forms.FolderBrowserDialog();
             loOpenDialog.RootFolder = Environment.SpecialFolder.Desktop;
@@ -512,6 +512,28 @@ namespace GoPcBackup
 
             if (System.Windows.Forms.DialogResult.OK == leDialogResult)
                 this.txtArchivePath.Text = loOpenDialog.SelectedPath;
+        }
+        
+        private void UseVirtualMachineHostArchive_Checked(object sender, RoutedEventArgs e)
+        {
+            this.VirtualMachineHostGrid.Visibility = Visibility.Visible;
+        }
+
+        private void UseVirtualMachineHostArchive_Unchecked(object sender, RoutedEventArgs e)
+        {
+            this.VirtualMachineHostGrid.Visibility = Visibility.Hidden;
+        }
+
+        private void btnSetupStep3_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog loOpenDialog = new System.Windows.Forms.FolderBrowserDialog();
+            loOpenDialog.RootFolder = Environment.SpecialFolder.Desktop;
+            loOpenDialog.SelectedPath = this.txtVirtualMachineHostArchivePath.Text;
+
+            System.Windows.Forms.DialogResult leDialogResult = loOpenDialog.ShowDialog();
+
+            if (System.Windows.Forms.DialogResult.OK == leDialogResult)
+                this.txtVirtualMachineHostArchivePath.Text = loOpenDialog.SelectedPath;
         }
 
         private void moNotifyIcon_OnHideWindow()
@@ -689,6 +711,25 @@ namespace GoPcBackup
 
             // Step 4
 
+            if ("" == this.txtVirtualMachineHostOutputFilename.Text)
+            {
+                string lsVirtualMachineHostArchivePath = (String)moProfile["-VirtualMachineHostArchivePath"];
+                if ("" != lsVirtualMachineHostArchivePath && null != lsVirtualMachineHostArchivePath)
+                {
+                    this.UseVirtualMachineHostArchive.IsChecked = true;
+
+                    int liIndex = lsVirtualMachineHostArchivePath.LastIndexOf("\\");
+                    string lsArchivePath = lsVirtualMachineHostArchivePath.Substring(0, liIndex);
+                    string lsOutputFilename = lsVirtualMachineHostArchivePath.Substring(liIndex + 1);
+                    this.txtVirtualMachineHostOutputFilename.Text = lsOutputFilename;
+                    this.txtVirtualMachineHostArchivePath.Text = lsArchivePath;
+                }
+                else
+                {
+                    this.UseVirtualMachineHostArchive.IsChecked = false;
+                }
+            }
+
             // This code can be improved by updating the CheckBoxes
             // when the user removes or inserts external drives.
 
@@ -765,33 +806,6 @@ namespace GoPcBackup
                 }
             }
 
-            // Save user's preferences for additional backup devices by creating a bit field.
-
-            StringBuilder   lsbBackupDeviceSelectionsBitField = new StringBuilder();
-            char            lcCurrentDriveLetter = 'C';
-
-            foreach ( CheckBox loCheckBox in gridBackupDevices.Children )
-            {
-                string lsCheckBoxDriveLetter = (loCheckBox.Tag as DriveInfo).Name.Substring(0, 1);
-
-                // Fill in zeros for all drives prior to or between each drive selected.
-                while ( String.Compare(lsCheckBoxDriveLetter, lcCurrentDriveLetter.ToString()) > 0 )
-                {
-                    lsbBackupDeviceSelectionsBitField.Append('0');
-                    ++lcCurrentDriveLetter;
-                }
-
-                lsbBackupDeviceSelectionsBitField.Append((bool)loCheckBox.IsChecked ? '1' : '0');
-                ++lcCurrentDriveLetter;
-            }
-
-            // Fill in zeros for all the drives after the last drive found.
-            for ( char c = lcCurrentDriveLetter; c <= 'Z'; ++c )
-            {
-                lsbBackupDeviceSelectionsBitField.Append('0');
-            }
-
-            moProfile["-BackupDeviceSelectionsBitField"] = lsbBackupDeviceSelectionsBitField.ToString();
 
 
             // Finish
@@ -828,6 +842,20 @@ namespace GoPcBackup
 
             moProfile["-ArchivePath"] = this.txtReviewArchivePath.Text;
             moProfile["-BackupTime"] = this.txtReviewBackupTime.Text;
+            if ((bool)this.UseVirtualMachineHostArchive.IsChecked)
+            {
+                moProfile["-VirtualMachineHostArchivePath"] = Path.Combine(this.txtVirtualMachineHostArchivePath.Text,
+                                                                           this.txtVirtualMachineHostOutputFilename.Text);
+            }
+            else
+            {
+                moProfile["-VirtualMachineHostArchivePath"] = "";
+                this.txtVirtualMachineHostOutputFilename.Text = "";
+                this.txtVirtualMachineHostArchivePath.Text = "";
+            }
+
+            CreateBackupDeviceSelectionBitField();
+
             moProfile.Save();
 
             if ( !this.bMainLoopStopped )
@@ -867,10 +895,10 @@ namespace GoPcBackup
                             ;
             }
 
-            // Step 2 (backup time)
+            // Step 4 (backup time)
             if (abVerifyAllTabs || lbHaveMovedForward && miPreviousConfigWizardSelectedIndex
                     == ItemsControl.ItemsControlFromItemContainer(
-                    this.tabStep2).ItemContainerGenerator.IndexFromContainer(this.tabStep2)
+                    this.tabStep4).ItemContainerGenerator.IndexFromContainer(this.tabStep4)
                     )
             {
                 DateTime ldtBackupTime;
@@ -881,10 +909,10 @@ namespace GoPcBackup
                             ;
             }
 
-            // Step 3 (backup filename and archive folder).
+            // Step 2 (backup filename and archive folder).
             if (abVerifyAllTabs || lbHaveMovedForward && miPreviousConfigWizardSelectedIndex
                     == ItemsControl.ItemsControlFromItemContainer(
-                    this.tabStep3).ItemContainerGenerator.IndexFromContainer(this.tabStep3)
+                    this.tabStep2).ItemContainerGenerator.IndexFromContainer(this.tabStep2)
                     )
             {
                 try
@@ -968,7 +996,7 @@ You can continue this later wherever you left off. "
                     )
             {
                 moProfile["-AllConfigWizardStepsCompleted"] = true;
-                moProfile.Save();
+                moProfile.Save();                
 
                 this.HideMiddlePanels();
                 this.MainButtonPanel.IsEnabled = true;
@@ -979,8 +1007,35 @@ You can continue this later wherever you left off. "
             }
         }
 
-        private void ConfigDetailsTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        // Save user's preferences for additional backup devices by creating a bit field.
+        private void CreateBackupDeviceSelectionBitField()
         {
+            StringBuilder lsbBackupDeviceSelectionsBitField = new StringBuilder();
+            char lcCurrentDriveLetter = 'C';
+
+            foreach (CheckBox loCheckBox in gridBackupDevices.Children)
+            {
+                string lsCheckBoxDriveLetter = (loCheckBox.Tag as DriveInfo).Name.Substring(0, 1);
+
+                // Fill in zeros for all drives prior to or between each drive selected.
+                while (String.Compare(lsCheckBoxDriveLetter, lcCurrentDriveLetter.ToString()) > 0)
+                {
+                    lsbBackupDeviceSelectionsBitField.Append('0');
+                    ++lcCurrentDriveLetter;
+                }
+
+                lsbBackupDeviceSelectionsBitField.Append((bool)loCheckBox.IsChecked ? '1' : '0');
+                ++lcCurrentDriveLetter;
+            }
+
+            // Fill in zeros for all the drives after the last drive found.
+            for (char c = lcCurrentDriveLetter; c <= 'Z'; ++c)
+            {
+                lsbBackupDeviceSelectionsBitField.Append('0');
+            }
+
+            moProfile["-BackupDeviceSelectionsBitField"] = lsbBackupDeviceSelectionsBitField.ToString();
+            moProfile.Save();
         }
 
         private void btnSetupGeneralResetAllPrompts_Click(object sender, RoutedEventArgs e)
@@ -1284,6 +1339,11 @@ You can continue this later wherever you left off. "
             while (!this.bMainLoopStopped);
 
             this.PopulateTimerDisplay(mcsStoppedText);
+        }
+
+        private void VirtualMachineHostGrid_Loaded(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }
