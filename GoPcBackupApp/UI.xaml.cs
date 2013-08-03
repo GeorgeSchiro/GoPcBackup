@@ -513,6 +513,28 @@ namespace GoPcBackup
             if (System.Windows.Forms.DialogResult.OK == leDialogResult)
                 this.txtArchivePath.Text = loOpenDialog.SelectedPath;
         }
+        
+        private void UseVirtualMachineHostArchive_Checked(object sender, RoutedEventArgs e)
+        {
+            this.VirtualMachineHostGrid.Visibility = Visibility.Visible;
+        }
+
+        private void UseVirtualMachineHostArchive_Unchecked(object sender, RoutedEventArgs e)
+        {
+            this.VirtualMachineHostGrid.Visibility = Visibility.Hidden;
+        }
+
+        private void btnSetupStep4_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog loOpenDialog = new System.Windows.Forms.FolderBrowserDialog();
+            loOpenDialog.RootFolder = Environment.SpecialFolder.Desktop;
+            loOpenDialog.SelectedPath = this.txtVirtualMachineHostArchivePath.Text;
+
+            System.Windows.Forms.DialogResult leDialogResult = loOpenDialog.ShowDialog();
+
+            if (System.Windows.Forms.DialogResult.OK == leDialogResult)
+                this.txtVirtualMachineHostArchivePath.Text = loOpenDialog.SelectedPath;
+        }
 
         private void moNotifyIcon_OnHideWindow()
         {
@@ -689,6 +711,25 @@ namespace GoPcBackup
 
             // Step 4
 
+            if ("" == this.txtVirtualMachineHostOutputFilename.Text)
+            {
+                string lsVirtualMachineHostArchivePath = (String)moProfile["-VirtualMachineHostArchivePath"];
+                if ("" != lsVirtualMachineHostArchivePath && null != lsVirtualMachineHostArchivePath)
+                {
+                    this.UseVirtualMachineHostArchive.IsChecked = true;
+
+                    int liIndex = lsVirtualMachineHostArchivePath.LastIndexOf("\\");
+                    string lsArchivePath = lsVirtualMachineHostArchivePath.Substring(0, liIndex);
+                    string lsOutputFilename = lsVirtualMachineHostArchivePath.Substring(liIndex + 1);
+                    this.txtVirtualMachineHostOutputFilename.Text = lsOutputFilename;
+                    this.txtVirtualMachineHostArchivePath.Text = lsArchivePath;
+                }
+                else
+                {
+                    this.UseVirtualMachineHostArchive.IsChecked = false;
+                }
+            }
+
             // This code can be improved by updating the CheckBoxes
             // when the user removes or inserts external drives.
 
@@ -828,6 +869,18 @@ namespace GoPcBackup
 
             moProfile["-ArchivePath"] = this.txtReviewArchivePath.Text;
             moProfile["-BackupTime"] = this.txtReviewBackupTime.Text;
+            if ((bool)this.UseVirtualMachineHostArchive.IsChecked)
+            {
+                moProfile["-VirtualMachineHostArchivePath"] = Path.Combine(this.txtVirtualMachineHostArchivePath.Text,
+                                                                          this.txtVirtualMachineHostOutputFilename.Text);
+            }
+            else
+            {
+                moProfile["-VirtualMachineHostArchivePath"] = "";
+                this.txtVirtualMachineHostOutputFilename.Text = "";
+                this.txtVirtualMachineHostArchivePath.Text = "";
+            }
+
             moProfile.Save();
 
             if ( !this.bMainLoopStopped )
@@ -977,10 +1030,6 @@ You can continue this later wherever you left off. "
                 this.CreateSysTrayIcon();
                 this.MainLoop();
             }
-        }
-
-        private void ConfigDetailsTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
         }
 
         private void btnSetupGeneralResetAllPrompts_Click(object sender, RoutedEventArgs e)
@@ -1284,6 +1333,11 @@ You can continue this later wherever you left off. "
             while (!this.bMainLoopStopped);
 
             this.PopulateTimerDisplay(mcsStoppedText);
+        }
+
+        private void VirtualMachineHostGrid_Loaded(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

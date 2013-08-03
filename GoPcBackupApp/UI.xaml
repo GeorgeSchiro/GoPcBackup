@@ -241,6 +241,25 @@
     </Grid.ColumnDefinitions>
         
 </Grid>
+
+<CheckBox Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content=" Back up to a virtual machine?" Checked="UseVirtualMachineHostArchive_Checked"
+                                                                                     Unchecked="UseVirtualMachineHostArchive_Unchecked"/>
+<Grid Name="VirtualMachineHostGrid" Loaded="VirtualMachineHostGrid_Loaded" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
+    <Grid.RowDefinitions>
+        <RowDefinition />
+        <RowDefinition />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition/>
+        <ColumnDefinition/>
+        <ColumnDefinition/>
+    </Grid.ColumnDefinitions>
+    <Label Grid.Row="0" Grid.Column="0" >Name:</Label>    <TextBox Width="300" Grid.Row="0" Grid.Column="1" Name="txtVirtualMachineHostOutputFilename" IsReadOnly="False" Style="{StaticResource ConfigWizardTextSelected}" />
+    <Label Grid.Row="1" Grid.Column="0">Archive:</Label>    <TextBox Width="300" Grid.Row="1" Grid.Column="1" Name="txtVirtualMachineHostArchivePath"    Style="{StaticResource ConfigWizardTextSelected}"  />
+    <Button Name="btnSetupStep4" Grid.Row="1" Grid.Column="2" Click="btnSetupStep4_Click" Margin="10,0,0,0"  Height="30" Style="{StaticResource ConfigWizardButton}">
+    Select Archive Folder
+    </Button>
+</Grid>    
                             </StackPanel>
                             </Viewbox>
                         </TabItem>
@@ -273,11 +292,11 @@
         <ColumnDefinition />
         <ColumnDefinition />
     </Grid.ColumnDefinitions>
-    <Label Grid.Row="0" Grid.Column="0">Folder to Backup:</Label>   <TextBox Grid.Row="0" Grid.Column="1" Name="txtReviewBackupFolder"      Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
-    <Label Grid.Row="1" Grid.Column="0">Output Filename:</Label>    <TextBox Grid.Row="1" Grid.Column="1" Name="txtReviewOutputFilename"    Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
-    <Label Grid.Row="0" Grid.Column="3">Archive Folder:</Label>     <TextBox Grid.Row="0" Grid.Column="4" Name="txtReviewArchivePath"       Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
-    <Label Grid.Row="1" Grid.Column="3">Backup Time:</Label>        <TextBox Grid.Row="1" Grid.Column="4" Name="txtReviewBackupTime"        Style="{StaticResource ConfigWizardTextReadOnly}"></TextBox>
-    <Label Grid.Row="2" Grid.Column="0">Additional Devices:</Label> <TextBox Grid.Row="2" Grid.Column="1" Name="txtReviewAdditionalDevices" Style="{StaticResource ConfigWizardTextReadOnly}" Grid.ColumnSpan="5"></TextBox>
+    <Label Grid.Row="0" Grid.Column="0">Folder to Backup:</Label>   <TextBox Grid.Row="0" Grid.Column="1" Name="txtReviewBackupFolder"      Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="1" Grid.Column="0">Output Filename:</Label>    <TextBox Grid.Row="1" Grid.Column="1" Name="txtReviewOutputFilename"    Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="0" Grid.Column="3">Archive Folder:</Label>     <TextBox Grid.Row="0" Grid.Column="4" Name="txtReviewArchivePath"       Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="1" Grid.Column="3">Backup Time:</Label>        <TextBox Grid.Row="1" Grid.Column="4" Name="txtReviewBackupTime"        Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="2" Grid.Column="0">Additional Devices:</Label> <TextBox Grid.Row="2" Grid.Column="1" Name="txtReviewAdditionalDevices" Style="{StaticResource ConfigWizardTextReadOnly}" Grid.ColumnSpan="5" />
 </Grid>
 <Button Name="btnSetupDone" Click="btnSetupDone_Click" Margin="5" Style="{StaticResource ConfigWizardButton}">
     Setup Done - Run Backup
@@ -291,7 +310,7 @@
                 </Grid>
                 <Grid Name="MiddlePanelConfigDetails" Visibility="Collapsed">
                     <Border Style="{StaticResource ConfigWizardBorder}">
-                    <TabControl Name="ConfigDetailsTabs" SelectionChanged="ConfigDetailsTabs_SelectionChanged"  Style="{StaticResource ConfigWizardTab}">
+                    <TabControl Name="ConfigDetailsTabs" Style="{StaticResource ConfigWizardTab}">
                         <TabItem Name="tabSetupGeneral" Header="General" Style="{StaticResource ConfigWizardTabItems}">
                             <Viewbox>
                             <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
