@@ -1803,8 +1803,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                     // Compare the bit field of writeable drives to the bit field of backup devices 
                     // selected by the user.
                     List<char> loMissingDrives = new List<char>();
-                    int liASCIIValueOfDrive = 67;
-                    string liBackupDeviceSelectionsBitField = null == moProfile["-BackupDeviceSelectionsBitField"]
+                    string lsBackupDeviceSelectionsBitField = null == moProfile["-BackupDeviceSelectionsBitField"]
                                                               ? "000000000000000000000000"
                                                               : moProfile["-BackupDeviceSelectionsBitField"].ToString();
 
@@ -1813,15 +1812,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                         lsBackupDevicesBitField = "0" + lsBackupDevicesBitField;
                     }
 
-                    for (int i = 0; i < 24; ++i)
-                    {
-                        if (Convert.ToInt32(liBackupDeviceSelectionsBitField[i]) > Convert.ToInt32(lsBackupDevicesBitField[i]))
-                        {
-                            loMissingDrives.Add((char)liASCIIValueOfDrive);
-                        }
-
-                        liASCIIValueOfDrive++;
-                    };
+                    loMissingDrives = ReportMissingDrives(lsBackupDevicesBitField, lsBackupDeviceSelectionsBitField);
 
                     if (0 == liBackupDoneScriptCopyFailures && 0 == loMissingDrives.Count)
                     {
@@ -1891,6 +1882,55 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
             }
 
             return liBackupDoneScriptCopyFailures;
+        }
+
+        public List<char> ReportMissingDrives(string asBackupDeviceBitField, string asBackupDeviceSelectionsBitField)
+        {
+            char lcCurrentDriveLetter = 'C';
+            List<char> loMissingDrives = new List<char>();
+
+            for (int i = 0; i < 24; ++i)
+            {
+                if (Convert.ToInt32(asBackupDeviceSelectionsBitField[i]) > Convert.ToInt32(asBackupDeviceBitField[i]))
+                {
+                    loMissingDrives.Add(lcCurrentDriveLetter);
+                }
+
+                ++lcCurrentDriveLetter;
+            };
+
+            return loMissingDrives;
+        }
+
+        public string CreateBackupDeviceBitField()
+        {
+            DriveInfo[] loDrives = DriveInfo.GetDrives();
+            StringBuilder lsBackupDevicesBitField = new StringBuilder();
+            char lcCurrentDriveLetter = 'C';
+
+            foreach (DriveInfo drive in loDrives)
+            {
+                string lsTokenPathFile = Path.Combine(drive.Name, this.sBackupDriveToken);
+                string lsDriveLetter = drive.Name.Substring(0, 1);
+
+                // Fill in zeros for all drives prior to or between each drive selected.
+                while (String.Compare(lsDriveLetter, lcCurrentDriveLetter.ToString()) > 0)
+                {
+                    lsBackupDevicesBitField.Append('0');
+                    ++lcCurrentDriveLetter;
+                }
+
+                lsBackupDevicesBitField.Append((bool)File.Exists(lsTokenPathFile) ? '1' : '0');
+                ++lcCurrentDriveLetter;
+            }
+
+            // Fill in zeros for all the drives after the last drive found.
+            for (char c = lcCurrentDriveLetter; c <= 'Z'; ++c)
+            {
+                lsBackupDevicesBitField.Append('0');
+            }
+
+            return lsBackupDevicesBitField.ToString();
         }
 
         private void BackupProcessOutputHandler(object sendingProcess, DataReceivedEventArgs outLine)

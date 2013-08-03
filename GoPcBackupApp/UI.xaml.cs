@@ -282,6 +282,35 @@ namespace GoPcBackup
                     this.MainLoop();
                 }
             }
+
+            string lsBackupDeviceBitField = moDoGoPcBackup.CreateBackupDeviceBitField();
+            string lsBackupDeviceSelectionsBitField = null == moProfile["-BackupDeviceSelectionsBitField"]
+                                                              ? "000000000000000000000000"
+                                                              : moProfile["-BackupDeviceSelectionsBitField"].ToString();
+            List<char> loMissingDrives = moDoGoPcBackup.ReportMissingDrives(lsBackupDeviceBitField, lsBackupDeviceSelectionsBitField);
+
+            if (0 < loMissingDrives.Count)
+            {
+                string lsMessageCaption = "Missing Backup Devices";
+                string lsMessage = "List of missing backup devices:";
+                foreach (char drive in loMissingDrives)
+                {
+                    lsMessage += "\n(" + drive + ":)";
+                }
+                lsMessage += @"Would you like to adjust your current selection of backup devices to match
+the list of available backup devices?";
+
+                if (tvMessageBox.Show(this, lsMessage, lsMessageCaption, tvMessageBoxButtons.YesNo, tvMessageBoxIcons.Alert)
+                    == tvMessageBoxResults.Yes)
+                {
+                    moProfile["-BackupDeviceSelectionsBitField"] = lsBackupDeviceBitField;
+                    moProfile.Save();
+                }
+                else
+                {
+                    moProfile["-AdjustBackupDeviceSelectionBitField"] = false;
+                }
+            }
         }
 
         // Buttons that don't launch external processes are toggles.
@@ -1037,8 +1066,12 @@ You can continue this later wherever you left off. "
                 lsbBackupDeviceSelectionsBitField.Append('0');
             }
 
-            moProfile["-BackupDeviceSelectionsBitField"] = lsbBackupDeviceSelectionsBitField.ToString();
-            moProfile.Save();
+            if (Convert.ToBoolean(moProfile["-AdjustBackupDeviceSelectionBitField"].ToString()) ||
+                moProfile["-AdjustBackupDeviceSelectionBitField"] == null)
+            {
+                moProfile["-BackupDeviceSelectionsBitField"] = lsbBackupDeviceSelectionsBitField.ToString();
+                moProfile.Save();
+            }
         }
 
         private void btnSetupGeneralResetAllPrompts_Click(object sender, RoutedEventArgs e)
