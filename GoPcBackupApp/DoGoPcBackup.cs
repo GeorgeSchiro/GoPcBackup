@@ -1804,10 +1804,17 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                     // selected by the user.
                     List<char> loMissingDrives = new List<char>();
                     int liASCIIValueOfDrive = 67;
-                    string liBackupDeviceSelectionsBitField = moProfile["-BackupDeviceSelectionsBitField"].ToString();
-                    for (int i = 0; i < liBackupDeviceSelectionsBitField.Length; ++i)
-                    {
+                    string liBackupDeviceSelectionsBitField = null == moProfile["-BackupDeviceSelectionsBitField"]
+                                                              ? "000000000000000000000000"
+                                                              : moProfile["-BackupDeviceSelectionsBitField"].ToString();
 
+                    while (lsBackupDevicesBitField.Length < 24)
+                    {
+                        lsBackupDevicesBitField = "0" + lsBackupDevicesBitField;
+                    }
+
+                    for (int i = 0; i < 24; ++i)
+                    {
                         if (Convert.ToInt32(liBackupDeviceSelectionsBitField[i]) > Convert.ToInt32(lsBackupDevicesBitField[i]))
                         {
                             loMissingDrives.Add((char)liASCIIValueOfDrive);
@@ -1823,9 +1830,11 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                     else
                     {
                         string lsMessage = "";
+                        string lsMessageCaption = "";
 
                         if (0 < liBackupDoneScriptCopyFailures)
                         {
+                            lsMessageCaption += "Copy Failures";
                             lsMessage += String.Format("The \"backup done\" script had {0} copy failure{1}.\r\n"
                                     , liBackupDoneScriptCopyFailures
                                     , 1 == liBackupDoneScriptCopyFailures ? "" : "s");
@@ -1863,7 +1872,8 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
 
                         if (0 < loMissingDrives.Count)
                         {
-                            lsMessage += "List of missing drives:";
+                            lsMessageCaption += "" == lsMessageCaption ? "Missing Backup Devices" : " and Missing Backup Devices";
+                            lsMessage += "List of missing backup devices:";
                             foreach (char drive in loMissingDrives)
                             {
                                 lsMessage += "\n(" + drive + ":)";
@@ -1871,7 +1881,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                         }
 
                         if ("" != lsMessage)
-                            tvMessageBox.ShowWarning(oUI, lsMessage, "Missing Drives and Copy Failures");
+                            tvMessageBox.ShowWarning(oUI, lsMessage, lsMessageCaption);
                     }
                 }
             }
