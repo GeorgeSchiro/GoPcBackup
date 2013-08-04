@@ -138,21 +138,8 @@
     Type the name of the file to contain all of the files in your backup. <LineBreak/><LineBreak/>
     Note: No folder path or filename extention is necessary.
 </TextBlock></Border>
-<StackPanel Style="{StaticResource ConfigWizardStackPanelMiddle}" Margin="50,25,50,0">
-    <Label>Output Filename:</Label>
-    <TextBox Name="txtBackupOutputFilename" IsReadOnly="False" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
-</StackPanel>
-<Button Name="btnSetupStep2" Click="btnSetupStep2_Click" Margin="30" Style="{StaticResource ConfigWizardButton}">
-    Select Archive Folder
-</Button>
-<StackPanel Style="{StaticResource ConfigWizardStackPanelBottom}">
-    <Label>Archive Folder:</Label>
-    <TextBox Name="txtArchivePath" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
-</StackPanel>
-<Label Height="10"></Label>
-<CheckBox Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content=" Back up to a virtual machine?" Checked="UseVirtualMachineHostArchive_Checked"
-                                                                                     Unchecked="UseVirtualMachineHostArchive_Unchecked"/>
-<Grid Name="VirtualMachineHostGrid" Loaded="VirtualMachineHostGrid_Loaded" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
+
+<Grid Margin="90,0,10,10" HorizontalAlignment="Left">
     <Grid.RowDefinitions>
         <RowDefinition />
         <RowDefinition />
@@ -162,11 +149,36 @@
         <ColumnDefinition/>
         <ColumnDefinition/>
     </Grid.ColumnDefinitions>
-    <Label Grid.Row="0" Grid.Column="0" >Name:</Label>    <TextBox Width="300" Grid.Row="0" Grid.Column="1" Name="txtVirtualMachineHostOutputFilename" IsReadOnly="False" Style="{StaticResource ConfigWizardTextSelected}" />
-    <Label Grid.Row="1" Grid.Column="0">Archive:</Label>    <TextBox Width="300" Grid.Row="1" Grid.Column="1" Name="txtVirtualMachineHostArchivePath"    Style="{StaticResource ConfigWizardTextSelected}"  />
-    <Button Name="btnSetupStep3" Grid.Row="1" Grid.Column="2" Click="btnSetupStep3_Click" Margin="10,0,0,0"  Height="30" Style="{StaticResource ConfigWizardButton}">
-    Select Archive Folder
+    <Label Grid.Row="0" Grid.Column="0">Output Filename:</Label>
+    <TextBox Grid.Row="0" Grid.Column="1" Name="txtBackupOutputFilename" IsReadOnly="False" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
+    <Label Grid.Row="1" Grid.Column="0">Local Archive:</Label>    
+    <TextBox Width="300" Grid.Row="1" Grid.Column="1" Name="txtArchivePath"    Style="{StaticResource ConfigWizardTextSelected}"  />
+    <Button Name="btnSetupStep2" Grid.Row="1" Grid.Column="2" Click="btnSetupStep2_Click" Margin="10,0,0,0"  Height="25" Style="{StaticResource ConfigWizardButton}">
+    Select Archive
     </Button>
+</Grid>  
+<CheckBox Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content=" Back up to a virtual machine?" Checked="UseVirtualMachineHostArchive_Checked"
+                                                                                     Unchecked="UseVirtualMachineHostArchive_Unchecked"/>
+<Grid Name="VirtualMachineHostGrid" Loaded="VirtualMachineHostGrid_Loaded" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
+    <Grid.RowDefinitions>
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition/>
+        <ColumnDefinition/>
+        <ColumnDefinition/>
+    </Grid.ColumnDefinitions>
+    <Label Grid.Row="0" Grid.Column="0">Virtual Archive:</Label>    
+    <TextBox Width="300" Grid.Row="0" Grid.Column="1" Name="txtVirtualMachineHostArchivePath" Style="{StaticResource ConfigWizardTextSelected}"  />
+    <Button Name="btnSetupStep3" Grid.Row="0" Grid.Column="2" Click="btnSetupStep3_Click" Margin="10,0,0,0"  Height="25" Style="{StaticResource ConfigWizardButton}">
+    Select Archive
+    </Button>
+    <Label Grid.Row="1" Grid.Column="0">Username:</Label>    
+    <TextBox Width="300" Grid.Row="1" Grid.Column="1" Name="txtVirtualMachineHostUsername" Style="{StaticResource ConfigWizardTextSelected}"  />
+    <Label Grid.Row="2" Grid.Column="0">Password:</Label>    
+    <TextBox Width="300" Grid.Row="2" Grid.Column="1" Name="txtVirtualMachineHostPassword" Style="{StaticResource ConfigWizardTextSelected}"  />
 </Grid>                                
                             </StackPanel>
                             </Viewbox>

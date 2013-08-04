@@ -548,7 +548,7 @@ Note:   There may be various other settings that can be adjusted also (user
                                 // Load the UI (only when -RunOnce is off).
                                 UI  loUI = new UI(loProfile, loMain);
                                     loMain.oUI = loUI;
-
+                                    loMain.DisplayMissingDevices();
                                 loMain.Run(loUI);
 
                                 GC.KeepAlive(loMutex);
@@ -2487,6 +2487,38 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
             }
 
             return lbCleanupPathFileSpec;
+        }
+
+        private void DisplayMissingDevices()
+        {
+            string lsBackupDeviceBitField = this.CreateBackupDeviceBitField();
+            string lsBackupDeviceSelectionsBitField = null == moProfile["-BackupDeviceSelectionsBitField"]
+                                                              ? "000000000000000000000000"
+                                                              : moProfile["-BackupDeviceSelectionsBitField"].ToString();
+            List<char> loMissingDrives = this.ReportMissingDrives(lsBackupDeviceBitField, lsBackupDeviceSelectionsBitField);
+
+            if (0 < loMissingDrives.Count)
+            {
+                string lsMessageCaption = "Missing Backup Devices";
+                string lsMessage = "List of missing backup devices:";
+                foreach (char drive in loMissingDrives)
+                {
+                    lsMessage += "\n(" + drive + ":)";
+                }
+                lsMessage += "\n\nWould you like to adjust your current selection of backup devices to match the list of available backup devices?";
+
+                if (tvMessageBox.Show(oUI, lsMessage, lsMessageCaption, tvMessageBoxButtons.YesNo, tvMessageBoxIcons.Alert)
+                    == tvMessageBoxResults.Yes)
+                {
+                    moProfile["-AdjustBackupDeviceSelectionBitField"] = true;
+                    moProfile["-BackupDeviceSelectionsBitField"] = lsBackupDeviceBitField;
+                    moProfile.Save();
+                }
+                else
+                {
+                    moProfile["-AdjustBackupDeviceSelectionBitField"] = false;
+                }
+            }
         }
     }
 }

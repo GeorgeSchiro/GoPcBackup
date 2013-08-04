@@ -281,36 +281,7 @@ namespace GoPcBackup
                     this.MiddlePanelTimer.Visibility = Visibility.Visible;
                     this.MainLoop();
                 }
-            }
-
-            string lsBackupDeviceBitField = moDoGoPcBackup.CreateBackupDeviceBitField();
-            string lsBackupDeviceSelectionsBitField = null == moProfile["-BackupDeviceSelectionsBitField"]
-                                                              ? "000000000000000000000000"
-                                                              : moProfile["-BackupDeviceSelectionsBitField"].ToString();
-            List<char> loMissingDrives = moDoGoPcBackup.ReportMissingDrives(lsBackupDeviceBitField, lsBackupDeviceSelectionsBitField);
-
-            if (0 < loMissingDrives.Count)
-            {
-                string lsMessageCaption = "Missing Backup Devices";
-                string lsMessage = "List of missing backup devices:";
-                foreach (char drive in loMissingDrives)
-                {
-                    lsMessage += "\n(" + drive + ":)";
-                }
-                lsMessage += @"Would you like to adjust your current selection of backup devices to match
-the list of available backup devices?";
-
-                if (tvMessageBox.Show(this, lsMessage, lsMessageCaption, tvMessageBoxButtons.YesNo, tvMessageBoxIcons.Alert)
-                    == tvMessageBoxResults.Yes)
-                {
-                    moProfile["-BackupDeviceSelectionsBitField"] = lsBackupDeviceBitField;
-                    moProfile.Save();
-                }
-                else
-                {
-                    moProfile["-AdjustBackupDeviceSelectionBitField"] = false;
-                }
-            }
+            }            
         }
 
         // Buttons that don't launch external processes are toggles.
@@ -743,18 +714,20 @@ the list of available backup devices?";
 
             // Step 4
 
-            if ("" == this.txtVirtualMachineHostOutputFilename.Text)
+            if ("" == this.txtVirtualMachineHostArchivePath.Text)
             {
                 string lsVirtualMachineHostArchivePath = (String)moProfile["-VirtualMachineHostArchivePath"];
-                if ("" != lsVirtualMachineHostArchivePath && null != lsVirtualMachineHostArchivePath)
+                string lsVirtualMachineHostUsername = (String)moProfile["-VirtualMachineHostUsername"];
+                string lsVirtualMachineHostPassword = (String)moProfile["-VirtualMachineHostPassword"];
+
+                if (!String.IsNullOrEmpty(lsVirtualMachineHostArchivePath) &&
+                    !String.IsNullOrEmpty(lsVirtualMachineHostUsername) &&
+                    !String.IsNullOrEmpty(lsVirtualMachineHostPassword))
                 {
                     this.UseVirtualMachineHostArchive.IsChecked = true;
-
-                    int liIndex = lsVirtualMachineHostArchivePath.LastIndexOf("\\");
-                    string lsArchivePath = lsVirtualMachineHostArchivePath.Substring(0, liIndex);
-                    string lsOutputFilename = lsVirtualMachineHostArchivePath.Substring(liIndex + 1);
-                    this.txtVirtualMachineHostOutputFilename.Text = lsOutputFilename;
-                    this.txtVirtualMachineHostArchivePath.Text = lsArchivePath;
+                    this.txtVirtualMachineHostArchivePath.Text = lsVirtualMachineHostArchivePath;
+                    this.txtVirtualMachineHostUsername.Text = lsVirtualMachineHostUsername;
+                    this.txtVirtualMachineHostPassword.Text = lsVirtualMachineHostPassword;
                 }
                 else
                 {
@@ -876,14 +849,19 @@ the list of available backup devices?";
             moProfile["-BackupTime"] = this.txtReviewBackupTime.Text;
             if ((bool)this.UseVirtualMachineHostArchive.IsChecked)
             {
-                moProfile["-VirtualMachineHostArchivePath"] = Path.Combine(this.txtVirtualMachineHostArchivePath.Text,
-                                                                           this.txtVirtualMachineHostOutputFilename.Text);
+                moProfile["-VirtualMachineHostArchivePath"] = this.txtVirtualMachineHostArchivePath.Text;
+                moProfile["-VirtualMachineHostUsername"] = this.txtVirtualMachineHostUsername.Text;
+                moProfile["-VirtualMachineHostPassword"] = this.txtVirtualMachineHostPassword.Text;
             }
             else
             {
                 moProfile["-VirtualMachineHostArchivePath"] = "";
-                this.txtVirtualMachineHostOutputFilename.Text = "";
+                moProfile["-VirtualMachineHostUsername"] = "";
+                moProfile["-VirtualMachineHostPassword"] = "";
                 this.txtVirtualMachineHostArchivePath.Text = "";
+                this.txtVirtualMachineHostUsername.Text = "";
+                this.txtVirtualMachineHostPassword.Text = "";
+
             }
 
             CreateBackupDeviceSelectionBitField();
@@ -1066,8 +1044,11 @@ You can continue this later wherever you left off. "
                 lsbBackupDeviceSelectionsBitField.Append('0');
             }
 
-            if (Convert.ToBoolean(moProfile["-AdjustBackupDeviceSelectionBitField"].ToString()) ||
-                moProfile["-AdjustBackupDeviceSelectionBitField"] == null)
+            if ( moProfile["-AdjustBackupDeviceSelectionBitField"] == null)
+            {
+                moProfile["-AdjustBackupDeviceSelectionBitField"] = true;
+            }
+            else if ( Convert.ToBoolean(moProfile["-AdjustBackupDeviceSelectionBitField"].ToString()) )
             {
                 moProfile["-BackupDeviceSelectionsBitField"] = lsbBackupDeviceSelectionsBitField.ToString();
                 moProfile.Save();
