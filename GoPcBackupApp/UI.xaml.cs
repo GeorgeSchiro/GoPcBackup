@@ -729,8 +729,8 @@ namespace GoPcBackup
             {
                 this.UseVirtualMachineHostArchive.IsChecked = moProfile.bValue("-UseVirtualMachineHostArchive", false);
                 this.txtVirtualMachineHostArchivePath.Text = moProfile.sValue("-VirtualMachineHostArchivePath", "\\\\Mainhost\\Archive");
-                this.txtVirtualMachineHostUsername.Text = moProfile.sValue("-VirtualMachineHostUsername", "anyone");
-                this.txtVirtualMachineHostPassword.Text = moProfile.sValue("-VirtualMachineHostPassword", "password");
+                this.txtVirtualMachineHostUsername.Text = moProfile.sValue("-VirtualMachineHostUsername", "VM host share username goes here.");
+                this.txtVirtualMachineHostPassword.Text = moProfile.sValue("-VirtualMachineHostPassword", "VM host share password goes here.");
             }
 
             // This code can be improved by updating the CheckBoxes

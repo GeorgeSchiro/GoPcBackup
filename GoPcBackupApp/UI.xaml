@@ -157,7 +157,7 @@
     Select Archive
     </Button>
 </Grid>  
-<CheckBox Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content=" Back up to a virtual machine?" Checked="UseVirtualMachineHostArchive_Checked"
+<CheckBox Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content="Back up to the virtual machine host?" Checked="UseVirtualMachineHostArchive_Checked"
                                                                                      Unchecked="UseVirtualMachineHostArchive_Unchecked"/>
 <Grid Name="VirtualMachineHostGrid" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
     <Grid.RowDefinitions>
@@ -170,7 +170,7 @@
         <ColumnDefinition/>
         <ColumnDefinition/>
     </Grid.ColumnDefinitions>
-    <Label Grid.Row="0" Grid.Column="0">Virtual Archive:</Label>    
+    <Label Grid.Row="0" Grid.Column="0">VM Host Archive:</Label>    
     <TextBox Width="300" Grid.Row="0" Grid.Column="1" Name="txtVirtualMachineHostArchivePath" Style="{StaticResource ConfigWizardTextSelected}"  />
     <Button Name="btnSetupStep3" Grid.Row="0" Grid.Column="2" Click="btnSetupStep3_Click" Margin="10,0,0,0"  Height="25" Style="{StaticResource ConfigWizardButton}">
     Select Archive
@@ -192,7 +192,7 @@
 <Border Margin="10,10,10,30" Style="{StaticResource ConfigWizardTextBorder}">
     <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
     Your backups will be copied to the root folder of each device you select. After each backup,
-    you will be reminded if any of your backup devices was missing. <LineBreak/><LineBreak/>
+    you will be reminded if any of your backup devices were missing. <LineBreak/><LineBreak/>
         
     Notes:  <LineBreak/>
             <Label Width="75" /> Only your latest backup will remain on each additional backup device.<LineBreak/>
@@ -251,7 +251,7 @@
     Slide the "GoPC" logo below to select the daily backup time.<LineBreak/><LineBreak/>
 
     Selecting a daily backup time implies that your PC will be running at that time.
-    If not, you can always run the backup manually by hitting the "Run Now" button.
+    If not, you can always run the backup manually by hitting the "Run Now" button anytime.
 </TextBlock></Border>
 <StackPanel Margin="20">
     <Label HorizontalAlignment="Center">Backup Time</Label>
