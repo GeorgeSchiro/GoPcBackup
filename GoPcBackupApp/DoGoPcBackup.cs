@@ -548,7 +548,7 @@ Note:   There may be various other settings that can be adjusted also (user
                                 // Load the UI (only when -RunOnce is off).
                                 UI  loUI = new UI(loProfile, loMain);
                                     loMain.oUI = loUI;
-                                    loMain.DisplayMissingDevices();
+
                                 loMain.Run(loUI);
 
                                 GC.KeepAlive(loMutex);
@@ -611,6 +611,28 @@ Note:   There may be various other settings that can be adjusted also (user
         public bool bMainLoopStopped
         {
             get;set;
+        }
+
+        /// <summary>
+        /// Returns the first possible backup device drive letter.
+        /// </summary>
+        public char cPossibleDriveLetterBegin
+        {
+            get
+            {
+                return 'D';
+            }
+        }
+
+        /// <summary>
+        /// Returns the last possible backup device drive letter.
+        /// </summary>
+        public char cPossibleDriveLetterEnd
+        {
+            get
+            {
+                return 'Z';
+            }
         }
 
         /// <summary>
@@ -1267,7 +1289,8 @@ No file cleanup will be done until you update the configuration.
                 this.bMainLoopStopped = false;
 
             bool    lbBackupFiles = false;
-            int     liBackupDoneScriptFileCopyFailures = 0;
+            int     liBackupDoneScriptFileCopyFailures = 0; // The copy failures count returned by "backup done" script.
+            int     liCurrentBackupDevicesBitField = 0;     // The current backup devices returned by "backup done" script.
 
             // Get the embedded zip compression tool from the EXE.
             tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name, mcsZipToolExeFilename, null);
@@ -1289,8 +1312,8 @@ No file cleanup will be done until you update the configuration.
                 lbBackupFiles = true;
 
                 string  lsZipToolFileListPathFile = moProfile.sValue("-ZipToolFileListPathFile", "ZipFileList.txt");
-                string  lsBackupPathFiles1 = null;  // The first file specification in the set (for logging).
-                int     liFileCount = 0;            // The number of file specifications in the current set.
+                string  lsBackupPathFiles1 = null;      // The first file specification in the set (for logging).
+                int     liFileCount = 0;                // The number of file specifications in the current set.
 
                 foreach (DictionaryEntry loEntry in loBackupSetsProfile)
                 {
@@ -1452,8 +1475,18 @@ No file cleanup will be done until you update the configuration.
                         this.LogIt(string.Format("The backup to \"{0}\" was successful."
                                 , Path.GetFileName(msCurrentBackupOutputPathFile)));
 
-                        // Run the "backup done" script and return the failed file count.
-                        int liCopyFailures = this.iBackupDoneScriptCopyFailures();
+                        // Run the "backup done" script and return the failed file count with bit field.
+                        // The exit code is defined in the script as a combination of two integers-
+                        // a bit field of found backup devices and a count of copy failures (99 max).
+                        double  ldCompositeResult = this.iBackupDoneScriptCopyFailuresWithBitField() / 100.0;
+
+                        // The integer part of the composite number is the bit field.
+                        // This will be used below after all backup sets are run. We
+                        // assume that the bit field remains constant between sets.
+                        liCurrentBackupDevicesBitField = (int)ldCompositeResult;
+
+                        // The fractional part (x 100) is the actual number of copy failures.
+                        int liCopyFailures = (int)(100.0 * (ldCompositeResult - (double)liCurrentBackupDevicesBitField));
 
                         // Add failed files from the current backup set to the total.
                         liBackupDoneScriptFileCopyFailures += liCopyFailures;
@@ -1480,13 +1513,20 @@ No file cleanup will be done until you update the configuration.
                         if ( moProfile.bValue("-AutoStart", true) )
                             lsSysTrayMsg = this.sSysTrayMsg;
 
+                // Compare the bit field of current backup devices to the bit field of devices selected by the user.
+                List<char> loMissingBackupDevices = this.oMissingBackupDevices(liCurrentBackupDevicesBitField);
+
                 if ( miBackupSetsRun != miBackupSetsGood
-                        || 0 != liBackupDoneScriptFileCopyFailures )
+                        || 0 != liBackupDoneScriptFileCopyFailures
+                        || 0 != loMissingBackupDevices.Count
+                        )
                 {
                     moProfile["-PreviousBackupOk"] = false;
 
                     this.ShowError("The backup failed. Check the log for errors." + lsSysTrayMsg
                             , "Backup Failed");
+
+                    lbBackupFiles = false;
                 }
                 else
                 {
@@ -1517,9 +1557,9 @@ No file cleanup will be done until you update the configuration.
             return lbBackupFiles;
         }
 
-        private int iBackupDoneScriptCopyFailures()
+        private int iBackupDoneScriptCopyFailuresWithBitField()
         {
-            int liBackupDoneScriptCopyFailures = 0;
+            int liBackupDoneScriptCopyFailuresWithBitField = 0;
 
             string lsBackupDoneScriptPathFile = moProfile.sRelativeToProfilePathFile(
                     moProfile.sValue("-BackupDoneScriptPathFile", msBackupDoneScriptPathFileDefault));
@@ -1667,13 +1707,18 @@ set BackupToolName=%5
 set BackupDeviceDecimalBitField=0
 set BackupDevicePositionExponent=23
 
-for %%d in (C: D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) do call :DoCopy %%d
+:: There are 23 drive letters (ie. possible backup devices) listed. A 32-bit integer can handle no more.
+for %%d in (D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) do call :DoCopy %%d
 
+:: Set bit 24 (ie. add 2^23 = 8,388,608) to preserve bit field's leading zeros.
 :: Combine the bit field and the copy failures into a single composite value.
 :: The factor of 100 means that there can be a maximum of 99 copy failures.
 
-set /A CompositeNumber = 100 * %BackupDeviceDecimalBitField% + %CopyFailures%
-exit  %CompositeNumber%
+set /A CompositeResult = 100 * (8388608 + %BackupDeviceDecimalBitField%) + %CopyFailures%
+
+echo.                                                                   >> ""Run Last BackupDone.cmd.txt""
+echo   CompositeResult=%CompositeResult%                                >> ""Run Last BackupDone.cmd.txt""
+exit  %CompositeResult%
 
 :DoCopy
 set /A BackupDevicePositionExponent -= 1
@@ -1683,7 +1728,7 @@ if not exist %1\""{BackupDriveToken}"" goto :EOF
 
 :: Determine the bit position (and the corresponding decimal value) from the exponent.
 set BitFieldDevicePosition=1
-for /L %%x in (0, 1, %BackupDevicePositionExponent%) do set /A BitFieldDevicePosition *= 2
+for /L %%x in (1, 1, %BackupDevicePositionExponent%) do set /A BitFieldDevicePosition *= 2
 
 :: Add the calculated positional value to the bit field for the current backup device.
 set /A BackupDeviceDecimalBitField += %BitFieldDevicePosition%
@@ -1793,44 +1838,29 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                 {
                     // The exit code is defined in the script as a combination of two integers-
                     // a bit field of found backup devices and a count of copy failures (99 max).
-                    double  ldCompositeNumber = loProcess.ExitCode / 100.0;
-                    int     liBackupDevicesBitField = (int)ldCompositeNumber;   // The integer part is the bit field.
-                    string  lsBackupDevicesBitField = Convert.ToString(liBackupDevicesBitField, 2);
+                    liBackupDoneScriptCopyFailuresWithBitField = loProcess.ExitCode;
+
+                    double  ldCompositeResult = liBackupDoneScriptCopyFailuresWithBitField / 100.0;
+                    int     liCurrentBackupDevicesBitField = (int)ldCompositeResult;   // The integer part is the bit field.
 
                     // The fractional part (x 100) is the number of copy failures.
-                    liBackupDoneScriptCopyFailures = (int)(100.0 * (ldCompositeNumber - (double)liBackupDevicesBitField));
+                    int liBackupDoneScriptCopyFailures = (int)(100.0 * (ldCompositeResult - (double)liCurrentBackupDevicesBitField));
 
-                    // Compare the bit field of writeable drives to the bit field of backup devices 
-                    // selected by the user.
-                    List<char> loMissingDrives = new List<char>();
-                    string lsBackupDeviceSelectionsBitField = null == moProfile["-BackupDeviceSelectionsBitField"]
-                                                              ? "000000000000000000000000"
-                                                              : moProfile["-BackupDeviceSelectionsBitField"].ToString();
+                    // Compare the bit field of current backup devices to the bit field of devices selected by the user.
+                    List<char> loMissingBackupDevices = this.oMissingBackupDevices(liCurrentBackupDevicesBitField);
 
-                    while (lsBackupDevicesBitField.Length < 24)
-                    {
-                        lsBackupDevicesBitField = "0" + lsBackupDevicesBitField;
-                    }
-
-                    loMissingDrives = ReportMissingDrives(lsBackupDevicesBitField, lsBackupDeviceSelectionsBitField);
-
-                    if (0 == liBackupDoneScriptCopyFailures && 0 == loMissingDrives.Count)
+                    if (0 == liBackupDoneScriptCopyFailures && 0 == loMissingBackupDevices.Count)
                     {
                         this.LogIt("The \"backup done\" script finished successfully.");
                     }
                     else
                     {
-                        string lsMessage = "";
-                        string lsMessageCaption = "";
-
-                        if (0 < liBackupDoneScriptCopyFailures)
+                        if ( 0 != liBackupDoneScriptCopyFailures )
                         {
-                            lsMessageCaption += "Copy Failures";
-                            lsMessage += String.Format("The \"backup done\" script had {0} copy failure{1}.\r\n"
+                            this.LogIt(string.Format("The \"backup done\" script had {0} copy failure{1}.\r\n"
                                     , liBackupDoneScriptCopyFailures
-                                    , 1 == liBackupDoneScriptCopyFailures ? "" : "s");
-
-                            this.LogIt(lsMessage);
+                                    , 1 == liBackupDoneScriptCopyFailures ? "" : "s")
+                                    );
 
                             // Get the output from the "backup done" script.
 
@@ -1857,22 +1887,15 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
 
                             this.LogIt("Here's output from the \"backup done script\":\r\n\r\n" + lsFileAsStream);
 
-                            if (moProfile.bValue("-ShowBackupDoneScriptErrors", true))
+                            if ( moProfile.bValue("-ShowBackupDoneScriptErrors", true) )
                                 this.DisplayFile(lsBackupDoneScriptOutputPathFile);
                         }
 
-                        if (0 < loMissingDrives.Count)
-                        {
-                            lsMessageCaption += "" == lsMessageCaption ? "Missing Backup Devices" : " and Missing Backup Devices";
-                            lsMessage += "List of missing backup devices:";
-                            foreach (char drive in loMissingDrives)
-                            {
-                                lsMessage += "\n(" + drive + ":)";
-                            }
-                        }
-
-                        if ("" != lsMessage)
-                            tvMessageBox.ShowWarning(oUI, lsMessage, lsMessageCaption);
+                        if ( 0 != loMissingBackupDevices.Count )
+                            this.LogIt(string.Format("The \"backup done\" script noticed {0} backup device{1} missing.\r\n"
+                                    , loMissingBackupDevices.Count
+                                    , 1 == loMissingBackupDevices.Count ? "" : "s")
+                                    );
                     }
                 }
             }
@@ -1881,56 +1904,32 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                 this.ShowError(ex.Message, "Failed Running Backup Done Script");
             }
 
-            return liBackupDoneScriptCopyFailures;
+            return liBackupDoneScriptCopyFailuresWithBitField;
         }
 
-        public List<char> ReportMissingDrives(string asBackupDeviceBitField, string asBackupDeviceSelectionsBitField)
+        // Determine missing backup devices by comparing the given bit field of current 
+        // backup devices to the bit field of previously selected backup devices.
+        public List<char> oMissingBackupDevices(int aiCurrentBackupDevicesBitField)
         {
-            char lcCurrentDriveLetter = 'C';
-            List<char> loMissingDrives = new List<char>();
+            List<char> loMissingBackupDevices = new List<char>();
 
-            for (int i = 0; i < 24; ++i)
+            int liSelectedBackupDevicesBitField = 
+                    Convert.ToInt32(moProfile.sValue("-SelectedBackupDevicesBitField", "1000000000000000000000000"), 2);
+
+            char lcPossibleDriveLetter = this.cPossibleDriveLetterBegin;
+
+            for (int i = (this.cPossibleDriveLetterEnd - this.cPossibleDriveLetterBegin); i > -1; --i)
             {
-                if (Convert.ToInt32(asBackupDeviceSelectionsBitField[i]) > Convert.ToInt32(asBackupDeviceBitField[i]))
-                {
-                    loMissingDrives.Add(lcCurrentDriveLetter);
-                }
+                int liDriveBit = (int)Math.Pow(2, i);
 
-                ++lcCurrentDriveLetter;
+                // Add drive letter to list if selected device bit is set while current device bit is not.
+                if ( (liSelectedBackupDevicesBitField & liDriveBit) > (aiCurrentBackupDevicesBitField & liDriveBit) )
+                    loMissingBackupDevices.Add(lcPossibleDriveLetter);
+
+                ++lcPossibleDriveLetter;
             };
 
-            return loMissingDrives;
-        }
-
-        public string CreateBackupDeviceBitField()
-        {
-            DriveInfo[] loDrives = DriveInfo.GetDrives();
-            StringBuilder lsBackupDevicesBitField = new StringBuilder();
-            char lcCurrentDriveLetter = 'C';
-
-            foreach (DriveInfo drive in loDrives)
-            {
-                string lsTokenPathFile = Path.Combine(drive.Name, this.sBackupDriveToken);
-                string lsDriveLetter = drive.Name.Substring(0, 1);
-
-                // Fill in zeros for all drives prior to or between each drive selected.
-                while (String.Compare(lsDriveLetter, lcCurrentDriveLetter.ToString()) > 0)
-                {
-                    lsBackupDevicesBitField.Append('0');
-                    ++lcCurrentDriveLetter;
-                }
-
-                lsBackupDevicesBitField.Append((bool)File.Exists(lsTokenPathFile) ? '1' : '0');
-                ++lcCurrentDriveLetter;
-            }
-
-            // Fill in zeros for all the drives after the last drive found.
-            for (char c = lcCurrentDriveLetter; c <= 'Z'; ++c)
-            {
-                lsBackupDevicesBitField.Append('0');
-            }
-
-            return lsBackupDevicesBitField.ToString();
+            return loMissingBackupDevices;
         }
 
         private void BackupProcessOutputHandler(object sendingProcess, DataReceivedEventArgs outLine)
@@ -2487,38 +2486,6 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
             }
 
             return lbCleanupPathFileSpec;
-        }
-
-        private void DisplayMissingDevices()
-        {
-            string lsBackupDeviceBitField = this.CreateBackupDeviceBitField();
-            string lsBackupDeviceSelectionsBitField = null == moProfile["-BackupDeviceSelectionsBitField"]
-                                                              ? "000000000000000000000000"
-                                                              : moProfile["-BackupDeviceSelectionsBitField"].ToString();
-            List<char> loMissingDrives = this.ReportMissingDrives(lsBackupDeviceBitField, lsBackupDeviceSelectionsBitField);
-
-            if (0 < loMissingDrives.Count)
-            {
-                string lsMessageCaption = "Missing Backup Devices";
-                string lsMessage = "List of missing backup devices:";
-                foreach (char drive in loMissingDrives)
-                {
-                    lsMessage += "\n(" + drive + ":)";
-                }
-                lsMessage += "\n\nWould you like to adjust your current selection of backup devices to match the list of available backup devices?";
-
-                if (tvMessageBox.Show(oUI, lsMessage, lsMessageCaption, tvMessageBoxButtons.YesNo, tvMessageBoxIcons.Alert)
-                    == tvMessageBoxResults.Yes)
-                {
-                    moProfile["-AdjustBackupDeviceSelectionBitField"] = true;
-                    moProfile["-BackupDeviceSelectionsBitField"] = lsBackupDeviceBitField;
-                    moProfile.Save();
-                }
-                else
-                {
-                    moProfile["-AdjustBackupDeviceSelectionBitField"] = false;
-                }
-            }
         }
     }
 }

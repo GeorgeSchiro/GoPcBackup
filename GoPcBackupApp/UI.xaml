@@ -159,7 +159,7 @@
 </Grid>  
 <CheckBox Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content=" Back up to a virtual machine?" Checked="UseVirtualMachineHostArchive_Checked"
                                                                                      Unchecked="UseVirtualMachineHostArchive_Unchecked"/>
-<Grid Name="VirtualMachineHostGrid" Loaded="VirtualMachineHostGrid_Loaded" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
+<Grid Name="VirtualMachineHostGrid" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
     <Grid.RowDefinitions>
         <RowDefinition />
         <RowDefinition />
