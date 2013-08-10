@@ -392,6 +392,15 @@ A brief description of each feature follows.
 
     This help content.
 
+-KillProcessRetries=10
+
+    This is the number of retries to kill a process that has been requested
+    to stop.
+
+-KillProcessWaitMS=1000
+
+    This is the number of milliseconds between process kill retry attempts.
+
 -LogEntryDateTimeFormatPrefix""yyyy-MM-dd hh:mm:ss:fff tt  ""
 
     This format string is used to prepend a timestamp prefix to each log entry in
@@ -435,6 +444,17 @@ A brief description of each feature follows.
     then shutdown automatically thereafter. This switch is useful if the utility
     is run in a batch process or if it is run by a job scheduler.
 
+-SelectedBackupDevices= NO DEFAULT VALUE
+
+    This is the list of selected backup devices in human readable text.
+
+-SelectedBackupDevicesBitField=0 (0 means not yet set)
+
+    This is the list of selected backup devices as a bit field. All bit fields
+    have a leading 1 bit to preserve leading zeros. The second bit starts the
+    device list (ie. drive letter list). Drive C: is not available as a backup
+    device. So the second bit identifies drive D:.
+
 -ShowBackupDoneScriptErrors=True
 
     Set this switch False to suppress the pop-up display of ""backup done"" script
@@ -469,15 +489,21 @@ A brief description of each feature follows.
     (see -ZipToolEXE above). The tokens (in curly brackets) are self-evident
     and they are replaced at runtime.
 
--ZipToolLastRun= NO DEFAULT VALUE
+-ZipToolEXEargsMore=
 
-    This shows the last executed ZIP command-line (see -ZipToolEXE and 
-    -ZipToolEXEargs above).
+    These are additional command line arguments for the ZIP tool. Using this
+    parameter makes it easier to add functionality to the ZIP command line
+    without changing the existing command line. A typical example would be
+    to supply a password on the command line to ""{EXE}"" itself.
+
+-ZipToolFileListPathFile=ZipFileList.txt
+
+    This is the file used to store the list of filenames to be compressed.
 
 -ZipToolLastRunCmdPathFile=Run Last Backup.cmd
 
-    This is a script file (text) that contains a copy of the last ZIP command 
-    line executed (see -ZipToolLastRun above).
+    This is a script file (text) that contains a copy of the last ZIP
+    command line executed.
 
 
 Note:   There may be various other settings that can be adjusted also (user
@@ -1374,7 +1400,8 @@ No file cleanup will be done until you update the configuration.
 
                     string  lsProcessPathFile = moProfile.sRelativeToProfilePathFile(moProfile.sValue("-ZipToolEXE", mcsZipToolExeFilename));
                     string  lsProcessArgs = moProfile.sValue("-ZipToolEXEargs"
-                                    , "a -r -spf -ssw \"{BackupOutputPathFile}\" @\"{BackupPathFiles}\" -w\"{BackupOutputPath}\" ");
+                                    , "a -r -spf -ssw \"{BackupOutputPathFile}\" @\"{BackupPathFiles}\" -w\"{BackupOutputPath}\" ")
+                                    + " " + moProfile.sValue("-ZipToolEXEargsMore", "");
                             lsProcessArgs = lsProcessArgs.Replace("{BackupPathFiles}", lsZipToolFileListPathFile);
                             lsProcessArgs = lsProcessArgs.Replace("{BackupOutputPath}", Path.GetDirectoryName(msCurrentBackupOutputPathFile));
                             lsProcessArgs = lsProcessArgs.Replace("{BackupOutputPathFile}", msCurrentBackupOutputPathFile);
@@ -1411,7 +1438,6 @@ No file cleanup will be done until you update the configuration.
 @pause
 "                                           , lsLastRunCmd);
 
-                    moProfile["-ZipToolLastRun"] = lsLastRunCmd;
                     moProfile.Remove("-PreviousBackupOk");
                     moProfile.Save();
 
@@ -1707,7 +1733,8 @@ set BackupToolName=%5
 set BackupDeviceDecimalBitField=0
 set BackupDevicePositionExponent=23
 
-:: There are 23 drive letters (ie. possible backup devices) listed. A 32-bit integer can handle no more.
+:: There are 23 drive letters (ie. possible backup devices) listed. A 32-bit integer
+:: can handle no more when a corresponding bit field is combined with copy failures.
 for %%d in (D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) do call :DoCopy %%d
 
 :: Set bit 24 (ie. add 2^23 = 8,388,608) to preserve bit field's leading zeros.
@@ -1913,8 +1940,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
         {
             List<char> loMissingBackupDevices = new List<char>();
 
-            int liSelectedBackupDevicesBitField = 
-                    Convert.ToInt32(moProfile.sValue("-SelectedBackupDevicesBitField", "1000000000000000000000000"), 2);
+            int liSelectedBackupDevicesBitField = Convert.ToInt32(moProfile.sValue("-SelectedBackupDevicesBitField", "0"), 2);
 
             char lcPossibleDriveLetter = this.cPossibleDriveLetterBegin;
 
@@ -2458,8 +2484,8 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                                         // include "readonly", let it blow an error.
                                         Directory.Delete(lsSubfolder);
 
-                                        // Using "-1" as the file size indicates a folder deletion.
-                                        this.LogDeletedFile(lsSubfolder + " (dir)", ldtFileDate, -1);
+                                        // Using "0" as the file size also indicates a folder deletion.
+                                        this.LogDeletedFile(lsSubfolder + " (dir)", ldtFileDate, 0);
                                     }
                                     catch (Exception ex)
                                     {

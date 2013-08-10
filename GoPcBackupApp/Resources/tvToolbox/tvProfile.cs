@@ -208,8 +208,17 @@ namespace tvToolbox
     /// <item>
     ///     <term>-SaveProfile</term>
     ///     <description>
-    ///     True by default. Set this false to prevent
-    ///     automated changes to the profile file.
+    ///     True by default (after the profile has been loaded from
+    ///     a text file). Set this false to prevent automated changes
+    ///     to the profile file.
+    ///     </description>
+    /// </item>
+    /// <item>
+    ///     <term>-SaveSansCmdLine</term>
+    ///     <description>
+    ///     True by default. Set this false to prevent automated changes
+    ///     to the profile file after command line merges have occured.
+    ///     When true, everything but command line keys will be saved.
     ///     </description>
     /// </item>
     /// <item>
@@ -1186,13 +1195,14 @@ namespace tvToolbox
         /// </p>
         /// <p>
         /// This property will be set false whenever anything is merged into a
-        /// profile (eg. command line arguments). In other words, command line
-        /// arguments are not normally written to a profile file. This behavior
-        /// can be overridden in code by setting this property to false.
+        /// profile (eg. command line arguments) and <see cref="bSaveSansCmdLine"/>
+        /// is false. In other words, command line arguments are not normally 
+        /// written to a profile file. This behavior can be overridden in code 
+        /// by setting this property to true after a merge.
         /// </p>
         /// <p>
         /// The predefined <see langword='-SaveProfile=false'/> switch can also
-        /// be used to disable the <see cref="Save()"/> method
+        /// be used to disable the <see cref="Save()"/> method manually
         /// (see <see cref="tvProfile"/> remarks).
         /// </p>
         /// </summary>
@@ -1214,6 +1224,36 @@ namespace tvToolbox
             }
         }
         private bool mbSaveEnabled = false;
+
+        /// <summary>
+        /// Returns true if all but command line merged keys will be saved to a profile
+        /// file. The predefined <see langword='-SaveSansCmdLine=false'/> switch can be
+        /// used to disable this behavior so that merged profiles are never saved (see 
+        /// <see cref="tvProfile"/> remarks). In other words, if this property is set 
+        /// false and command line arguments have been merged into the profile, the 
+        /// <see cref="Save()"/> method will be disabled (unless overridden in code).
+        /// </summary>
+        public  bool  bSaveSansCmdLine
+        {
+            get
+            {
+                if ( mbAddStandardDefaults || this.ContainsKey("-SaveSansCmdLine") )
+                    mbSaveSansCmdLine = this.bValue("-SaveSansCmdLine", mbSaveSansCmdLine);
+
+                if ( mbSaveSansCmdLine && null == moInputCommandLineProfile )
+                {
+                    moInputCommandLineProfile = new tvProfile();
+                    moInputCommandLineProfile.LoadFromCommandLineArray(this.msInputCommandLineArray, tvProfileLoadActions.Append);
+                }
+
+                return mbSaveSansCmdLine;
+            }
+            set
+            {
+                mbSaveSansCmdLine = value;
+            }
+        }
+        private bool mbSaveSansCmdLine = true;
 
         /// <summary>
         /// Returns true if profile files will be read and written in XML format
@@ -1886,10 +1926,32 @@ namespace tvToolbox
         }
 
         /// <summary>
+        /// Returns the entire contents of the profile as a "command block" string
+        /// (eg. <see langword='-Key1=one -Key2=2 -Key3 -Key4="we have four"'/>), 
+        /// where the items are stacked vertically rather than listed horozontally.
+        /// This feature is handy for minimally serializing profiles, passing them
+        /// around easily and storing them elsewhere.
+        /// </summary>
+        /// <returns>
+        /// A "command block" string (not a string array).
+        /// </returns>
+        public String sCommandBlock()
+        {
+            StringBuilder   lsbCommandBlock = new StringBuilder(this.sCommandLine());
+                            lsbCommandBlock.Replace("-", Environment.NewLine + "    -")
+                                           .Replace(mccHideHyphen, '-')
+                                           ;
+                            lsbCommandBlock.Append(Environment.NewLine);
+                            lsbCommandBlock.Append(Environment.NewLine);
+
+            return lsbCommandBlock.ToString();
+        }
+
+        /// <summary>
         /// Returns the entire contents of the profile as a "command line" string
-        /// (eg. <see langword='-Key1=one -Key2=2 -Key3 -Key4="we have four"'/>). This feature
-        /// is handy for minimally serializing profiles, passing them around
-        /// easily and storing them.
+        /// (eg. <see langword='-Key1=one -Key2=2 -Key3 -Key4="we have four"'/>).
+        /// This feature is handy for minimally serializing profiles, passing them
+        /// around easily and storing them elsewhere.
         /// </summary>
         /// <returns>
         /// A "command line" string (not a string array).
@@ -1947,6 +2009,22 @@ namespace tvToolbox
         }
 
         /// <summary>
+        /// Temporarily replaces all hyphens in the given asSource string
+        /// with a placeholder character for later hyphen substitution.
+        /// 
+        /// This is typically used as a precursor to calling
+        /// "sCommandBlock()" where the placeholder characters, if
+        /// any, are finally replaced with hyphens once again.
+        /// </summary>
+        /// <param name="asSource"></param>
+        /// The source string to have hyphens replaced.
+        /// <returns></returns>
+        public String sHideHyphens(String asSource)
+        {
+            return asSource.Replace("-", mcsHideHyphen);
+        }
+
+        /// <summary>
         /// The profile entry key at the given zero-based index position.
         /// </summary>
         /// <param name="aiIndex">
@@ -1965,6 +2043,21 @@ namespace tvToolbox
         public String sKey(int aiIndex)
         {
             return oEntry(aiIndex).Key.ToString();
+        }
+
+        /// <summary>
+        /// Permanently replaces all hyphens in the given asSource string
+        /// with another character (eg. an underscore).
+        /// 
+        /// This is typically used as a precursor to calling "sCommandBlock()"
+        /// where embedded hyphens can't be preserved for whatever reason.
+        /// </summary>
+        /// <param name="asSource"></param>
+        /// The source string to have hyphens replaced.
+        /// <returns></returns>
+        public String sSwapHyphens(String asSource)
+        {
+            return asSource.Replace("-", "_");
         }
 
         /// <summary>
@@ -2051,6 +2144,33 @@ namespace tvToolbox
             lsbFileAsStream.Replace("encoding=\"utf-16\"", "encoding=\"UTF-8\"");
 
             return lsbFileAsStream.ToString();
+        }
+
+        /// <summary>
+        /// Returns a subset of the profile as a new profile using the given
+        /// asKey.
+        /// 
+        /// The first item found with the given asKey is assumed itself to be
+        /// a profile.
+        /// </summary>
+        /// <param name="asKey">
+        /// The key string used to find the nested profile in the current
+        /// profile.
+        /// </param>
+        /// <returns>
+        /// A new object containing the nested profile found.
+        /// </returns>
+        public tvProfile oNestedProfile(String asKey)
+        {
+            tvProfile loNestedProfile = null;
+            tvProfile loOneKeyProfile = this.oOneKeyProfile(asKey);
+
+            if ( 0 == loOneKeyProfile.Count )
+                loNestedProfile = new tvProfile();
+            else
+                loNestedProfile = new tvProfile(loOneKeyProfile[0].ToString());
+
+            return loNestedProfile;
         }
 
         /// <summary>
@@ -2704,7 +2824,10 @@ namespace tvToolbox
 
                                 case tvProfileLoadActions.Merge:
 
-                                    this.bSaveEnabled = false;
+                                    // Only disable saving after merges if the "bSaveSansCmdLine" switch is turned off.
+                                    // Likewise, only after merges do we bother to check for command line keys to remove.
+                                    if ( !this.bSaveSansCmdLine )
+                                        this.bSaveEnabled = false;
 
                                     int liIndex = this.IndexOfKey(lsKey);
 
@@ -2885,24 +3008,26 @@ namespace tvToolbox
 
                 foreach ( DictionaryEntry loEntry in this )
                 {
+                    String lsKey = loEntry.Key.ToString();
                     String lsValue = loEntry.Value.ToString();
 
-                    if ( -1 == lsValue.IndexOf(Environment.NewLine) )
+                    // "mbSaveSansCmdLine" is referenced here directly to gain a little speed.
+                    if ( !mbSaveSansCmdLine || null == moInputCommandLineProfile
+                            || (mbSaveSansCmdLine && !moInputCommandLineProfile.ContainsKey(lsKey)) )
                     {
-                        if ( -1 == lsValue.IndexOf(" ") )
+                        if ( -1 == lsValue.IndexOf(Environment.NewLine) )
                         {
-                            lsbFileAsStream.Append(loEntry.Key.ToString() + "=" + lsValue + Environment.NewLine);
+                            if ( -1 == lsValue.IndexOf(" ") )
+                                lsbFileAsStream.Append(lsKey + "=" + lsValue + Environment.NewLine);
+                            else
+                                lsbFileAsStream.Append(lsKey + "=" + "\"" + lsValue + "\"" + Environment.NewLine);
                         }
                         else
                         {
-                            lsbFileAsStream.Append(loEntry.Key.ToString() + "=" + "\"" + lsValue + "\"" + Environment.NewLine);
+                            lsbFileAsStream.Append(lsKey + "=" + mcsBeginBlockMark + Environment.NewLine);
+                            lsbFileAsStream.Append(lsValue + ((lsValue.EndsWith(Environment.NewLine)) ? "" : Environment.NewLine).ToString());
+                            lsbFileAsStream.Append(lsKey + "=" + mcsEndBlockMark + Environment.NewLine);
                         }
-                    }
-                    else
-                    {
-                        lsbFileAsStream.Append(loEntry.Key.ToString() + "=" + mcsBeginBlockMark + Environment.NewLine);
-                        lsbFileAsStream.Append(lsValue + ((lsValue.EndsWith(Environment.NewLine)) ? "" : Environment.NewLine).ToString());
-                        lsbFileAsStream.Append(loEntry.Key.ToString() + "=" + mcsEndBlockMark + Environment.NewLine);
                     }
                 }
 
@@ -3195,7 +3320,11 @@ namespace tvToolbox
         private const String mcsBeginBlockMark = "[";
         private const String mcsEndBlockMark = "]";
         private const char   mccSplitMark = '\u0001';
+        private const char   mccHideHyphen = '\u0001';
+        private const String mcsHideHyphen = "\u0001";
         private FileStream   moFileStreamProfileFileLock;
+        private tvProfile    moInputCommandLineProfile;
+
 
         private class tvProfileEnumerator : IEnumerator
         {

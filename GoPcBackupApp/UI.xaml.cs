@@ -25,7 +25,6 @@ namespace GoPcBackup
         private const string mcsNoPreviousText = "none";
         private const string mcsWaitingText = "Waiting";
         private const string mcsBackingUpText = "Backup Running";
-        private const string mcsHideHyphen = "\u0001";              // Replaces embedded hyphens.
 
         private ExtendedNotifyIcon moNotifyIcon;
         private double miOriginalScreenHeight;
@@ -476,11 +475,17 @@ namespace GoPcBackup
             this.IncrementProgressBar();
         }
 
-        public void InitProgressBar(int aiMaximum)
+        public void InitProgressBar(double adMaximum)
         {
             miProcessedFileCount = 0;
             this.prbBackupProgress.Value = 0;
-            this.prbBackupProgress.Maximum = aiMaximum;
+            this.prbBackupProgress.Minimum = 0;
+            this.prbBackupProgress.Maximum = adMaximum;
+        }
+
+        public void FillProgressBar()
+        {
+            this.prbBackupProgress.Value = this.prbBackupProgress.Maximum;
         }
 
         public void IncrementProgressBar()
@@ -822,23 +827,18 @@ namespace GoPcBackup
             {
                 if ((bool)loCheckBox.IsChecked)
                 {
-                    loSelectedBackupDevices.Add("-Device", loCheckBox.Content.ToString());
+                    loSelectedBackupDevices.Add("-Device", loSelectedBackupDevices.sSwapHyphens(loCheckBox.Content.ToString()));
                     lsSelectedDrives += loCheckBox.Content.ToString().Substring(0, 5);
                 }
             }
 
             this.txtReviewAdditionalDevices.Text = lsSelectedDrives;
 
-            loBackupSet1Profile["-FolderToBackup"] = this.txtReviewBackupFolder.Text.Replace("-", mcsHideHyphen);
+            loBackupSet1Profile["-FolderToBackup"] = loBackupSet1Profile.sHideHyphens(this.txtReviewBackupFolder.Text);
             loBackupSet1Profile["-OutputFilename"] = this.txtReviewOutputFilename.Text;
 
             // Make the backup set a multi-line block by inserting newlines before hyphens.
-            moProfile["-BackupSet"] = loBackupSet1Profile.sCommandLine()
-                    .Replace("-", "\r\n    -")
-                    .Replace(mcsHideHyphen, "-")
-                    + "\r\n\r\n"
-                    ;
-
+            moProfile["-BackupSet"] = loBackupSet1Profile.sCommandBlock();
             moProfile["-ArchivePath"] = this.txtReviewArchivePath.Text;
             moProfile["-BackupTime"] = this.txtReviewBackupTime.Text;
 
@@ -852,11 +852,7 @@ namespace GoPcBackup
             if ( mbUpdateSelectedBackupDevices )
             {
                 // Make the list of selected backup devices a multi-line block by inserting newlines before hyphens.
-                moProfile["-SelectedBackupDevices"] = loSelectedBackupDevices.sCommandLine()
-                        .Replace("-", "\r\n    -")
-                        .Replace(mcsHideHyphen, "-")
-                        + "\r\n\r\n"
-                        ;
+                moProfile["-SelectedBackupDevices"] = loSelectedBackupDevices.sCommandBlock();
                 moProfile["-SelectedBackupDevicesBitField"] = Convert.ToString(this.iSelectedBackupDevicesBitField(), 2);
 
                 mbUpdateSelectedBackupDevices = false;
@@ -1125,8 +1121,7 @@ You can continue this later wherever you left off. "
             {
                 string lsMessageCaption = "Missing Devices";
 
-                tvProfile loSelectedBackupDevices = new tvProfile(
-                        moProfile.oOneKeyProfile("-SelectedBackupDevices")[0].ToString());
+                tvProfile loSelectedBackupDevices = moProfile.oNestedProfile("-SelectedBackupDevices");
 
                 string lsMessage = String.Format("Fix setup? Selected backup device{0}:\r\n\r\n"
                                                     , 1 == loSelectedBackupDevices.Count ? "" : "s");
@@ -1354,10 +1349,14 @@ You can continue this later wherever you left off. "
             {
                 this.InitProgressBar(moDoGoPcBackup.iBackupFilesCount());
 
-                if ( moDoGoPcBackup.BackupFiles() )
-                    this.prbBackupProgress.Value = double.MaxValue;
-                else
+                if ( !moDoGoPcBackup.BackupFiles() )
+                {
                     this.InitProgressBar(0);
+                }
+                else
+                {
+                    this.FillProgressBar();
+                }
 
                 if ( this.bVisible )
                     this.ShowMissingBackupDevices();
