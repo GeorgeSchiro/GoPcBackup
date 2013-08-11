@@ -318,6 +318,10 @@ namespace GoPcBackup
                 {
                     this.HideMiddlePanels();
                     this.MiddlePanelConfigWizard.Visibility = Visibility.Visible;
+
+                    // Reset setup backup device checkboxes.
+                    gridBackupDevices.Children.Clear();
+                    this.ConfigWizardTabs.SelectedIndex = 0;
                 }
             }
         }
@@ -738,8 +742,8 @@ namespace GoPcBackup
                 this.txtVirtualMachineHostPassword.Text = moProfile.sValue("-VirtualMachineHostPassword", "VM host share password goes here.");
             }
 
-            // This code can be improved by updating the CheckBoxes
-            // when the user removes or inserts external drives.
+            // The removal or insertion of external devices will be
+            // detected whenever the "Setup Wizard" button is clicked.
 
             if ( 0 == gridBackupDevices.Children.Count )
             {   
@@ -1105,7 +1109,7 @@ You can continue this later wherever you left off. "
                         return;
                 }
 
-            // Reset setup device checkboxes.
+            // Reset setup backup device checkboxes.
             gridBackupDevices.Children.Clear();
         }
 
