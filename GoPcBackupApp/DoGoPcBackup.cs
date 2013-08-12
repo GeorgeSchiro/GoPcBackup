@@ -990,6 +990,7 @@ Note:   There may be various other settings that can be adjusted also (user
                 , string asMessageCaption
                 , tvMessageBoxButtons aetvMessageBoxButtons
                 , tvMessageBoxIcons aetvMessageBoxIcon
+                , string asProfilePromptKey
                 )
         {
             this.LogIt(asMessageText);
@@ -1005,6 +1006,9 @@ Note:   There may be various other settings that can be adjusted also (user
                         , asMessageCaption
                         , aetvMessageBoxButtons
                         , aetvMessageBoxIcon
+                        , tvMessageBoxCheckBoxTypes.SkipThis
+                        , moProfile
+                        , asProfilePromptKey
                         );
             }
             ));
@@ -1558,7 +1562,7 @@ No file cleanup will be done until you update the configuration.
                 {
                     moProfile["-PreviousBackupOk"] = true;
 
-                    this.ShowModeless("Backup finished successfully." + lsSysTrayMsg
+                    this.Show("Backup finished successfully." + lsSysTrayMsg
                             , "Backup Finished"
                             , tvMessageBoxButtons.OK
                             , tvMessageBoxIcons.Done

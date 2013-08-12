@@ -1301,7 +1301,7 @@ You can continue this later wherever you left off. "
                         int liPreviousBackupDays = (DateTime.Now - moProfile.dtValue("-PreviousBackupTime"
                                                         , DateTime.MinValue)).Days;
 
-                        tvMessageBox.ShowModeless(this, string.Format(
+                        tvMessageBox.Show(this, string.Format(
                                 "The previous backup finished successfully ({0} {1} day{2} ago)."
                                         , liPreviousBackupDays < 1 ? "less than" : "about"
                                         , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
@@ -1369,6 +1369,46 @@ You can continue this later wherever you left off. "
             this.bBackupRunning = false;
         }
 
+        private DateTime dtBackupTime()
+        {
+            DateTime ldtBackupTime = DateTime.MinValue;
+
+            try
+            {
+                ldtBackupTime = moProfile.dtValue("-BackupTime", DateTime.MinValue);
+
+                if ( DateTime.MinValue == ldtBackupTime )
+                {
+                    ldtBackupTime = DateTime.Now;
+                }
+                else
+                {
+                    // Wait until the given date (if in the future).
+                    // Otherwise wait until later today or tomorrow.
+
+                    // This is done by parsing out the date string
+                    // from the starting datetime string to get the
+                    // given time for the current date.
+                    if ( ldtBackupTime < DateTime.Now )
+                        ldtBackupTime = DateTime.Parse(ldtBackupTime.ToString().Replace(
+                                ldtBackupTime.ToShortDateString(), null));
+
+                    // If the given time has passed, wait until the
+                    // the same time tomorrow.
+                    if (ldtBackupTime < DateTime.Now)
+                        ldtBackupTime = ldtBackupTime.AddDays(1);
+                }
+            }
+            catch (Exception ex)
+            {
+                this.bMainLoopStopped = true;
+
+                tvMessageBox.ShowError(this, ex.Message, "Error Setting Backup Time");
+            }
+
+            return ldtBackupTime;
+        }
+
         private void MainLoop()
         {
             if ( !this.bMainLoopStopped
@@ -1389,38 +1429,7 @@ You can continue this later wherever you left off. "
 
                     this.bMainLoopStopped = false;
 
-                    try
-                    {
-                        ldtNextStart = moProfile.dtValue("-BackupTime", DateTime.MinValue);
-
-                        if ( DateTime.MinValue == ldtNextStart )
-                        {
-                            ldtNextStart = DateTime.Now;
-                        }
-                        else
-                        {
-                            // Wait until the given date (if in the future).
-                            // Otherwise wait until later today or tomorrow.
-
-                            // This is done by parsing out the date string
-                            // from the starting datetime string to get the
-                            // given time for the current date.
-                            if ( ldtNextStart < DateTime.Now )
-                                ldtNextStart = DateTime.Parse(ldtNextStart.ToString().Replace(
-                                        ldtNextStart.ToShortDateString(), null));
-
-                            // If the given time has passed, wait until the
-                            // the same time tomorrow.
-                            if (ldtNextStart < DateTime.Now)
-                                ldtNextStart = ldtNextStart.AddDays(1);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        this.bMainLoopStopped = true;
-
-                        tvMessageBox.ShowError(this, ex.Message, "Error Setting Timer");
-                    }
+                    ldtNextStart= this.dtBackupTime();
 
                     do
                     {
@@ -1433,13 +1442,13 @@ You can continue this later wherever you left off. "
                             lblNextBackupTimeLeft.Content = lsTimeLeft.Substring(0, lsTimeLeft.Length - 8);
 
                             // "ContainsKey" is used here to avoid storing "mcsNoPreviousText" as the 
-                            // default -PreviousBackupTime. Doing so would blow an error next time.
+                            // default -PreviousBackupTime. Doing so would throw an error next time.
                             if (moProfile.ContainsKey("-PreviousBackupTime"))
                                 lblPrevBackupTime.Content = moProfile["-PreviousBackupTime"];
                             else
                                 lblPrevBackupTime.Content = mcsNoPreviousText;
 
-                            if ( ldtNextStart > DateTime.Now )
+                            if ( DateTime.Now < ldtNextStart )
                             {
                                 if (!this.bBackupRunning)
                                     lblTimerStatus.Content = mcsWaitingText;
@@ -1451,11 +1460,16 @@ You can continue this later wherever you left off. "
                             else
                             {
                                 ldtNextStart = DateTime.Now.AddMinutes(moProfile.iValue("-MainLoopMinutes", 1440));
-                                lblNextBackupTime.Content = (DateTime.Today.Date == ldtNextStart.Date ? ""
-                                        : ldtNextStart.DayOfWeek.ToString())
-                                        + " " + ldtNextStart.ToShortTimeString();
+                                lblNextBackupTime.Content = (DateTime.Today.Date == ldtNextStart.Date
+                                        ? ""
+                                        : ldtNextStart.DayOfWeek.ToString()) + " " + ldtNextStart.ToShortTimeString();
 
                                 this.DoBackup();
+
+                                // If it's time to run the backup again, the backup finished dialog must have
+                                // been up for more than a day (ie. more than -MainLoopMinutes). Wait another day.
+                                if ( DateTime.Now > ldtNextStart )
+                                    ldtNextStart = this.dtBackupTime();
                             }
                         }
                     }
