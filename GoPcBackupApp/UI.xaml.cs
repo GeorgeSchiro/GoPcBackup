@@ -1388,7 +1388,7 @@ You can continue this later wherever you left off. "
 
                     // This is done by parsing out the date string
                     // from the starting datetime string to get the
-                    // given time for the current date.
+                    // given time for the given datetime.
                     if ( ldtBackupTime < DateTime.Now )
                         ldtBackupTime = DateTime.Parse(ldtBackupTime.ToString().Replace(
                                 ldtBackupTime.ToShortDateString(), null));
@@ -1453,9 +1453,9 @@ You can continue this later wherever you left off. "
                                 if (!this.bBackupRunning)
                                     lblTimerStatus.Content = mcsWaitingText;
 
-                                lblNextBackupTime.Content = (DateTime.Today.Date == ldtNextStart.Date ? ""
-                                        : ldtNextStart.DayOfWeek.ToString())
-                                        + " " + ldtNextStart.ToShortTimeString();
+                                lblNextBackupTime.Content = (DateTime.Today.Date == ldtNextStart.Date
+                                        ? ""
+                                        : ldtNextStart.DayOfWeek.ToString()) + " " + ldtNextStart.ToShortTimeString();
                             }
                             else
                             {
@@ -1465,6 +1465,8 @@ You can continue this later wherever you left off. "
                                         : ldtNextStart.DayOfWeek.ToString()) + " " + ldtNextStart.ToShortTimeString();
 
                                 this.DoBackup();
+
+                                System.Windows.Forms.Application.DoEvents();
 
                                 // If it's time to run the backup again, the backup finished dialog must have
                                 // been up for more than a day (ie. more than -MainLoopMinutes). Wait another day.

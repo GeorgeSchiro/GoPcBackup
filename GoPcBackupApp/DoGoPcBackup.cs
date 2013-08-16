@@ -1617,7 +1617,7 @@ if ""%1""=="""" goto :EOF
 ::
 :: This script is executed after each successful backup completes. If you 
 :: prompt for input within this DOS script (eg. ""pause""), the script
-:: will stay in memory. This is not recommended since that behavior would
+:: will stay in memory. This is not recommended since such behavior would
 :: be similar to a memory leak.
 ::
 :: You can also create and edit another DOS script file and reference that
@@ -1632,7 +1632,7 @@ if ""%1""=="""" goto :EOF
 ::
 :: %2 = ""BackupOutputFilename""
 ::
-::      This the backup filename only (ie. no path). It includes the
+::      This is the backup filename only (ie. no path). It includes the
 ::      embedded date as well as the filename extension.
 ::
 :: %3 = ""BackupBaseOutputFilename""
