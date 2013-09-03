@@ -40,25 +40,29 @@ namespace GoPcBackup
 
 
     /// <summary>
-    /// Cleanup old files and backup new ones.
+    /// Backup new files after cleaning up old files.
     /// </summary>
     public class DoGoPcBackup : Application
     {
-        private tvProfile       moCurrentBackupSet;
-        private string          msCurrentBackupOutputPathFile;
-        private const string    mcsZipToolExeFilename = "7z.exe";
-        private const string    mcsZipToolDllFilename = "7z.dll";
-        private const string    msBackupDoneScriptPathFileDefault = "Run Last BackupDone.cmd";
+        private const string    msBackupBeginScriptPathFileDefault  = "BackupBegin.cmd";
+        private const string    msBackupDoneScriptPathFileDefault   = "BackupDone.cmd";
+        private const string    mcsZipToolDllFilename               = "7z.dll";
+        private const string    mcsZipToolExeFilename               = "7z.exe";
+
         private bool            mbHasNoDeletionGroups;
         private int             miBackupSets;
-        private int             miBackupSetsRun;
         private int             miBackupSetsGood;
+        private int             miBackupSetsRun;
+        private string          msCurrentBackupOutputPathFile;
+
+        private tvProfile       moCurrentBackupSet;
 
 
         private DoGoPcBackup()
         {
             tvMessageBox.ShowError(null, "Don't use this constructor!");
         }
+
 
         /// <summary>
         /// Expects a profile object to be provided.
@@ -115,8 +119,8 @@ Command-Line Usage
 
 
 Open this utility's profile file to see additional options available. It is
-usually located in the same folder as ""{EXE}"" and it typically has
-the same name with "".txt"" added (see ""{INI}"").
+usually located in the same folder as ""{EXE}"" and has the same name with 
+"".txt"" added (see ""{INI}"").
 
 Profile file options can be overridden with command-line arguments. The
 keys for any ""-key=value"" pairs passed on the command-line must match
@@ -136,6 +140,7 @@ This tells the software to run in automatic mode:
 
 
 Author:  George Schiro (GeoCode@Schiro.name)
+
 Date:    10/21/2011
 
 
@@ -156,6 +161,36 @@ A brief description of each feature follows.
     and the main loop in the UI will only start manually. The software will
     also vacate memory after the UI window closes. This is the timer switch.
 
+-BackupBeginScriptEnabled=True
+
+    Set this switch False to skip running the ""backup begin"" script.
+
+-BackupBeginScriptHelp= SEE PROFILE FOR DEFAULT VALUE
+
+    This is the default content of the DOS script that is initially written to
+    -BackupBeginScriptPathFile and run before each backup starts. It contains
+    a description of the command-line arguments passed to the script at runtime.
+
+-BackupBeginScriptInit=False
+
+    Set this switch True and the ""backup begin"" script will be automatically
+    overwritten from the content of -BackupBeginScriptHelp. Once used this switch
+    will be reset to False.
+
+    Note: the content of -BackupBeginScriptHelp will also be overwritten from the
+    default value embedded in the executable file.
+
+-BackupBeginScriptPathFile=BackupBegin.cmd
+
+    This DOS shell script is run before each backup starts. Edit the contents
+    of the file or point this parameter to another file. If you delete the file,
+    it will be recreated from the content found in -BackupBeginScriptHelp (see 
+    above).
+
+-BackupDoneScriptEnabled=True
+
+    Set this switch False to skip running the ""backup done"" script.
+
 -BackupDoneScriptHelp= SEE PROFILE FOR DEFAULT VALUE
 
     This is the default content of the DOS script that is initially written to
@@ -171,7 +206,7 @@ A brief description of each feature follows.
     Note: the content of -BackupDoneScriptHelp will also be overwritten from the
     default value embedded in the executable file.
 
--BackupDoneScriptPathFile=Run Last BackupDone.cmd
+-BackupDoneScriptPathFile=BackupDone.cmd
 
     This DOS shell script is run after each successful backup completes. You 
     can edit the contents of the file or point this parameter to another file.
@@ -227,6 +262,10 @@ A brief description of each feature follows.
             This parameter will be combined with -BackupOutputExtension, 
             -ArchivePath and -BackupOutputFilenameDateFormat to produce a
             full backup output path\file specification.
+
+-BackupTime=12:00 AM
+
+    This is the time each day that the backup starts.
 
 -BackupTimeMinsPerTick=15
 
@@ -390,7 +429,7 @@ A brief description of each feature follows.
 
 -Help= SEE PROFILE FOR DEFAULT VALUE
 
-    This help content.
+    This help text.
 
 -KillProcessRetries=10
 
@@ -444,6 +483,12 @@ A brief description of each feature follows.
     then shutdown automatically thereafter. This switch is useful if the utility
     is run in a batch process or if it is run by a job scheduler.
 
+-SaveProfile=True
+
+    Set this switch False to prevent saving to the profile file by the backup
+    software itself. This is not recommended since backup status information is 
+    written to the profile after each backup runs.
+
 -SelectedBackupDevices= NO DEFAULT VALUE
 
     This is the list of selected backup devices in human readable text.
@@ -454,6 +499,11 @@ A brief description of each feature follows.
     have a leading 1 bit to preserve leading zeros. The second bit starts the
     device list (ie. drive letter list). Drive C: is not available as a backup
     device. So the second bit identifies drive D:.
+
+-ShowBackupBeginScriptErrors=True
+
+    Set this switch False to suppress the pop-up display of ""backup begin"" script
+    errors (see -BackupBeginScriptPathFile above).
 
 -ShowBackupDoneScriptErrors=True
 
@@ -466,18 +516,48 @@ A brief description of each feature follows.
     the application associated with -DeletedFileListOutputPathFile's filename
     extension, see above).
 
+-ShowProfile=False
+
+    Set this switch True to immediately display the entire contents of the profile
+    file at startup in command-line format. This is sometimes helpful to diagnose
+    problems.
+
+-UseConnectVirtualMachineHost=False
+
+    Set this switch True to force a connection to the virtual machine share archive
+    before each backup starts (ie. during the ""backup begin"" script).
+
 -UseVirtualMachineHostArchive=False
 
     Set this switch True and code will be added to the ""backup done"" script
     (see -BackupDoneScriptPathFile above) that copies backups to your virtual
     machine host computer (assuming you have one).
 
--VirtualMachineHostArchivePath=\\Mainhost\Archive
+-VirtualMachineHostArchivePath= NO DEFAULT VALUE
 
     This value is used within the ""backup done"" script to copy backups to the
-    virtual machine host (assuming you have one, see -BackupDoneScriptPathFile).
-    If you haven't already customized the done script, delete it. Then change this
-    value. A new script will be made with your new -VirtualMachineHostArchivePath.
+    virtual machine host share (see -UseVirtualMachineHostArchive above).
+
+    You may want to reference your VM host by IP address rather than by name.
+    Doing so is often more reliable than using netbios names on your local area
+    network.
+
+-VirtualMachineHostPassword= NO DEFAULT VALUE
+
+    This value is the password used within the ""backup begin"" script to log
+    into the virtual machine host share (see -UseConnectVirtualMachineHost
+    above).
+
+-VirtualMachineHostUsername= NO DEFAULT VALUE
+
+    This value is the username used within the ""backup begin"" script to log
+    into the virtual machine host share (see -UseConnectVirtualMachineHost
+    above).
+
+-XML_Profile=False
+
+    Set this switch True to change the profile file from command-line format
+    to XML format.
 
 -ZipToolEXE=7z.exe
 
@@ -489,7 +569,7 @@ A brief description of each feature follows.
     (see -ZipToolEXE above). The tokens (in curly brackets) are self-evident
     and they are replaced at runtime.
 
--ZipToolEXEargsMore=
+-ZipToolEXEargsMore= NO DEFAULT VALUE
 
     These are additional command line arguments for the ZIP tool. Using this
     parameter makes it easier to add functionality to the ZIP command line
@@ -502,17 +582,19 @@ A brief description of each feature follows.
 
 -ZipToolLastRunCmdPathFile=Run Last Backup.cmd
 
-    This is a script file (text) that contains a copy of the last ZIP
+    This is a script file (text) which contains a copy of the last ZIP tool
     command line executed.
 
 
-Note:   There may be various other settings that can be adjusted also (user
-        interface settings, etc). See the profile file (""{INI}"")
-        for all available options.
+Notes:
 
-        To see the options related to any particular behavior, you must run that
-        part of the software first. Configuration options are added ""on the fly""
-        (in order of execution) to ""{INI}"" as the software runs.
+    There may be various other settings that can be adjusted also (user
+    interface settings, etc). See the profile file (""{INI}"")
+    for all available options.
+
+    To see the options related to any particular behavior, you must run that
+    part of the software first. Configuration options are added ""on the fly""
+    (in order of execution) to ""{INI}"" as the software runs.
 "
                             .Replace("{EXE}", Path.GetFileName(Application.ResourceAssembly.Location))
                             .Replace("{INI}", Path.GetFileName(loProfile.sActualPathFile))
@@ -565,32 +647,31 @@ Note:   There may be various other settings that can be adjusted also (user
 
                     if ( !loProfile.bExit )
                     {
-                        if ( !loProfile.bValue("-RunOnce", false) )
+                        GC.KeepAlive(loMutex);
+
+                        if ( loProfile.bValue("-RunOnce", false) )
                         {
+                            // Run in batch mode.
+
+                            DoGoPcBackup    loDoDa = new DoGoPcBackup(loProfile);
+                                            loDoDa.CleanupFiles();
+                                            loDoDa.BackupFiles();
+                        }
+                        else
+                        {
+                            // Run in interactive mode.
+
                             try
                             {
                                 loMain = new DoGoPcBackup(loProfile);
 
-                                // Load the UI (only when -RunOnce is off).
-                                UI  loUI = new UI(loProfile, loMain);
+                                // Load the UI.
+                                UI  loUI = new UI(loMain);
                                     loMain.oUI = loUI;
 
                                 loMain.Run(loUI);
-
-                                GC.KeepAlive(loMutex);
                             }
                             catch (ObjectDisposedException) {}
-                        }
-                        else
-                        {
-                            // Run in batch mode.
-
-                            DoGoPcBackup loDoDa = new DoGoPcBackup(loProfile);
-
-                            GC.KeepAlive(loMutex);
-
-                            loDoDa.CleanupFiles();
-                            loDoDa.BackupFiles();
                         }
                     }
                 }
@@ -611,7 +692,7 @@ Note:   There may be various other settings that can be adjusted also (user
         }
 
         /// <summary>
-        /// This is main application profile object.
+        /// This is the main application profile object.
         /// </summary>
         public tvProfile oProfile
         {
@@ -1173,10 +1254,14 @@ Note:   There may be various other settings that can be adjusted also (user
 
         private void IncrementUIProgressBar()
         {
+            this.IncrementUIProgressBar(false);
+        }
+        private void IncrementUIProgressBar(bool abFill)
+        {
             if ( null != this.oUI )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
             {
-                this.oUI.IncrementProgressBar();
+                this.oUI.IncrementProgressBar(abFill);
             }
             ));
         }
@@ -1185,28 +1270,12 @@ Note:   There may be various other settings that can be adjusted also (user
         /// Displays the given file (ie. asPathFile) using whatever
         /// application is associated with its filename extension.
         /// </summary>
-        private void DisplayFile(string asPathFile)
+        private void DisplayFileAsError(string asFileAsStream, string asCaption)
         {
-            string lsFilename = Path.GetFileName(asPathFile);
+            ScrollingText   loHelp = new ScrollingText(asFileAsStream, asCaption);
+                            loHelp.Show();
 
-            try
-            {
-                // First, close any previously displayed file app windows.
-                foreach (Process loProcess in Process.GetProcesses())
-                {
-                   if( loProcess.MainWindowTitle.Contains(lsFilename) )
-                   {
-                        loProcess.CloseMainWindow();
-                        break;
-                   }
-                }
-
-                Process.Start(asPathFile);
-            }
-            catch (Exception ex)
-            {
-                this.ShowError(ex.Message);
-            }
+                            this.oUI.oOtherWindows.Add(loHelp);
         }
 
         /// <summary>
@@ -1319,8 +1388,9 @@ No file cleanup will be done until you update the configuration.
                 this.bMainLoopStopped = false;
 
             bool    lbBackupFiles = false;
-            int     liBackupDoneScriptFileCopyFailures = 0; // The copy failures count returned by "backup done" script.
-            int     liCurrentBackupDevicesBitField = 0;     // The current backup devices returned by "backup done" script.
+            int     liBackupBeginScriptErrors = 0;          // The error count returned by the "backup begin" script.
+            int     liBackupDoneScriptFileCopyFailures = 0; // The copy failures count returned by the "backup done" script.
+            int     liCurrentBackupDevicesBitField = 0;     // The current backup devices returned by the "backup done" script.
 
             // Get the embedded zip compression tool from the EXE.
             tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name, mcsZipToolExeFilename, null);
@@ -1340,6 +1410,10 @@ No file cleanup will be done until you update the configuration.
             try
             {
                 lbBackupFiles = true;
+
+                // Run the "backup begin" script and return any errors.
+                if ( moProfile.bValue("-BackupBeginScriptEnabled", true) )
+                    liBackupBeginScriptErrors = this.iBackupBeginScriptErrors();
 
                 string  lsZipToolFileListPathFile = moProfile.sValue("-ZipToolFileListPathFile", "ZipFileList.txt");
                 string  lsBackupPathFiles1 = null;      // The first file specification in the set (for logging).
@@ -1377,8 +1451,8 @@ No file cleanup will be done until you update the configuration.
                             if ( this.bMainLoopStopped )
                                 break;
 
-                            string lsBackupFolder = loFolderToBackup.Value.ToString().Trim();
-                            string lsBackupPathFiles = Path.Combine(lsBackupFolder, this.sBackupFileSpec());
+                            string lsFolderToBackup = loFolderToBackup.Value.ToString().Trim();
+                            string lsBackupPathFiles = Path.Combine(lsFolderToBackup, this.sBackupFileSpec());
 
                             loStreamWriter.WriteLine(lsBackupPathFiles);
 
@@ -1505,10 +1579,13 @@ No file cleanup will be done until you update the configuration.
                         this.LogIt(string.Format("The backup to \"{0}\" was successful."
                                 , Path.GetFileName(msCurrentBackupOutputPathFile)));
 
+                        double  ldCompositeResult = 0;
+
                         // Run the "backup done" script and return the failed file count with bit field.
                         // The exit code is defined in the script as a combination of two integers-
                         // a bit field of found backup devices and a count of copy failures (99 max).
-                        double  ldCompositeResult = this.iBackupDoneScriptCopyFailuresWithBitField() / 100.0;
+                        if ( moProfile.bValue("-BackupDoneScriptEnabled", true) )
+                            ldCompositeResult = this.iBackupDoneScriptCopyFailuresWithBitField() / 100.0;
 
                         // The integer part of the composite number is the bit field.
                         // This will be used below after all backup sets are run. We
@@ -1516,13 +1593,13 @@ No file cleanup will be done until you update the configuration.
                         liCurrentBackupDevicesBitField = (int)ldCompositeResult;
 
                         // The fractional part (x 100) is the actual number of copy failures.
-                        int liCopyFailures = (int)(100.0 * (ldCompositeResult - (double)liCurrentBackupDevicesBitField));
+                        int liCopyFailures = (int)Math.Round(100 * (ldCompositeResult - liCurrentBackupDevicesBitField));
 
                         // Add failed files from the current backup set to the total.
                         liBackupDoneScriptFileCopyFailures += liCopyFailures;
 
                         // Increment how many backup sets have succeeded so far.
-                        if ( 0 ==liCopyFailures )
+                        if ( 0 == liCopyFailures )
                             miBackupSetsGood++;
                     }
                 }
@@ -1543,12 +1620,17 @@ No file cleanup will be done until you update the configuration.
                         if ( moProfile.bValue("-AutoStart", true) )
                             lsSysTrayMsg = this.sSysTrayMsg;
 
-                // Compare the bit field of current backup devices to the bit field of devices selected by the user.
-                List<char> loMissingBackupDevices = this.oMissingBackupDevices(liCurrentBackupDevicesBitField);
+                List<char> loMissingBackupDevices = new List<char>();
 
-                if ( miBackupSetsRun != miBackupSetsGood
-                        || 0 != liBackupDoneScriptFileCopyFailures
-                        || 0 != loMissingBackupDevices.Count
+                // Compare the bit field of current backup devices to the bit field of
+                // devices selected by the user to be used by the "backup done" script.
+                if ( moProfile.bValue("-BackupDoneScriptEnabled", true) )
+                    loMissingBackupDevices = this.oMissingBackupDevices(liCurrentBackupDevicesBitField);
+
+                if (        miBackupSetsGood != miBackupSetsRun
+                        ||  0 != liBackupBeginScriptErrors
+                        ||  0 != liBackupDoneScriptFileCopyFailures
+                        ||  0 != loMissingBackupDevices.Count
                         )
                 {
                     moProfile["-PreviousBackupOk"] = false;
@@ -1587,6 +1669,233 @@ No file cleanup will be done until you update the configuration.
             return lbBackupFiles;
         }
 
+        private int iBackupBeginScriptErrors()
+        {
+            int liBackupBeginScriptErrors = 0;
+
+            string lsBackupBeginScriptPathFile = moProfile.sRelativeToProfilePathFile(
+                    moProfile.sValue("-BackupBeginScriptPathFile", msBackupBeginScriptPathFileDefault));
+            string lsBackupBeginScriptOutputPathFile = lsBackupBeginScriptPathFile + ".txt";
+
+            // Before the "backup begin" script can be initialized,
+            // -BackupBeginScriptHelp must be initialized first.
+            if ( moProfile.bValue("-BackupBeginScriptInit", false) )
+                moProfile.Remove("-BackupBeginScriptHelp");
+
+            // If the "backup begin" script has not been redefined to point elsewhere,
+            // prepare to create it from the current -BackupBeginScriptHelp content.
+            // We do this even if the script file actually exists already. This way
+            // the following default script will be written to the profile file if
+            // its not already there.
+            if ( lsBackupBeginScriptPathFile == moProfile.sRelativeToProfilePathFile(msBackupBeginScriptPathFileDefault) )
+            {
+                bool    lbUseMainhostArchive    = moProfile.bValue("-UseVirtualMachineHostArchive", false);
+                bool    lbUseConnectMainhost    = moProfile.bValue("-UseConnectVirtualMachineHost", false);
+                string  lsBackupBeginScript     = (moProfile.sValue("-BackupBeginScriptHelp", @"
+@echo off
+if %1=="""" goto :EOF
+::
+:: *** Backup started script goes here. ***
+::
+:: This script is executed before each backup starts. If you prompt for 
+:: input within this DOS script (eg. ""pause""), the script will stay in 
+:: memory. This is not recommended since such behavior would be similar to 
+:: a memory leak.
+::
+:: You can also create and edit another DOS script file and reference that
+:: instead (see ""-BackupBeginScriptPathFile"" in ""{ProfileFile}"").
+::
+:: You can access parameters prior to backup via the DOS shell command-line:
+::
+:: %1 = ""MainhostArchive""
+::
+::      This is the full UNC specification of the Mainhost archive share.
+::
+:: %2 = ""MainhostShareUsername""
+::
+::      This is the username needed to connect to the Mainhost network share.
+::
+:: %3 = ""MainhostSharePassword""
+::
+::      This is the password needed to connect to the Mainhost network share.
+::
+::
+:: Note: All arguments will be passed with double quotation marks included.
+::       So don't use quotes here unless you want ""double double"" quotes.
+::
+::
+:: The following example defines a network connection to the Mainhost using
+:: ""pw123"" as the password and ""anyone"" as the share username.
+::
+:: Example:
+::
+::     echo net use %1 pw123 /user:anyone  ] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+::          net use %1 pw123 /user:anyone ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+::
+::                                        ^^  Replace brackets with darts.
+
+:: The ""Errors"" environment variable is used to keep count of errors to be returned.
+set Errors=0
+
+:: Initialize the ""backup begin"" script log file. It's for this run only.
+echo.                                      > ""{BackupBeginScriptOutputPathFile}"" 2>&1
+"
++
+(!lbUseMainhostArchive || !lbUseConnectMainhost ? "" :
+@"
+:: Here is some sample network connection script that may be helpful (replace brackets with darts):
+
+:: echo Initialize all network connections:                                    ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+:: echo.                                                                       ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+:: echo net use * /delete /yes                                                 ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+::      net use * /delete /yes                                                 ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+::
+::     if ERRORLEVEL 1 set /A Errors += 1
+
+:: echo Connect drive Z:                                                       ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+:: echo net use Z: \\Mainhost\ArchiveGoPC                                      ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+::      net use Z: \\Mainhost\ArchiveGoPC                                      ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+::
+::     if ERRORLEVEL 1 set /A Errors += 1
+
+echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo Connect to Mainhost:                                                   >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo net use %1  [password not shown]  /user:[username not shown]           >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+     net use %1  %3  /user:%2                                               >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+
+     if ERRORLEVEL 1 set /A Errors += 1
+"
+)
++
+@"
+echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo   Errors=%Errors%                                                      >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+exit  %Errors%
+"
+)                       .Replace("{ProfileFile}", Path.GetFileName(moProfile.sLoadedPathFile))
+                        .Replace("{BackupBeginScriptOutputPathFile}", Path.GetFileName(lsBackupBeginScriptOutputPathFile))
+                        );
+
+                // Write the default "backup begin" script if its
+                // not there or if -BackupBeginScriptInit is set.
+                if (       !File.Exists(lsBackupBeginScriptPathFile)
+                        || moProfile.bValue("-BackupBeginScriptInit", false) )
+                {
+                    StreamWriter loStreamWriter = null;
+
+                    try
+                    {
+                        loStreamWriter = new StreamWriter(lsBackupBeginScriptPathFile, false);
+                        loStreamWriter.Write(lsBackupBeginScript);
+
+                        // This is used only once then reset.
+                        moProfile["-BackupBeginScriptInit"] = false;
+                        moProfile.Save();
+                    }
+                    catch (Exception ex)
+                    {
+                        this.ShowError(string.Format("File Write Failure: \"{0}\"\r\n"
+                                , lsBackupBeginScript) + ex.Message
+                                , "Failed Writing File"
+                                );
+                    }
+                    finally
+                    {
+                        if ( null != loStreamWriter )
+                            loStreamWriter.Close();
+                    }
+                }
+            }
+
+            try
+            {
+                this.LogIt("");
+                this.LogIt("Running \"backup begin\" script ...");
+
+                Process loProcess = new Process();
+                        loProcess.StartInfo.FileName = lsBackupBeginScriptPathFile;
+                        loProcess.StartInfo.Arguments = string.Format(
+                                  " \"{0}\" \"{1}\" \"{2}\" \"{3}\" \"{4}\" \"{5}\" \"{6}\" \"{7}\" \"{8}\" "
+                                , moProfile.sValue("-VirtualMachineHostArchivePath", "")
+                                , moProfile.sValue("-VirtualMachineHostUsername", "")
+                                , moProfile.sValue("-VirtualMachineHostPassword", "")
+                                , ""
+                                , ""
+                                , ""
+                                , ""
+                                , ""
+                                , ""
+                                );
+                        loProcess.StartInfo.UseShellExecute = true;
+                        loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                        loProcess.Start();
+
+                // Wait for the "backup begin script" to finish.
+                while ( !this.bMainLoopStopped && !loProcess.HasExited )
+                {
+                    System.Windows.Forms.Application.DoEvents();
+                    System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 200));
+                }
+
+                // If a stop request came through, kill the backup begin script.
+                if ( this.bMainLoopStopped && !this.bKillProcess(loProcess) )
+                    this.ShowError("The \"backup begin\" script could not be stopped."
+                            , "Backup Failed");
+
+                if ( !this.bMainLoopStopped )
+                {
+                    liBackupBeginScriptErrors = loProcess.ExitCode;
+
+                    if ( 0 == liBackupBeginScriptErrors )
+                    {
+                        this.LogIt("The \"backup begin\" script finished successfully.");
+                    }
+                    else
+                    {
+                        this.LogIt(string.Format("The \"backup begin\" script had {0} error{1}.\r\n"
+                                , liBackupBeginScriptErrors
+                                , 1 == liBackupBeginScriptErrors ? "" : "s")
+                                );
+
+                        // Get the output from the "backup begin" script.
+
+                        StreamReader loStreamReader = null;
+                        string lsFileAsStream = null;
+
+                        try
+                        {
+                            loStreamReader = new StreamReader(lsBackupBeginScriptOutputPathFile);
+                            lsFileAsStream = loStreamReader.ReadToEnd();
+                        }
+                        catch (Exception ex)
+                        {
+                            this.ShowError(string.Format("File Read Failure: \"{0}\"\r\n"
+                                    , lsBackupBeginScriptOutputPathFile) + ex.Message
+                                    , "Failed Reading File"
+                                    );
+                        }
+                        finally
+                        {
+                            if (null != loStreamReader)
+                                loStreamReader.Close();
+                        }
+
+                        this.LogIt("Here's output from the \"backup begin script\":\r\n\r\n" + lsFileAsStream);
+
+                        if ( moProfile.bValue("-ShowBackupBeginScriptErrors", true) )
+                            this.DisplayFileAsError(lsFileAsStream, "Begin Script Errors");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.ShowError(ex.Message, "Failed Running Backup Begin Script");
+            }
+
+            return liBackupBeginScriptErrors;
+        }
+
         private int iBackupDoneScriptCopyFailuresWithBitField()
         {
             int liBackupDoneScriptCopyFailuresWithBitField = 0;
@@ -1607,11 +1916,10 @@ No file cleanup will be done until you update the configuration.
             // its not already there.
             if ( lsBackupDoneScriptPathFile == moProfile.sRelativeToProfilePathFile(msBackupDoneScriptPathFileDefault) )
             {
-                bool    lbUseMainhostArchive = moProfile.bValue("-UseVirtualMachineHostArchive", false);
-                string  lsMainhostArchivePath = moProfile.sValue("-VirtualMachineHostArchivePath", "\\\\Mainhost\\Archive");
-                string  lsBackupDoneScript = (moProfile.sValue("-BackupDoneScriptHelp", @"
+                bool    lbUseMainhostArchive    = moProfile.bValue("-UseVirtualMachineHostArchive", false);
+                string  lsBackupDoneScript      = (moProfile.sValue("-BackupDoneScriptHelp", @"
 @echo off
-if ""%1""=="""" goto :EOF
+if %1=="""" goto :EOF
 ::
 :: *** Backup finished successfully script goes here. ***
 ::
@@ -1640,28 +1948,32 @@ if ""%1""=="""" goto :EOF
 ::      This is the backup filename with no path and no date. It's just
 ::      the base output filename name with the filename extension.
 ::
-:: %4 = ""ArchivePath""
+:: %4 = ""LocalArchivePath""
 ::
-::      This is the archive folder.
+::      This is the local archive folder.
 ::
-:: %5 = ""AppName""
+:: %5 = ""VirtualMachineHostArchive""
+::
+::      This is the virtual machine host archive share name.
+::
+:: %6 = ""AppName""
 ::
 ::      This is the backup software filename with no extension.
 ::
-:: %6 = ""BackupExePathFile""
+:: %7 = ""BackupExePathFile""
 ::
 ::      This is the full path\file specification of the backup software.
 ::
-:: %7 = ""BackupProfilePathFile""
+:: %8 = ""BackupProfilePathFile""
 ::
 ::      This is the full path\file specification of the backup software's
 ::      profile file (ie. its configuration file).
 ::
-:: %8 = ""BackupProfileFilename""
+:: %9 = ""BackupProfileFilename""
 ::
 ::      This is the filename only of the profile file (with extension).
 ::
-:: %9 = ""LogPathFile""
+:: %10= ""LogPathFile""
 ::
 ::      This is the full path\file specification of the backup log file.
 ::
@@ -1678,10 +1990,10 @@ if ""%1""=="""" goto :EOF
 ::
 :: if not %3.==""AdministratorFiles.zip"". goto :EOF
 ::
-::     echo copy %1 C:\  ] ""{BackupDoneScriptOutputPathFile}""
-::          copy %1 C:\ ]] ""{BackupDoneScriptOutputPathFile}""
+::     echo copy %1 C:\  ] ""{BackupDoneScriptOutputPathFile}"" 2>&1
+::          copy %1 C:\ ]] ""{BackupDoneScriptOutputPathFile}"" 2>&1
 ::
-:: dir %4               ]] ""{BackupDoneScriptOutputPathFile}""
+:: dir %4               ]] ""{BackupDoneScriptOutputPathFile}"" 2>&1
 ::
 ::                      ^^  Replace brackets with darts.
 
@@ -1689,50 +2001,48 @@ if ""%1""=="""" goto :EOF
 set CopyFailures=0
 
 :: Initialize the ""backup done"" script log file. It's for this run only.
-echo.                    > ""{BackupDoneScriptOutputPathFile}""
+echo.                    > ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
-echo This backs up the backup software:                         >> ""{BackupDoneScriptOutputPathFile}""
-
-echo.                   >> ""{BackupDoneScriptOutputPathFile}""
-echo xcopy /y %6 %4\%5\ >> ""{BackupDoneScriptOutputPathFile}""
-     xcopy /y %6 %4\%5\ >> ""{BackupDoneScriptOutputPathFile}""
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo This backs up the backup software:                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo xcopy /y %7 %4\%6\                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     xcopy /y %7 %4\%6\                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if ERRORLEVEL 1 set /A CopyFailures += 1
 
-echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
-echo This copies the backup software's current profile file     >> ""{BackupDoneScriptOutputPathFile}""
-echo to a subfolder with the backup output file base name:      >> ""{BackupDoneScriptOutputPathFile}""
-
-echo.                                          >> ""{BackupDoneScriptOutputPathFile}""
-echo echo F : xcopy  /y  %7 %4\%5\%3\%8.%2.txt >> ""{BackupDoneScriptOutputPathFile}""
-     echo F | xcopy  /y  %7 %4\%5\%3\%8.%2.txt >> ""{BackupDoneScriptOutputPathFile}""
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo This copies the backup software's current profile file                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo to a subfolder with the backup output file base name:                  >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo echo F : xcopy  /y  %8 %4\%6\%3\%9.%2.txt                              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     echo F | xcopy  /y  %8 %4\%6\%3\%9.%2.txt                              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if ERRORLEVEL 1 set /A CopyFailures += 1
 "
 +
 (!lbUseMainhostArchive ? "" :
 @"
-echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
-echo This copies the backup to the virtual machine host archive:>> ""{BackupDoneScriptOutputPathFile}""
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo This copies the backup to the virtual machine host archive:            >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo copy %1 %5                                                             >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     copy %1 %5                                                             >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %5\%2 echo Error: %2 not found in host archive %5.        >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-echo.                              >> ""{BackupDoneScriptOutputPathFile}""
-echo copy %1 ""{MainHostArchive}"" >> ""{BackupDoneScriptOutputPathFile}""
-     copy %1 ""{MainHostArchive}"" >> ""{BackupDoneScriptOutputPathFile}""
-
-     if ERRORLEVEL 1 set /A CopyFailures += 1
+     if not exist %5\%2 set /A CopyFailures += 1
 "
 )
 +
 @"
-echo.                                                                   >> ""{BackupDoneScriptOutputPathFile}""
-echo The following copies the backup (base name) to each attached backup>> ""{BackupDoneScriptOutputPathFile}""
-echo device with the file ""{BackupDriveToken}"" at its root.           >> ""{BackupDoneScriptOutputPathFile}""
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo The following copies the backup (base name) to each attached backup    >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo device with the file ""{BackupDriveToken}"" at its root.               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
 set BackupOutputPathFile=%1
 set BackupBaseOutputFilename=%3
-set BackupToolPath=%4\%5
-set BackupToolName=%5
+set BackupToolPath=%4\%6
+set BackupToolName=%6
 
 set BackupDeviceDecimalBitField=0
 set BackupDevicePositionExponent=23
@@ -1747,8 +2057,8 @@ for %%d in (D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:
 
 set /A CompositeResult = 100 * (8388608 + %BackupDeviceDecimalBitField%) + %CopyFailures%
 
-echo.                                                                   >> ""Run Last BackupDone.cmd.txt""
-echo   CompositeResult=%CompositeResult%                                >> ""Run Last BackupDone.cmd.txt""
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo   CompositeResult=%CompositeResult%                                    >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 exit  %CompositeResult%
 
 :DoCopy
@@ -1764,38 +2074,43 @@ for /L %%x in (1, 1, %BackupDevicePositionExponent%) do set /A BitFieldDevicePos
 :: Add the calculated positional value to the bit field for the current backup device.
 set /A BackupDeviceDecimalBitField += %BitFieldDevicePosition%
 
-echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
-echo This copies the backup to %1 (overwriting previous backup):>> ""{BackupDoneScriptOutputPathFile}""
-
-echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
-echo copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%  >> ""{BackupDoneScriptOutputPathFile}""
-     copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%  >> ""{BackupDoneScriptOutputPathFile}""
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo This removes the previous backup (if any) from %1                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo del %1\%BackupBaseOutputFilename%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     del %1\%BackupBaseOutputFilename%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if ERRORLEVEL 1 set /A CopyFailures += 1
+
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo This copies the current backup to %1                                   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+
+     if not exist %1\%BackupBaseOutputFilename% set /A CopyFailures += 1
 
 :: Exit if the following variables are both empty.
-if ""%BackupToolName%%BackupBaseOutputFilename%""=="""" goto :EOF
+if %BackupToolName%%BackupBaseOutputFilename%=="""""""" goto :EOF
 
-echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
-echo This removes the previous backup software profile files:   >> ""{BackupDoneScriptOutputPathFile}""
-
-echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
-echo rd  /s/q  %1\%BackupToolName%\%BackupBaseOutputFilename%   >> ""{BackupDoneScriptOutputPathFile}""
-     rd  /s/q  %1\%BackupToolName%\%BackupBaseOutputFilename%   >> ""{BackupDoneScriptOutputPathFile}""
-
-echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
-echo This copies the backup software to %1\%BackupToolName%:    >> ""{BackupDoneScriptOutputPathFile}""
-
-echo.                                                           >> ""{BackupDoneScriptOutputPathFile}""
-echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDoneScriptOutputPathFile}""
-     xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDoneScriptOutputPathFile}""
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo This removes the previous backup software profile files:               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo rd  /s/q  %1\%BackupToolName%\%BackupBaseOutputFilename%               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     rd  /s/q  %1\%BackupToolName%\%BackupBaseOutputFilename%               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if ERRORLEVEL 1 set /A CopyFailures += 1
 
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo This copies the backup software to %1\%BackupToolName%:                >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+
+     if ERRORLEVEL 1 set /A CopyFailures += 1
 "
 )                       .Replace("{ProfileFile}", Path.GetFileName(moProfile.sLoadedPathFile))
                         .Replace("{BackupDoneScriptOutputPathFile}", Path.GetFileName(lsBackupDoneScriptOutputPathFile))
-                        .Replace("{MainHostArchive}", lsMainhostArchivePath)
                         .Replace("{BackupDriveToken}", this.sBackupDriveToken)
                         );
 
@@ -1838,11 +2153,12 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                 Process loProcess = new Process();
                         loProcess.StartInfo.FileName = lsBackupDoneScriptPathFile;
                         loProcess.StartInfo.Arguments = string.Format(
-                                  " \"{0}\" \"{1}\" \"{2}\" \"{3}\" \"{4}\" \"{5}\" \"{6}\" \"{7}\" \"{8}\" "
+                                  " \"{0}\" \"{1}\" \"{2}\" \"{3}\" \"{4}\" \"{5}\" \"{6}\" \"{7}\" \"{8}\" \"{9}\" "
                                 , msCurrentBackupOutputPathFile
                                 , Path.GetFileName(msCurrentBackupOutputPathFile)
                                 , Path.GetFileName(this.sBackupOutputPathFileBase())
                                 , this.sArchivePath()
+                                , moProfile.sValue("-VirtualMachineHostArchivePath", "")
                                 , Application.ResourceAssembly.GetName().Name
                                 , Application.ResourceAssembly.Location
                                 , moProfile.sBackupPathFile
@@ -1875,7 +2191,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                     int     liCurrentBackupDevicesBitField = (int)ldCompositeResult;   // The integer part is the bit field.
 
                     // The fractional part (x 100) is the number of copy failures.
-                    int liBackupDoneScriptCopyFailures = (int)(100.0 * (ldCompositeResult - (double)liCurrentBackupDevicesBitField));
+                    int liBackupDoneScriptCopyFailures = (int)Math.Round(100 * (ldCompositeResult - liCurrentBackupDevicesBitField));
 
                     // Compare the bit field of current backup devices to the bit field of devices selected by the user.
                     List<char> loMissingBackupDevices = this.oMissingBackupDevices(liCurrentBackupDevicesBitField);
@@ -1919,7 +2235,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\         >> ""{BackupDone
                             this.LogIt("Here's output from the \"backup done script\":\r\n\r\n" + lsFileAsStream);
 
                             if ( moProfile.bValue("-ShowBackupDoneScriptErrors", true) )
-                                this.DisplayFile(lsBackupDoneScriptOutputPathFile);
+                                this.DisplayFileAsError(lsFileAsStream, "Done Script Errors");
                         }
 
                         if ( 0 != loMissingBackupDevices.Count )

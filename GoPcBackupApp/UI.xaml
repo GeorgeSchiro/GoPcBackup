@@ -86,12 +86,8 @@
                     </StackPanel>
                     <StackPanel Name="CloseButtonPanel" Orientation="Horizontal" HorizontalAlignment="Right">
                         <StackPanel Name="CloseCheckboxes" VerticalAlignment="Center">
-                            <CheckBox Name="chkUseTimer" ToolTip="Start Timer after Reopen" Click="chkUseTimer_Click" Style="{StaticResource MainCanvasCheckBox}">
-                                Use Timer
-                            </CheckBox>
-                            <CheckBox Name="chkCloseAndExit" ToolTip="Exit GoPC after Close" Style="{StaticResource MainCanvasCheckBox}">
-                                Full Exit
-                            </CheckBox>
+                            <CheckBox Name="chkUseTimer" Content="Use Timer" ToolTip="Start Timer after Reopen" Click="chkUseTimer_Click" Style="{StaticResource MainCanvasCheckBox}" />
+                            <CheckBox Name="chkCloseAndExit" Content="Full Exit" ToolTip="Exit GoPC after Close" Style="{StaticResource MainCanvasCheckBox}" />
                         </StackPanel>
                         <Button Name="btnClose" Click="mnuExit_Click" Content="Close" ToolTip="Close to System Tray" HorizontalAlignment="Right" Style="{StaticResource MainCanvasButton}" />
                     </StackPanel>
@@ -121,7 +117,7 @@
 </Button>
 <StackPanel Style="{StaticResource ConfigWizardStackPanelBottom}">
     <Label>Folder to Backup:</Label>
-    <TextBox Name="txtBackupFolder" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
+    <TextBox Name="FolderToBackup" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
 </StackPanel>
 <Label Height="10"></Label>
                             </StackPanel>
@@ -135,11 +131,10 @@
 </TextBlock>
 <Border Style="{StaticResource ConfigWizardTextBorder}">
         <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
-    Type the name of the file to contain all of the files in your backup. <LineBreak/><LineBreak/>
-    Note: No folder path or filename extention is necessary.
+    Type the name of the file (no extension) to contain all of the files in your backup.
 </TextBlock></Border>
 
-<Grid Margin="90,0,10,10" HorizontalAlignment="Left">
+<Grid Margin="90,10,10,10" HorizontalAlignment="Left">
     <Grid.RowDefinitions>
         <RowDefinition />
         <RowDefinition />
@@ -150,15 +145,15 @@
         <ColumnDefinition/>
     </Grid.ColumnDefinitions>
     <Label Grid.Row="0" Grid.Column="0">Output Filename:</Label>
-    <TextBox Grid.Row="0" Grid.Column="1" Name="txtBackupOutputFilename" IsReadOnly="False" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
+    <TextBox Grid.Row="0" Grid.Column="1" Name="BackupOutputFilename" IsReadOnly="False" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
     <Label Grid.Row="1" Grid.Column="0">Local Archive:</Label>    
-    <TextBox Width="300" Grid.Row="1" Grid.Column="1" Name="txtArchivePath"    Style="{StaticResource ConfigWizardTextSelected}"  />
+    <TextBox Width="300" Grid.Row="1" Grid.Column="1" Name="ArchivePath"    Style="{StaticResource ConfigWizardTextSelected}"  />
     <Button Name="btnSetupStep2" Grid.Row="1" Grid.Column="2" Click="btnSetupStep2_Click" Margin="10,0,0,0"  Height="25" Style="{StaticResource ConfigWizardButton}">
     Select Archive
     </Button>
 </Grid>  
-<CheckBox Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content="Back up to the virtual machine host?" Checked="UseVirtualMachineHostArchive_Checked"
-                                                                                     Unchecked="UseVirtualMachineHostArchive_Unchecked"/>
+<CheckBox Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content="Back up to the virtual machine host?"
+        Checked="UseVirtualMachineHostArchive_Checked" Unchecked="UseVirtualMachineHostArchive_Unchecked" Style="{StaticResource ConfigWizardCheckBox}" />
 <Grid Name="VirtualMachineHostGrid" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
     <Grid.RowDefinitions>
         <RowDefinition />
@@ -171,14 +166,28 @@
         <ColumnDefinition/>
     </Grid.ColumnDefinitions>
     <Label Grid.Row="0" Grid.Column="0">VM Host Archive:</Label>    
-    <TextBox Width="300" Grid.Row="0" Grid.Column="1" Name="txtVirtualMachineHostArchivePath" Style="{StaticResource ConfigWizardTextSelected}"  />
+    <TextBox Width="300" Grid.Row="0" Grid.Column="1" Name="VirtualMachineHostArchivePath" Style="{StaticResource ConfigWizardTextSelected}"  />
     <Button Name="btnSetupStep3" Grid.Row="0" Grid.Column="2" Click="btnSetupStep3_Click" Margin="10,0,0,0"  Height="25" Style="{StaticResource ConfigWizardButton}">
     Select Archive
     </Button>
-    <Label Grid.Row="1" Grid.Column="0">Username:</Label>    
-    <TextBox Width="300" Grid.Row="1" Grid.Column="1" Name="txtVirtualMachineHostUsername" Style="{StaticResource ConfigWizardTextSelected}"  />
-    <Label Grid.Row="2" Grid.Column="0">Password:</Label>    
-    <TextBox Width="300" Grid.Row="2" Grid.Column="1" Name="txtVirtualMachineHostPassword" Style="{StaticResource ConfigWizardTextSelected}"  />
+</Grid>                                
+<CheckBox Margin="90,10,10,10" Name="UseConnectVirtualMachineHost" Content="Force reconnect to virtual machine host before each backup?" Visibility="Hidden" 
+        Checked="UseConnectVirtualMachineHost_Checked" Unchecked="UseConnectVirtualMachineHost_Unchecked" Style="{StaticResource ConfigWizardCheckBox}" />
+<Grid Name="ConnectVirtualMachineHostGrid" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
+    <Grid.RowDefinitions>
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition />
+        <ColumnDefinition Width="280" />
+        <ColumnDefinition />
+    </Grid.ColumnDefinitions>
+    <Label Grid.Row="0" Grid.Column="0">VM Host Username:</Label>    
+    <TextBox Width="300" Grid.Row="0" Grid.Column="1" Name="VirtualMachineHostUsername" Style="{StaticResource ConfigWizardTextSelected}"  />
+    <Label Grid.Row="1" Grid.Column="0">VM Host Password:</Label>    
+    <TextBox Width="300" Grid.Row="1" Grid.Column="1" Name="VirtualMachineHostPassword" Style="{StaticResource ConfigWizardTextSelected}"  />
 </Grid>                                
                             </StackPanel>
                             </Viewbox>
@@ -196,7 +205,7 @@
         
     Notes:  <LineBreak/>
             <Label Width="75" /> Only your latest backup will remain on each additional backup device.<LineBreak/>
-            <Label Width="75" /> Devices in <Run Foreground="Red" Text="red"/> are invalid for backups
+            <Label Width="75" /> Devices in <Run Foreground="Red" Text="red"/> below are invalid for backups
                                     (ie. they can't be written to).
     </TextBlock>
 </Border>
@@ -270,7 +279,7 @@
 </StackPanel>
 <StackPanel Style="{StaticResource ConfigWizardStackPanelBottom}">
     <Label>Selected Time:</Label>
-    <TextBox Name="txtBackupTime" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
+    <TextBox Name="BackupTime" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
 </StackPanel>
 <Label Height="10"></Label>  
                             </StackPanel>
@@ -305,11 +314,11 @@
         <ColumnDefinition />
         <ColumnDefinition />
     </Grid.ColumnDefinitions>
-    <Label Grid.Row="0" Grid.Column="0">Folder to Backup:</Label>   <TextBox Grid.Row="0" Grid.Column="1" Name="txtReviewBackupFolder"      Style="{StaticResource ConfigWizardTextReadOnly}" />
-    <Label Grid.Row="1" Grid.Column="0">Output Filename:</Label>    <TextBox Grid.Row="1" Grid.Column="1" Name="txtReviewOutputFilename"    Style="{StaticResource ConfigWizardTextReadOnly}" />
-    <Label Grid.Row="0" Grid.Column="3">Archive Folder:</Label>     <TextBox Grid.Row="0" Grid.Column="4" Name="txtReviewArchivePath"       Style="{StaticResource ConfigWizardTextReadOnly}" />
-    <Label Grid.Row="1" Grid.Column="3">Backup Time:</Label>        <TextBox Grid.Row="1" Grid.Column="4" Name="txtReviewBackupTime"        Style="{StaticResource ConfigWizardTextReadOnly}" />
-    <Label Grid.Row="2" Grid.Column="0">Additional Devices:</Label> <TextBox Grid.Row="2" Grid.Column="1" Name="txtReviewAdditionalDevices" Style="{StaticResource ConfigWizardTextReadOnly}" Grid.ColumnSpan="5" />
+    <Label Grid.Row="0" Grid.Column="0">Folder to Backup:</Label>   <TextBox Grid.Row="0" Grid.Column="1" Name="ReviewFolderToBackup"      Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="1" Grid.Column="0">Output Filename:</Label>    <TextBox Grid.Row="1" Grid.Column="1" Name="ReviewOutputFilename"    Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="0" Grid.Column="3">Archive Folder:</Label>     <TextBox Grid.Row="0" Grid.Column="4" Name="ReviewArchivePath"       Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="1" Grid.Column="3">Backup Time:</Label>        <TextBox Grid.Row="1" Grid.Column="4" Name="ReviewBackupTime"        Style="{StaticResource ConfigWizardTextReadOnly}" />
+    <Label Grid.Row="2" Grid.Column="0">Additional Devices:</Label> <TextBox Grid.Row="2" Grid.Column="1" Name="ReviewAdditionalDevices" Style="{StaticResource ConfigWizardTextReadOnly}" Grid.ColumnSpan="5" />
 </Grid>
 <Button Name="btnSetupDone" Click="btnSetupDone_Click" Margin="5" Style="{StaticResource ConfigWizardButton}">
     Setup Done - Run Backup
@@ -327,10 +336,37 @@
                         <TabItem Name="tabSetupGeneral" Header="General" Style="{StaticResource ConfigWizardTabItems}">
                             <Viewbox>
                             <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
-<Button Name="btnSetupGeneralResetAllPrompts" Click="btnSetupGeneralResetAllPrompts_Click" Margin="30" Style="{StaticResource ConfigWizardButton}">
-    Reset All Prompts
-</Button>
-<Label Height="10"></Label>
+<Grid Name="ConfigDetailsGrid" HorizontalAlignment="Center">
+    <Grid.RowDefinitions>
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+        <RowDefinition />
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="600" />
+        <ColumnDefinition />
+    </Grid.ColumnDefinitions>
+
+    <CheckBox Grid.Row="0"  Grid.Column="0" Name="BackupFiles" Content="Include backup files process?" Style="{StaticResource ConfigWizardCheckBox}" />
+    <CheckBox Grid.Row="1"  Grid.Column="0" Name="CleanupFiles" Content="Include cleanup files process?" Style="{StaticResource ConfigWizardCheckBox}" />
+    <CheckBox Grid.Row="2"  Grid.Column="0" Name="BackupBeginScriptEnabled" Content='Use "backup begin" script?' Style="{StaticResource ConfigWizardCheckBox}" />
+    <CheckBox Grid.Row="3"  Grid.Column="0" Name="BackupDoneScriptEnabled" Content='Use "backup done" script?' Style="{StaticResource ConfigWizardCheckBox}" />
+</Grid>
+<Button Name="btnSetupGeneralResetAllPrompts" Content="Reset All Prompts" Margin="0,20,0,0"
+        Click="btnSetupGeneralResetAllPrompts_Click" Style="{StaticResource ConfigWizardButton}" />
                             </StackPanel>
                             </Viewbox>
                         </TabItem>
@@ -381,9 +417,8 @@
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Name="MiddlePanelProgressBar"
                             CornerRadius="10,10,0,0" BorderThickness="5,5,5,0" BorderBrush="WhiteSmoke" Margin="50,0,50,0">
-                        <ProgressBar Name="prbBackupProgress" Minimum="0" Maximum="999999999" Height="20"
-                                Background="WhiteSmoke" Foreground="YellowGreen"
-                        />
+                        <ProgressBar Name="prbBackupProgress" Height="20" Background="WhiteSmoke" Foreground="YellowGreen"
+                                Minimum="0" Maximum="100" />
                     </Border>
                     <Border Grid.Row="1" CornerRadius="0,0,10,10"
                             BorderThickness="{Binding ElementName=MiddlePanelProgressBar, Path=BorderThickness.Top}"
@@ -391,7 +426,7 @@
                             Margin="{Binding ElementName=MiddlePanelProgressBar, Path=Margin}"
                             >
                         <ScrollViewer Name="scrBackupProcessOutput" VerticalScrollBarVisibility="Hidden">
-                            <TextBlock Name="txtBackupProcessOutput" Style="{StaticResource OutputText}" />
+                            <TextBlock Name="BackupProcessOutput" Style="{StaticResource OutputText}" />
                         </ScrollViewer>
                     </Border>
                 </Grid>

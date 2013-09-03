@@ -13,56 +13,56 @@ using tvToolbox;
 
 namespace GoPcBackup
 {
-    /// <summary>
-    /// Interaction logic for UI.xaml
-    /// </summary>
     public partial class UI : SavedWindow
     {
-        private tvProfile moProfile;
-        private DoGoPcBackup moDoGoPcBackup;
+        private tvProfile       moProfile;
+        private DoGoPcBackup    moDoGoPcBackup;
 
-        private const string mcsStoppedText = "stopped";
-        private const string mcsNoPreviousText = "none";
-        private const string mcsWaitingText = "Waiting";
-        private const string mcsBackingUpText = "Backup Running";
+        private const string mcsBackingUpText   = "Backup Running";
+        private const string mcsNoPreviousText  = "none";
+        private const string mcsStoppedText     = "stopped";
+        private const string mcsWaitingText     = "Waiting";
 
-        private ExtendedNotifyIcon moNotifyIcon;
-        private double miOriginalScreenHeight;
-        private double miOriginalScreenWidth;
-        private double miAdjustedWindowHeight;
-        private double miAdjustedWindowWidth;
-        private int miPreviousConfigWizardSelectedIndex = -1;
-        private int miProcessedFileCount;
-        private bool mbShowBackupOutputAfterSysTray;                // Determines if the text output console
-        private bool mbPreviousBackupError;                         // is displayed after a systray click.
-        private bool mbBackupRan;
-        private Help moHelpWindow;
-        private Button moStartStopButtonState = new Button();
-        private bool mbUpdateSelectedBackupDevices = false;
+        private double  miOriginalScreenHeight;
+        private double  miOriginalScreenWidth;
+        private double  miAdjustedWindowHeight;
+        private double  miAdjustedWindowWidth;
+        private int     miPreviousConfigWizardSelectedIndex  = -1;
+        private int     miPreviousConfigDetailsSelectedIndex = -1;
+        private int     miProcessedFilesCount;
+        private int     miProcessedFilesMaximum;
+        private bool    mbBackupRan;
+        private bool    mbGetSetDefaultsDone;
+        private bool    mbIgnoreCheck;                                  // This is needed to avoid double hits in checkbox events.
+        private bool    mbPreviousBackupError;                          // Tracks the success or failure status of the previous backup run.
+        private bool    mbShowBackupOutputAfterSysTray;                 // Determines if the text output console is displayed after a systray click.
+        private bool    mbStartupDone;                                  // Indicates all activities prior to logo animation are completed.
+        private bool    mbUpdateSelectedBackupDevices;                  // Indicates when the selected backup devices list can be updated.
+                                                                        // (which differs from the usual "GetSet()" "always update" behavior)
+
+        private ExtendedNotifyIcon  moNotifyIcon;
+        private Button              moStartStopButtonState = new Button();
+
 
         private UI() { }
 
 
         /// <summary>
-        /// This constructor expects a profile object 
-        /// and a file backup object to be provided.
+        /// This constructor expects a file backup 
+        /// application object to be provided.
         /// </summary>
-        /// <param name="aoProfile">
-        /// The given profile object must either contain runtime options
-        /// or it will be returned filled with default runtime options.
-        /// </param>
         /// <param name="aoDoGoPcBackup">
         /// The given file backup object creates dated archives
         /// of file collections from the local file system.
         /// </param>
-        public UI(tvProfile aoProfile, DoGoPcBackup aoDoGoPcBackup)
+        public UI(DoGoPcBackup aoDoGoPcBackup)
         {
             InitializeComponent();
 
-            // This load window UI defaults fom the given profile.
+            // This loads window UI defaults from the given profile.
             base.Init();
 
-            moProfile = aoProfile;
+            moProfile = aoDoGoPcBackup.oProfile;
             moDoGoPcBackup = aoDoGoPcBackup;
         }
 
@@ -162,6 +162,24 @@ namespace GoPcBackup
         }
         private bool mbBackupRunning;
 
+        /// <summary>
+        /// This will restart the main timer loop
+        /// (eg. after configuration changes) so 
+        /// that the timer panel is refreshed.
+        /// </summary>
+        public List<ScrollingText> oOtherWindows
+        {
+            get
+            {
+                return moOtherWindows;
+            }
+            set
+            {
+                moOtherWindows = value;
+            }
+        }
+        private List<ScrollingText> moOtherWindows = new List<ScrollingText>();
+
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -198,7 +216,7 @@ namespace GoPcBackup
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             // Save any setup changes.
-            this.GetSetConfigurationWizardDefaults();
+            this.GetSetConfigurationDefaults();
 
             // Do a full exit if shutting down.
             if ( ShutdownMode.OnExplicitShutdown == Application.Current.ShutdownMode )
@@ -247,8 +265,9 @@ namespace GoPcBackup
             if ( null != moNotifyIcon )
                 moNotifyIcon.Dispose();
 
-            if ( null != moHelpWindow )
-                moHelpWindow.Close();
+            if ( 0 != moOtherWindows.Count )
+                foreach (ScrollingText loWindow in moOtherWindows)
+                    loWindow.Close();
         }
 
         // This method is called before anything else (after init & load events).
@@ -256,6 +275,8 @@ namespace GoPcBackup
 
         private void LogoImageAnimation_Completed(object sender, EventArgs e)
         {
+            mbStartupDone = true;
+
             if ( !moProfile.bValue("-AllConfigWizardStepsCompleted", false) )
             {
                 this.MiddlePanelConfigWizard.Visibility = Visibility.Visible;
@@ -300,8 +321,11 @@ namespace GoPcBackup
             else
             {
                 this.HideMiddlePanels();
-                this.GetSetConfigurationWizardDefaults();
-                this.DoBackup();
+                this.GetSetConfigurationDefaults();
+                if ( this.bValidateConfiguration() )
+                    this.DoBackup();
+                else
+                    this.btnSetup_Click(null, null);
             }
         }
 
@@ -352,7 +376,7 @@ namespace GoPcBackup
             }
             else
             {
-                this.GetSetConfigurationWizardDefaults();
+                this.GetSetConfigurationDefaults();
                 this.HideMiddlePanels();
                 this.MiddlePanelTimer.Visibility = Visibility.Visible;
 
@@ -391,7 +415,7 @@ namespace GoPcBackup
         }
 
         // This kludge is necessary becuase use of the "Checked" and "Unchecked"
-        // event handlers oddly disables rendering of the check in the box.
+        // event handlers oddly disable rendering of the check in the box.
         private void chkUseTimer_SetChecked(bool abValue)
         {
             this.chkUseTimer.IsChecked = abValue;
@@ -406,7 +430,7 @@ namespace GoPcBackup
             }
             else
             {
-                this.GetSetConfigurationWizardDefaults();
+                this.GetSetConfigurationDefaults();
                 this.HideMiddlePanels();
                 this.MiddlePanelTimer.Visibility = Visibility.Visible;
                 this.MainLoop();
@@ -458,7 +482,8 @@ namespace GoPcBackup
             string lsControlClass = e.OriginalSource.ToString();
 
             // Disable maximizing while clicking various controls.
-            if ( !lsControlClass.Contains("Text")
+            if (       !lsControlClass.Contains("Text")
+                    && !lsControlClass.Contains("Bullet")
                     && !lsControlClass.Contains("ClassicBorderDecorator")
                     )
             {
@@ -471,30 +496,43 @@ namespace GoPcBackup
 
         public void AppendOutputTextLine(string asTextLine)
         {
-            txtBackupProcessOutput.Inlines.Add(asTextLine + Environment.NewLine);
-            if ( txtBackupProcessOutput.Inlines.Count > 50 )
-                txtBackupProcessOutput.Inlines.Remove(txtBackupProcessOutput.Inlines.FirstInline);
-            scrBackupProcessOutput.ScrollToEnd();
+            this.BackupProcessOutput.Inlines.Add(asTextLine + Environment.NewLine);
+            if ( this.BackupProcessOutput.Inlines.Count > 50 )
+                this.BackupProcessOutput.Inlines.Remove(this.BackupProcessOutput.Inlines.FirstInline);
+            this.scrBackupProcessOutput.ScrollToEnd();
 
-            this.IncrementProgressBar();
+            this.IncrementProgressBar(false);
         }
 
-        public void InitProgressBar(double adMaximum)
+        public void InitProgressBar(int aiProcessedFilesMaximum)
         {
-            miProcessedFileCount = 0;
+            miProcessedFilesCount = 0;
+            miProcessedFilesMaximum = aiProcessedFilesMaximum;
             this.prbBackupProgress.Value = 0;
             this.prbBackupProgress.Minimum = 0;
-            this.prbBackupProgress.Maximum = adMaximum;
+            this.prbBackupProgress.Maximum = 100;
         }
 
-        public void FillProgressBar()
+        public void IncrementProgressBar(bool abFill)
         {
-            this.prbBackupProgress.Value = this.prbBackupProgress.Maximum;
-        }
-
-        public void IncrementProgressBar()
-        {
-            this.prbBackupProgress.Value = ++miProcessedFileCount;
+            if ( !abFill )
+                this.prbBackupProgress.Value = 0 == miProcessedFilesMaximum ? 0
+                        : this.prbBackupProgress.Maximum
+                                * ((double)++miProcessedFilesCount / miProcessedFilesMaximum);
+            else
+                if ( 0 == miProcessedFilesMaximum )
+                {
+                    this.prbBackupProgress.Value = 0;
+                }
+                else
+                    // This kludge is necessary since simply setting
+                    // "this.prbBackupProgress.Value = this.prbBackupProgress.Maximum" fails.
+                    do
+	                {
+                	    this.prbBackupProgress.Value = this.prbBackupProgress.Maximum
+                                * ((double)++miProcessedFilesCount / miProcessedFilesMaximum);
+	                }
+                    while ( miProcessedFilesCount < miProcessedFilesMaximum );
         }
 
         private void btnSetupStep1_Click(object sender, RoutedEventArgs e)
@@ -510,46 +548,111 @@ namespace GoPcBackup
 
             System.Windows.Forms.FolderBrowserDialog loOpenDialog = new System.Windows.Forms.FolderBrowserDialog();
             loOpenDialog.RootFolder = Environment.SpecialFolder.Desktop;
-            loOpenDialog.SelectedPath = this.txtBackupFolder.Text;
+            loOpenDialog.SelectedPath = this.FolderToBackup.Text;
 
             System.Windows.Forms.DialogResult leDialogResult = loOpenDialog.ShowDialog();
 
             if ( System.Windows.Forms.DialogResult.OK == leDialogResult )
-                this.txtBackupFolder.Text = loOpenDialog.SelectedPath;
+                this.FolderToBackup.Text = loOpenDialog.SelectedPath;
         }
 
         private void btnSetupStep2_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.Forms.FolderBrowserDialog loOpenDialog = new System.Windows.Forms.FolderBrowserDialog();
             loOpenDialog.RootFolder = Environment.SpecialFolder.Desktop;
-            loOpenDialog.SelectedPath = this.txtArchivePath.Text;
+            loOpenDialog.SelectedPath = this.ArchivePath.Text;
 
             System.Windows.Forms.DialogResult leDialogResult = loOpenDialog.ShowDialog();
 
             if ( System.Windows.Forms.DialogResult.OK == leDialogResult )
-                this.txtArchivePath.Text = loOpenDialog.SelectedPath;
+                this.ArchivePath.Text = loOpenDialog.SelectedPath;
         }
-        
+
         private void UseVirtualMachineHostArchive_Checked(object sender, RoutedEventArgs e)
         {
+            if ( mbIgnoreCheck )
+            {
+                mbIgnoreCheck = false;
+                return;
+            }
+
+            if ( mbStartupDone && !this.bShowInitScriptsWarning() )
+            {
+                mbIgnoreCheck = true;
+                (e.OriginalSource as CheckBox).IsChecked = false;
+                return;
+            }
+
             this.VirtualMachineHostGrid.Visibility = Visibility.Visible;
+            this.UseConnectVirtualMachineHost.Visibility = Visibility.Visible;
         }
 
         private void UseVirtualMachineHostArchive_Unchecked(object sender, RoutedEventArgs e)
         {
+            if ( mbIgnoreCheck )
+            {
+                mbIgnoreCheck = false;
+                return;
+            }
+
+            if ( mbStartupDone && !this.bShowInitScriptsWarning() )
+            {
+                mbIgnoreCheck = true;
+                (e.OriginalSource as CheckBox).IsChecked = true;
+                return;
+            }
+
             this.VirtualMachineHostGrid.Visibility = Visibility.Hidden;
+            this.UseConnectVirtualMachineHost.IsChecked = false;
+            this.UseConnectVirtualMachineHost.Visibility = Visibility.Hidden;
+        }
+
+        private void UseConnectVirtualMachineHost_Checked(object sender, RoutedEventArgs e)
+        {
+            if ( mbIgnoreCheck )
+            {
+                mbIgnoreCheck = false;
+                return;
+            }
+
+            if ( mbStartupDone && !this.bShowInitBeginScriptWarning() )
+            {
+                mbIgnoreCheck = true;
+                (e.OriginalSource as CheckBox).IsChecked = false;
+                return;
+            }
+
+            this.ConnectVirtualMachineHostGrid.Visibility = Visibility.Visible;
+        }
+
+        private void UseConnectVirtualMachineHost_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if ( mbIgnoreCheck )
+            {
+                mbIgnoreCheck = false;
+                return;
+            }
+
+            if ( mbStartupDone && !this.bShowInitBeginScriptWarning() )
+            {
+                mbIgnoreCheck = true;
+                (e.OriginalSource as CheckBox).IsChecked = true;
+                return;
+            }
+
+            this.ConnectVirtualMachineHostGrid.Visibility = Visibility.Hidden;
         }
 
         private void btnSetupStep3_Click(object sender, RoutedEventArgs e)
         {
             System.Windows.Forms.FolderBrowserDialog loOpenDialog = new System.Windows.Forms.FolderBrowserDialog();
             loOpenDialog.RootFolder = Environment.SpecialFolder.Desktop;
-            loOpenDialog.SelectedPath = this.txtVirtualMachineHostArchivePath.Text;
+            loOpenDialog.SelectedPath = this.VirtualMachineHostArchivePath.Text;
 
             System.Windows.Forms.DialogResult leDialogResult = loOpenDialog.ShowDialog();
 
             if ( System.Windows.Forms.DialogResult.OK == leDialogResult )
-                this.txtVirtualMachineHostArchivePath.Text = loOpenDialog.SelectedPath;
+                this.VirtualMachineHostArchivePath.Text = loOpenDialog.SelectedPath;
         }
 
         private void moNotifyIcon_OnHideWindow()
@@ -604,6 +707,41 @@ namespace GoPcBackup
             System.Windows.Forms.Application.DoEvents();
             this.bVisible = true;
             this.ShowMissingBackupDevices();
+        }
+
+        private bool bShowInitBeginScriptWarning()
+        {
+            bool lbShowInitBeginScriptWarning = tvMessageBoxResults.OK == tvMessageBox.Show(this
+                    , "Are you sure you want reinitialize the \"backup begin\" script to its default state?"
+                    , "Reinitialize Begin Script", tvMessageBoxButtons.OKCancel, tvMessageBoxIcons.Exclamation
+                    , tvMessageBoxCheckBoxTypes.DontAsk, moProfile, "-InitBeginScript", tvMessageBoxResults.OK
+                    );
+
+            if ( lbShowInitBeginScriptWarning )
+            {
+                moProfile["-BackupBeginScriptInit"] = true;
+                moProfile.Save();
+            }
+
+            return lbShowInitBeginScriptWarning;
+        }
+
+        private bool bShowInitScriptsWarning()
+        {
+            bool lbShowInitScriptsWarning = tvMessageBoxResults.OK == tvMessageBox.Show(this
+                    , "Are you sure you want reinitialize both backup scripts to their default states?"
+                    , "Reinitialize Both Scripts", tvMessageBoxButtons.OKCancel, tvMessageBoxIcons.Exclamation
+                    , tvMessageBoxCheckBoxTypes.DontAsk, moProfile, "-InitBothScripts", tvMessageBoxResults.OK
+                    );
+
+            if ( lbShowInitScriptsWarning )
+            {
+                moProfile["-BackupBeginScriptInit"] = true;
+                moProfile["-BackupDoneScriptInit"] = true;
+                moProfile.Save();
+            }
+
+            return lbShowInitScriptsWarning;
         }
 
         private void AdjustWindowSize()
@@ -661,7 +799,7 @@ namespace GoPcBackup
             string lsHour = 0 == liHour ? "12" : liHour.ToString();
             string lsMin = liMin.ToString("00");
 
-            this.txtBackupTime.Text = lsHour + ":" + lsMin + " " + (lbIsAM ? "AM" : "PM");
+            this.BackupTime.Text = lsHour + ":" + lsMin + " " + (lbIsAM ? "AM" : "PM");
         }
 
         private void sldBackupTime_ValueFromString(string asTimeOnly)
@@ -698,32 +836,47 @@ namespace GoPcBackup
             return lbStopTimerforUI;
         }
 
-        private void GetSetConfigurationWizardDefaults()
+        private void GetSetConfigurationDefaults()
         {
             tvProfile loBackupSet1Profile = new tvProfile(moProfile.sValue("-BackupSet", "(not set)"));
 
-
-            // Step 1
-            if ( "" == this.txtBackupFolder.Text )
-                this.txtBackupFolder.Text = loBackupSet1Profile.sValue("-FolderToBackup",
+            if ( !mbGetSetDefaultsDone )
+            {
+                // Step 1
+                this.FolderToBackup.Text = loBackupSet1Profile.sValue("-FolderToBackup",
                         Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
 
 
-            // Step 2
-            if ( "" == this.txtBackupTime.Text )
-            {
-                this.txtBackupTime.Text = moProfile.sValue("-BackupTime", "12:00 AM");
-                this.sldBackupTime_ValueFromString(this.txtBackupTime.Text);
+                // Step 2
+                this.BackupOutputFilename.Text = loBackupSet1Profile.sValue("-OutputFilename",
+                        string.Format("{0}Files", Environment.GetEnvironmentVariable("USERNAME")));
+
+                this.ArchivePath.Text = moDoGoPcBackup.sArchivePath();
+
+                this.UseVirtualMachineHostArchive.IsChecked = moProfile.bValue("-UseVirtualMachineHostArchive", false);
+                this.VirtualMachineHostArchivePath.Text = moProfile.sValue("-VirtualMachineHostArchivePath", "");
+                this.UseConnectVirtualMachineHost.IsChecked = moProfile.bValue("-UseConnectVirtualMachineHost", false);
+                this.VirtualMachineHostUsername.Text = moProfile.sValue("-VirtualMachineHostUsername", "");
+                this.VirtualMachineHostPassword.Text = moProfile.sValue("-VirtualMachineHostPassword", "");
+
+
+                // Step 4
+                this.BackupTime.Text = moProfile.sValue("-BackupTime", "12:00 AM");
+                this.sldBackupTime_ValueFromString(this.BackupTime.Text);
+
+
+                // General
+                this.CleanupFiles.IsChecked = moProfile.bValue("-CleanupFiles", true);
+                this.BackupFiles.IsChecked = moProfile.bValue("-BackupFiles", true);
+                this.BackupBeginScriptEnabled.IsChecked = moProfile.bValue("-BackupBeginScriptEnabled", true);
+                this.BackupDoneScriptEnabled.IsChecked = moProfile.bValue("-BackupDoneScriptEnabled", true);
+
+
+                mbGetSetDefaultsDone = true;
             }
 
 
             // Step 3
-            if ( "" == this.txtBackupOutputFilename.Text )
-                this.txtBackupOutputFilename.Text = loBackupSet1Profile.sValue("-OutputFilename",
-                        string.Format("{0}Files", Environment.GetEnvironmentVariable("USERNAME")));
-
-            if ( "" == this.txtArchivePath.Text )
-                this.txtArchivePath.Text = moDoGoPcBackup.sArchivePath();
 
             // If the user merely looks at the backup devices tab, update the profile.
             if ( this.ConfigWizardTabs.SelectedIndex
@@ -731,16 +884,6 @@ namespace GoPcBackup
                     this.tabStep3).ItemContainerGenerator.IndexFromContainer(this.tabStep3)
                     )
                 mbUpdateSelectedBackupDevices = true;
-
-
-            // Step 4
-            if ( "" == this.txtVirtualMachineHostArchivePath.Text )
-            {
-                this.UseVirtualMachineHostArchive.IsChecked = moProfile.bValue("-UseVirtualMachineHostArchive", false);
-                this.txtVirtualMachineHostArchivePath.Text = moProfile.sValue("-VirtualMachineHostArchivePath", "\\\\Mainhost\\Archive");
-                this.txtVirtualMachineHostUsername.Text = moProfile.sValue("-VirtualMachineHostUsername", "VM host share username goes here.");
-                this.txtVirtualMachineHostPassword.Text = moProfile.sValue("-VirtualMachineHostPassword", "VM host share password goes here.");
-            }
 
             // The removal or insertion of external devices will be
             // detected whenever the "Setup Wizard" button is clicked.
@@ -818,10 +961,10 @@ namespace GoPcBackup
 
 
             // Finish
-            this.txtReviewBackupFolder.Text = this.txtBackupFolder.Text;
-            this.txtReviewOutputFilename.Text = this.txtBackupOutputFilename.Text;
-            this.txtReviewArchivePath.Text = this.txtArchivePath.Text;
-            this.txtReviewBackupTime.Text = this.txtBackupTime.Text;
+            this.ReviewFolderToBackup.Text = this.FolderToBackup.Text;
+            this.ReviewOutputFilename.Text = this.BackupOutputFilename.Text;
+            this.ReviewArchivePath.Text = this.ArchivePath.Text;
+            this.ReviewBackupTime.Text = this.BackupTime.Text;
 
             tvProfile loSelectedBackupDevices = new tvProfile();
             string lsSelectedDrives = "";
@@ -836,20 +979,20 @@ namespace GoPcBackup
                 }
             }
 
-            this.txtReviewAdditionalDevices.Text = lsSelectedDrives;
+            this.ReviewAdditionalDevices.Text = lsSelectedDrives;
 
-            loBackupSet1Profile["-FolderToBackup"] = loBackupSet1Profile.sHideHyphens(this.txtReviewBackupFolder.Text);
-            loBackupSet1Profile["-OutputFilename"] = this.txtReviewOutputFilename.Text;
+            loBackupSet1Profile["-FolderToBackup"] = loBackupSet1Profile.sHideHyphens(this.ReviewFolderToBackup.Text);
+            loBackupSet1Profile["-OutputFilename"] = this.ReviewOutputFilename.Text;
 
-            // Make the backup set a multi-line block by inserting newlines before hyphens.
             moProfile["-BackupSet"] = loBackupSet1Profile.sCommandBlock();
-            moProfile["-ArchivePath"] = this.txtReviewArchivePath.Text;
-            moProfile["-BackupTime"] = this.txtReviewBackupTime.Text;
+            moProfile["-ArchivePath"] = this.ReviewArchivePath.Text;
+            moProfile["-BackupTime"] = this.ReviewBackupTime.Text;
 
             moProfile["-UseVirtualMachineHostArchive"] = this.UseVirtualMachineHostArchive.IsChecked;
-            moProfile["-VirtualMachineHostArchivePath"] = this.txtVirtualMachineHostArchivePath.Text;
-            moProfile["-VirtualMachineHostUsername"] = this.txtVirtualMachineHostUsername.Text;
-            moProfile["-VirtualMachineHostPassword"] = this.txtVirtualMachineHostPassword.Text;
+            moProfile["-VirtualMachineHostArchivePath"] = this.VirtualMachineHostArchivePath.Text;
+            moProfile["-UseConnectVirtualMachineHost"] = this.UseConnectVirtualMachineHost.IsChecked;
+            moProfile["-VirtualMachineHostUsername"] = this.VirtualMachineHostUsername.Text;
+            moProfile["-VirtualMachineHostPassword"] = this.VirtualMachineHostPassword.Text;
 
             // Only update the selected backup devices list (and bit field) if the backup devices
             // tab has been viewed or one of the backup device checkboxes has been clicked.
@@ -862,13 +1005,23 @@ namespace GoPcBackup
                 mbUpdateSelectedBackupDevices = false;
             }
 
+            moProfile["-CleanupFiles"] = this.CleanupFiles.IsChecked;
+            moProfile["-BackupFiles"] = this.BackupFiles.IsChecked;
+            moProfile["-BackupBeginScriptEnabled"] = this.BackupBeginScriptEnabled.IsChecked;
+            moProfile["-BackupDoneScriptEnabled"] = this.BackupDoneScriptEnabled.IsChecked;
+
             moProfile.Save();
 
             if ( !this.bMainLoopStopped )
                 this.bMainLoopRestart = true;
         }
 
-        private bool ValidateConfigurationWizardValues(bool abVerifyAllTabs)
+        private bool bValidateConfiguration()
+        {
+            return ( this.bValidateConfigWizardValues(true) && this.bValidateConfigDetailsValues(true) );
+        }
+
+        private bool bValidateConfigWizardValues(bool abVerifyAllTabs)
         {
             string lsCaption = "Please Fix Before You Finish";
             string lsMessage = null;
@@ -887,13 +1040,13 @@ namespace GoPcBackup
                 lsProgramsFolderPrefix = Path.Combine(Path.GetPathRoot(lsProgramsFolderPrefix),
                                                     lsProgramsFolderPrefix.Split(Path.DirectorySeparatorChar)[1]);
 
-                if ( !Directory.Exists(txtBackupFolder.Text) )
+                if ( !Directory.Exists(this.FolderToBackup.Text) )
                     lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
                             + "Step 1. Select a backup folder that exists."
                             ;
-                if (txtBackupFolder.Text == Path.GetPathRoot(lsSystemFolderPrefix)
-                        || txtBackupFolder.Text.StartsWith(lsSystemFolderPrefix)
-                        || txtBackupFolder.Text.StartsWith(lsProgramsFolderPrefix)
+                if (this.FolderToBackup.Text == Path.GetPathRoot(lsSystemFolderPrefix)
+                        || this.FolderToBackup.Text.StartsWith(lsSystemFolderPrefix)
+                        || this.FolderToBackup.Text.StartsWith(lsProgramsFolderPrefix)
                         )
                     lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
                             + "Step 1. Select a backup folder that is not the system root,"
@@ -911,7 +1064,7 @@ namespace GoPcBackup
                 {   // Don't use "Path.Combine()" here since we want
                     // to test for path separators in the filename.
                     string lsPathfile = Path.GetDirectoryName(moProfile.sLoadedPathFile)
-                                            + Path.DirectorySeparatorChar + txtBackupOutputFilename.Text;
+                                            + Path.DirectorySeparatorChar + BackupOutputFilename.Text;
                     FileStream loFileStream = File.Create(lsPathfile);
                     loFileStream.Close();
                     File.Delete(lsPathfile);
@@ -919,26 +1072,39 @@ namespace GoPcBackup
                 catch
                 {
                     lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
-                            + "Step 3a. Select a backup filename that is valid for output files.";
+                            + "Step 2a. Type a backup filename that is valid for output files.";
                 }
 
                 try
                 {
-                    if ( !Directory.Exists(txtArchivePath.Text) )
+                    if ( !Directory.Exists(ArchivePath.Text) )
                     {
-                        Directory.CreateDirectory(txtArchivePath.Text);
-                        Directory.Delete(txtArchivePath.Text);
+                        Directory.CreateDirectory(ArchivePath.Text);
+                        Directory.Delete(ArchivePath.Text);
                     }
                 }
                 catch
                 {
                     lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
-                            + "Step 3b. Select a valid archive folder name.";
+                            + "Step 2b. Select or type a valid archive folder name.";
+                }
+
+                if ( (bool)this.UseVirtualMachineHostArchive.IsChecked && !this.VirtualMachineHostArchivePath.Text.StartsWith("\\\\") )
+                {
+                    lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
+                            + "Step 2c. Select or type a valid VM host archive share name.";
+                }
+
+                if ( (bool)this.UseConnectVirtualMachineHost.IsChecked 
+                        && ("" == this.VirtualMachineHostUsername.Text || "" == this.VirtualMachineHostPassword.Text ) )
+                {
+                    lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
+                            + "Step 2d. Select or type a valid VM host archive share username and password.";
                 }
 
                 if ( null != lsMessage )
                     lsMessage += Environment.NewLine + Environment.NewLine
-                                + "Also, make sure you have adminstrator privileges to do this.";
+                                + "Also, make sure you have adminstrator privileges to do all this.";
             }
 
             // Step 4 (backup time)
@@ -949,7 +1115,7 @@ namespace GoPcBackup
             {
                 DateTime ldtBackupTime;
 
-                if ( !DateTime.TryParse(txtBackupTime.Text, out ldtBackupTime) )
+                if ( !DateTime.TryParse(BackupTime.Text, out ldtBackupTime) )
                     lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
                             + "Step 2. Select a valid backup time."
                             ;
@@ -958,17 +1124,43 @@ namespace GoPcBackup
             if ( null != lsMessage )
                 tvMessageBox.ShowWarning(this, lsMessage, lsCaption);
 
+            return null == lsMessage;
+        }
+
+        private bool bValidateConfigDetailsValues(bool abVerifyAllTabs)
+        {
+            string lsCaption = "Please Fix Before You Finish";
+            string lsMessage = null;
+            bool lbHaveMovedForward = this.ConfigDetailsTabs.SelectedIndex >= miPreviousConfigDetailsSelectedIndex;
+
+            // General
+            if ( abVerifyAllTabs || lbHaveMovedForward && miPreviousConfigDetailsSelectedIndex
+                    == ItemsControl.ItemsControlFromItemContainer(
+                    this.tabSetupGeneral).ItemContainerGenerator.IndexFromContainer(this.tabSetupGeneral)
+                    )
+            {
+            }
+
+            if ( null != lsMessage )
+                tvMessageBox.ShowWarning(this, lsMessage, lsCaption);
 
             return null == lsMessage;
-            
         }
 
         private void ConfigWizardTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            this.GetSetConfigurationWizardDefaults();
-            this.ValidateConfigurationWizardValues(false);
+            this.GetSetConfigurationDefaults();
+            this.bValidateConfigWizardValues(false);
 
             miPreviousConfigWizardSelectedIndex = this.ConfigWizardTabs.SelectedIndex;
+        }
+
+        private void ConfigDetailsTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            this.GetSetConfigurationDefaults();
+            this.bValidateConfigDetailsValues(false);
+
+            miPreviousConfigDetailsSelectedIndex = this.ConfigDetailsTabs.SelectedIndex;
         }
 
         private void BackupDeviceCheckboxStateChanged(object sender, RoutedEventArgs e)
@@ -993,7 +1185,7 @@ namespace GoPcBackup
         
         private void btnSetupDone_Click(object sender, RoutedEventArgs e)
         {
-            if ( this.ValidateConfigurationWizardValues(true)
+            if ( this.bValidateConfiguration()
                     && tvMessageBoxResults.Yes == tvMessageBox.Show(this, string.Format(@"
 Are you sure you want to run the backup now?
 
@@ -1090,6 +1282,10 @@ You can continue this later wherever you left off. "
         // Show any missing selected backup devices in a pop-up message.
         private void ShowMissingBackupDevices()
         {
+            // Additional backup devices are only used by the "backup done" script.
+            if ( !moProfile.bValue("-BackupDoneScriptEnabled", true) )
+                return;
+
             tvMessageBoxResults leShowMissingBackupDevices = tvMessageBoxResults.No;
 
             while ( tvMessageBoxResults.No == leShowMissingBackupDevices )
@@ -1099,7 +1295,7 @@ You can continue this later wherever you left off. "
                         // Allow updates to the selected devices (ie. simulate checkbox click).
                         mbUpdateSelectedBackupDevices = true;
                         // Change the setup to match the missing device(s).
-                        this.GetSetConfigurationWizardDefaults();
+                        this.GetSetConfigurationDefaults();
                         break;
                     case tvMessageBoxResults.No:
                         // Try again.
@@ -1258,15 +1454,21 @@ You can continue this later wherever you left off. "
 
         private void ShowHelp()
         {
-            if ( null != moHelpWindow )
-                moHelpWindow.Close();
+            // If a help window is already open, close it.
+            foreach (ScrollingText loWindow in moOtherWindows)
+            {
+                if ( loWindow.Title.Contains("Help") )
+                {
+                    loWindow.Close();
+                    moOtherWindows.Remove(loWindow);
+                    break;
+                }
+            }
 
-            moHelpWindow = new Help();
-            moHelpWindow.WindowState = WindowState.Minimized;
-            System.Windows.Forms.Application.DoEvents();
-            moHelpWindow.Show();
-            System.Windows.Forms.Application.DoEvents();
-            moHelpWindow.WindowState = WindowState.Normal;
+            ScrollingText   loHelp = new ScrollingText(moProfile["-Help"].ToString(), "Backup Help", Brushes.Khaki, true);
+                            loHelp.Show();
+
+                            moOtherWindows.Add(loHelp);
         }
 
         private void ShowPreviousBackupStatus()
@@ -1339,7 +1541,8 @@ You can continue this later wherever you left off. "
         {
             this.bBackupRunning = true;
 
-            if ( moProfile.bValue("-CleanupFiles", true) && Visibility.Hidden != this.Visibility )
+            if ( moProfile.bValue("-CleanupFiles", true) && moProfile.bValue("-BackupFiles", true)
+                    && Visibility.Hidden != this.Visibility )
                 tvMessageBox.ShowBriefly(this, "The file cleanup process is now running ..."
                         , "Backup Started", tvMessageBoxIcons.Information, 2);
 
@@ -1351,19 +1554,20 @@ You can continue this later wherever you left off. "
             }
             else
             {
-                this.InitProgressBar(moDoGoPcBackup.iBackupFilesCount());
+                this.IncrementProgressBar(true);
 
-                if ( !moDoGoPcBackup.BackupFiles() )
+                if ( moProfile.bValue("-BackupFiles", true) )
                 {
-                    this.InitProgressBar(0);
-                }
-                else
-                {
-                    this.FillProgressBar();
-                }
+                    this.InitProgressBar(moDoGoPcBackup.iBackupFilesCount());
 
-                if ( this.bVisible )
-                    this.ShowMissingBackupDevices();
+                    if ( !moDoGoPcBackup.BackupFiles() )
+                        this.InitProgressBar(0);
+                    else
+                        this.IncrementProgressBar(true);
+
+                    if ( this.bVisible )
+                        this.ShowMissingBackupDevices();
+                }
             }
 
             this.bBackupRunning = false;

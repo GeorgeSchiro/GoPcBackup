@@ -23,7 +23,9 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>GoPcBackupSigned.snk</AssemblyOriginatorKeyFile>
     <IsWebBootstrapper>true</IsWebBootstrapper>
-    <PublishUrl>http://localhost/GoPcBackup/</PublishUrl>
+    <ManifestCertificateThumbprint>32A6E48478873E5B6BF25A3579ED30D831B00A49</ManifestCertificateThumbprint>
+    <ManifestKeyFile>GoPcBackup_TemporaryKey.pfx</ManifestKeyFile>
+    <PublishUrl>C:\Desktop\tmp\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Web</InstallFrom>
     <UpdateEnabled>true</UpdateEnabled>
@@ -33,9 +35,13 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
+    <InstallUrl>http://localhost/tmp/</InstallUrl>
+    <CreateWebPageOnPublish>true</CreateWebPageOnPublish>
+    <WebPage>publish.htm</WebPage>
+    <ApplicationRevision>1</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
+    <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -84,10 +90,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Page Include="Help.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="Resources\GlassButtonStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -95,6 +97,10 @@
     <Page Include="Resources\LogoSliderStyle.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Resources\ScrollingText.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="Resources\Styles.xaml">
       <SubType>Designer</SubType>
@@ -123,9 +129,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DoGoPcBackup.cs" />
-    <Compile Include="Help.xaml.cs">
-      <DependentUpon>Help.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Resources\ExtendedNotifyIcon.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
@@ -140,6 +143,10 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Resources\SavedWindow.cs" />
+    <Compile Include="Resources\ScrollingText.xaml.cs">
+      <DependentUpon>ScrollingText.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Resources\Styles.xaml.cs">
       <DependentUpon>Styles.xaml</DependentUpon>
     </Compile>
@@ -149,13 +156,13 @@
     <Compile Include="Resources\tvToolbox\tvExtensions.cs" />
     <Compile Include="Resources\tvToolbox\tvFetchResource.cs" />
     <Compile Include="Resources\tvToolbox\tvProfile.cs" />
-    <Compile Include="SavedWindow.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="GoPcBackup.zip" />
     <None Include="GoPcBackupSigned.snk" />
+    <None Include="GoPcBackup_TemporaryKey.pfx" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

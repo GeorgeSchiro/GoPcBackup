@@ -1785,105 +1785,6 @@ namespace tvToolbox
         #endregion
 
         /// <summary>
-        /// Fetch or run the setup program provided by the caller.
-        /// </summary>
-        /// <param name="aoFetchResourceToDisk">
-        /// The delegate to the one parameter "tvFetchResource" method.
-        /// </param>
-        /// <param name="asSetupPgmFile">
-        /// The name of the setup program file to be fetched.
-        /// </param>
-        /// <returns>Returns true if the setup program was run.</returns>
-        public bool bFetchOrRunSetup(String asSetupPgmFile, FetchResourceToDisk aoFetchResourceToDisk )
-        {
-            bool lbSetupWasRun = false;
-
-            if ( this.bInOwnFolder && !this.bInstalledAlready )
-            {
-                // This allows the user to delete the setup (and have it not come back).
-                if ( !this.bValue("-SetupFetched", false) )
-                {
-                    aoFetchResourceToDisk(asSetupPgmFile);
-                    this["-SetupFetched"] = true;
-                    this.Save();
-                }
-
-                // This allows the command file to run prettier (just a little) and safer.
-                if ( this.ContainsKey("-Setup") && this.bValue("-Setup", false) )
-                {
-                    // This closes the application unconditionally.
-                    lbSetupWasRun = true;
-
-                    if ( MessageBox.Show(String.Format(
-                              "{0}."  + Environment.NewLine + Environment.NewLine
-                            + "Are you sure?" + Environment.NewLine + Environment.NewLine + Environment.NewLine
-                            + "Note: An installation error may indicate that you don't have permissions to install programs."
-                            , Path.GetFileNameWithoutExtension(asSetupPgmFile)), "Run Setup?"
-                            , MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK )
-                    {
-                        ProcessStartInfo    loStartInfo = new ProcessStartInfo(asSetupPgmFile, "-Setup");
-                                            loStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-
-                        Process.Start(loStartInfo);
-                    }
-                }
-            }
-
-            return lbSetupWasRun;
-        }
-
-        /// <summary>
-        /// Fetch or run the setup program provided by the caller.
-        /// </summary>
-        /// <param name="aoFetchResourceToDisk">
-        /// The delegate to the three parameter "tvFetchResource" method.
-        /// </param>
-        /// <param name="asSetupPgmFile">
-        /// The name of the setup program file to be fetched.
-        /// </param>
-        /// <param name="asNamespace">
-        /// The namespace of the setup program file to be fetched.
-        /// </param>
-        /// <returns>Returns true if the setup program was run.</returns>
-        public bool bFetchOrRunSetup(String asNamespace, String asSetupPgmFile, FetchResourceToDisk2 aoFetchResourceToDisk )
-        {
-            bool lbSetupWasRun = false;
-
-            if ( this.bInOwnFolder && !this.bInstalledAlready )
-            {
-                // This allows the user to delete the setup (and have it not come back).
-                if ( !this.bValue("-SetupFetched", false) )
-                {
-                    aoFetchResourceToDisk(asNamespace, asSetupPgmFile, null);
-                    this["-SetupFetched"] = true;
-                    this.Save();
-                }
-
-                // This allows the command file to run prettier (just a little) and safer.
-                if ( this.ContainsKey("-Setup") && this.bValue("-Setup", false) )
-                {
-                    // This closes the application unconditionally.
-                    lbSetupWasRun = true;
-
-                    if ( MessageBox.Show(String.Format(
-                              "{0}."  + Environment.NewLine + Environment.NewLine
-                            + "Are you sure?" + Environment.NewLine + Environment.NewLine + Environment.NewLine
-                            + "Note: An installation error may indicate that you don't have permissions to install programs."
-                            , Path.GetFileNameWithoutExtension(asSetupPgmFile)), "Run Setup?"
-                            , MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK )
-                    {
-                        ProcessStartInfo    loStartInfo = new ProcessStartInfo(asSetupPgmFile, "-Setup");
-                                            loStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-
-                        Process.Start(loStartInfo);
-                    }
-                }
-            }
-
-            return lbSetupWasRun;
-        }
-
-        /// <summary>
         /// The count of profile entries with a key that matches asKey.
         /// This number will be greater than one if asKey appears multiple
         /// times in the profile (duplicate keys are OK). Likewise, this
@@ -3077,7 +2978,14 @@ namespace tvToolbox
                 {
                     if ( !this.bInOwnFolder )
                     {
+                        this.bEnableFileLock = false;
+
                         Process.Start(this.sActualPathFile);
+
+                        // Give it time to load the file before locking it again.
+                        System.Threading.Thread.Sleep(500);
+
+                        this.bEnableFileLock = true;
                     }
                 }
             }
