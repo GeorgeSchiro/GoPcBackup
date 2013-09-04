@@ -484,6 +484,7 @@ namespace GoPcBackup
             // Disable maximizing while clicking various controls.
             if (       !lsControlClass.Contains("Text")
                     && !lsControlClass.Contains("Bullet")
+                    && !lsControlClass.Contains("Scroll")
                     && !lsControlClass.Contains("ClassicBorderDecorator")
                     )
             {

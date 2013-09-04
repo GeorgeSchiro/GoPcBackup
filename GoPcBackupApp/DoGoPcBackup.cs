@@ -65,7 +65,7 @@ namespace GoPcBackup
 
 
         /// <summary>
-        /// Expects a profile object to be provided.
+        /// This constructor expects a profile object to be provided.
         /// </summary>
         /// <param name="aoProfile">
         /// The given profile object must either contain runtime options
@@ -115,12 +115,14 @@ This utility will run in the background unless its timer is turned off. Its
 simple user interface (UI) is usually minimized to the system tray.
 
 
+
+
 Command-Line Usage
 
 
 Open this utility's profile file to see additional options available. It is
-usually located in the same folder as ""{EXE}"" and has the same name with 
-"".txt"" added (see ""{INI}"").
+usually located in the same folder as ""{EXE}"" and has the same name
+with "".txt"" added (see ""{INI}"").
 
 Profile file options can be overridden with command-line arguments. The
 keys for any ""-key=value"" pairs passed on the command-line must match
@@ -142,6 +144,8 @@ This tells the software to run in automatic mode:
 Author:  George Schiro (GeoCode@Schiro.name)
 
 Date:    10/21/2011
+
+
 
 
 Options and Features
