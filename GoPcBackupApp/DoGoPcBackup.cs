@@ -1677,14 +1677,18 @@ No file cleanup will be done until you update the configuration.
         {
             int liBackupBeginScriptErrors = 0;
 
+            // Before the "backup begin" script can be initialized,
+            // -BackupBeginScriptPathFile and -BackupBeginScriptHelp
+            // must be initialized first.
+            if ( moProfile.bValue("-BackupBeginScriptInit", false) )
+            {
+                moProfile.Remove("-BackupBeginScriptPathFile");
+                moProfile.Remove("-BackupBeginScriptHelp");
+            }
+
             string lsBackupBeginScriptPathFile = moProfile.sRelativeToProfilePathFile(
                     moProfile.sValue("-BackupBeginScriptPathFile", msBackupBeginScriptPathFileDefault));
             string lsBackupBeginScriptOutputPathFile = lsBackupBeginScriptPathFile + ".txt";
-
-            // Before the "backup begin" script can be initialized,
-            // -BackupBeginScriptHelp must be initialized first.
-            if ( moProfile.bValue("-BackupBeginScriptInit", false) )
-                moProfile.Remove("-BackupBeginScriptHelp");
 
             // If the "backup begin" script has not been redefined to point elsewhere,
             // prepare to create it from the current -BackupBeginScriptHelp content.
@@ -1888,7 +1892,7 @@ exit  %Errors%
                         this.LogIt("Here's output from the \"backup begin script\":\r\n\r\n" + lsFileAsStream);
 
                         if ( moProfile.bValue("-ShowBackupBeginScriptErrors", true) )
-                            this.DisplayFileAsError(lsFileAsStream, "Begin Script Errors");
+                            this.DisplayFileAsError(lsFileAsStream, "Backup Begin Script Errors");
                     }
                 }
             }
@@ -1904,14 +1908,18 @@ exit  %Errors%
         {
             int liBackupDoneScriptCopyFailuresWithBitField = 0;
 
+            // Before the "backup done" script can be initialized,
+            // -BackupDoneScriptPathFile and -BackupDoneScriptHelp
+            // must be initialized first.
+            if ( moProfile.bValue("-BackupDoneScriptInit", false) )
+            {
+                moProfile.Remove("-BackupDoneScriptPathFile");
+                moProfile.Remove("-BackupDoneScriptHelp");
+            }
+
             string lsBackupDoneScriptPathFile = moProfile.sRelativeToProfilePathFile(
                     moProfile.sValue("-BackupDoneScriptPathFile", msBackupDoneScriptPathFileDefault));
             string lsBackupDoneScriptOutputPathFile = lsBackupDoneScriptPathFile + ".txt";
-
-            // Before the "backup done" script can be initialized,
-            // -BackupDoneScriptHelp must be initialized first.
-            if ( moProfile.bValue("-BackupDoneScriptInit", false) )
-                moProfile.Remove("-BackupDoneScriptHelp");
 
             // If the "backup done" script has not been redefined to point elsewhere,
             // prepare to create it from the current -BackupDoneScriptHelp content.
@@ -2012,8 +2020,9 @@ echo This backs up the backup software:                                     >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo xcopy /y %7 %4\%6\                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      xcopy /y %7 %4\%6\                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %4\%6\%6.exe echo   Error: %6.exe not found in %4\%6\.    >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if ERRORLEVEL 1 set /A CopyFailures += 1
+     if not exist %4\%6\%6.exe set /A CopyFailures += 1
 
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This copies the backup software's current profile file                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
@@ -2021,8 +2030,9 @@ echo to a subfolder with the backup output file base name:                  >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo echo F : xcopy  /y  %8 %4\%6\%3\%9.%2.txt                              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      echo F | xcopy  /y  %8 %4\%6\%3\%9.%2.txt                              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %4\%6\%3\%9.%2.txt echo   Error: %9.%2.txt not found in %4\%6\. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if ERRORLEVEL 1 set /A CopyFailures += 1
+     if not exist %4\%6\%3\%9.%2.txt set /A CopyFailures += 1
 "
 +
 (!lbUseMainhostArchive ? "" :
@@ -2032,7 +2042,7 @@ echo This copies the backup to the virtual machine host archive:            >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo copy %1 %5                                                             >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      copy %1 %5                                                             >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %5\%2 echo Error: %2 not found in host archive %5.        >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %5\%2 echo   Error: %2 not found in host archive %5.      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if not exist %5\%2 set /A CopyFailures += 1
 "
@@ -2083,14 +2093,16 @@ echo This removes the previous backup (if any) from %1                      >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo del %1\%BackupBaseOutputFilename%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      del %1\%BackupBaseOutputFilename%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if exist %1\%BackupBaseOutputFilename% echo   Error: previous %BackupBaseOutputFilename% could not be removed from %1\. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if ERRORLEVEL 1 set /A CopyFailures += 1
+     if exist %1\%BackupBaseOutputFilename% set /A CopyFailures += 1
 
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This copies the current backup to %1                                   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %1\%BackupBaseOutputFilename% echo   Error: %BackupBaseOutputFilename% not found in %1\. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if not exist %1\%BackupBaseOutputFilename% set /A CopyFailures += 1
 
@@ -2102,16 +2114,18 @@ echo This removes the previous backup software profile files:               >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo rd  /s/q  %1\%BackupToolName%\%BackupBaseOutputFilename%               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      rd  /s/q  %1\%BackupToolName%\%BackupBaseOutputFilename%               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* echo   Error: previous %BackupToolName%\%BackupBaseOutputFilename% could not be removed from %1\. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if ERRORLEVEL 1 set /A CopyFailures += 1
+     if exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* set /A CopyFailures += 1
 
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This copies the backup software to %1\%BackupToolName%:                >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* echo   Error: %BackupToolName%\%BackupBaseOutputFilename%\*.* not found in %1\. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if ERRORLEVEL 1 set /A CopyFailures += 1
+     if not exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* set /A CopyFailures += 1
 "
 )                       .Replace("{ProfileFile}", Path.GetFileName(moProfile.sLoadedPathFile))
                         .Replace("{BackupDoneScriptOutputPathFile}", Path.GetFileName(lsBackupDoneScriptOutputPathFile))
@@ -2239,7 +2253,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
                             this.LogIt("Here's output from the \"backup done script\":\r\n\r\n" + lsFileAsStream);
 
                             if ( moProfile.bValue("-ShowBackupDoneScriptErrors", true) )
-                                this.DisplayFileAsError(lsFileAsStream, "Done Script Errors");
+                                this.DisplayFileAsError(lsFileAsStream, "Backup Done Script Errors");
                         }
 
                         if ( 0 != loMissingBackupDevices.Count )

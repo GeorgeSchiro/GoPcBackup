@@ -162,7 +162,6 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="GoPcBackup.zip" />
-    <None Include="app.config" />
     <None Include="GoPcBackupSigned.snk" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
