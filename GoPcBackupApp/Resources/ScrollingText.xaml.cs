@@ -132,10 +132,11 @@ namespace GoPcBackup
             string lsControlClass = e.OriginalSource.ToString();
 
             // Disable maximizing while clicking various controls.
-            if (       !lsControlClass.Contains("Text")
-                    && !lsControlClass.Contains("Bullet")
-                    && !lsControlClass.Contains("Scroll")
+            if (       !lsControlClass.Contains("Bullet")
+                    && !lsControlClass.Contains("Button")
                     && !lsControlClass.Contains("ClassicBorderDecorator")
+                    && !lsControlClass.Contains("Scroll")
+                    && !lsControlClass.Contains("Text")
                     )
             {
                 if ( WindowState.Normal == this.WindowState )

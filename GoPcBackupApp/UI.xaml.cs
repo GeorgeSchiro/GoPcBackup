@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Input;
+using System.Windows.Threading;
 using tvToolbox;
 
 namespace GoPcBackup
@@ -40,8 +41,10 @@ namespace GoPcBackup
         private bool    mbUpdateSelectedBackupDevices;                  // Indicates when the selected backup devices list can be updated.
                                                                         // (which differs from the usual "GetSet()" "always update" behavior)
 
-        private ExtendedNotifyIcon  moNotifyIcon;
         private Button              moStartStopButtonState = new Button();
+        private DateTime            mdtNextStart = DateTime.MinValue;
+        private DispatcherTimer     moMainLoopTimer = null;
+        private ExtendedNotifyIcon  moNotifyIcon;
 
 
         private UI() { }
@@ -99,6 +102,12 @@ namespace GoPcBackup
                 mbMainLoopStopped = value;
 
                 moDoGoPcBackup.bMainLoopStopped = mbMainLoopStopped;
+
+                if ( mbMainLoopStopped )
+                {
+                    moMainLoopTimer.Stop();
+                    this.PopulateTimerDisplay(mcsStoppedText);
+                }
             }
         }
         private bool mbMainLoopStopped = true;
@@ -163,9 +172,9 @@ namespace GoPcBackup
         private bool mbBackupRunning;
 
         /// <summary>
-        /// This will restart the main timer loop
-        /// (eg. after configuration changes) so 
-        /// that the timer panel is refreshed.
+        /// This contains all child windows
+        /// opened by the main parent window
+        /// (ie. by this window).
         /// </summary>
         public List<ScrollingText> oOtherWindows
         {
@@ -338,15 +347,15 @@ namespace GoPcBackup
             }
             else
             {
-                if ( !(bool)this.chkUseTimer.IsChecked || this.StopTimerforUI() )
-                {
+                //if ( !(bool)this.chkUseTimer.IsChecked || this.StopTimerforUI() )
+                //{
                     this.HideMiddlePanels();
                     this.MiddlePanelConfigWizard.Visibility = Visibility.Visible;
 
                     // Reset setup backup device checkboxes.
                     gridBackupDevices.Children.Clear();
                     this.ConfigWizardTabs.SelectedIndex = 0;
-                }
+                //}
             }
         }
 
@@ -359,11 +368,11 @@ namespace GoPcBackup
             }
             else
             {
-                if ( !(bool)this.chkUseTimer.IsChecked || this.StopTimerforUI() )
-                {
+                //if ( !(bool)this.chkUseTimer.IsChecked || this.StopTimerforUI() )
+                //{
                     this.HideMiddlePanels();
                     this.MiddlePanelConfigDetails.Visibility = Visibility.Visible;
-                }
+                //}
             }
         }
 
@@ -482,10 +491,11 @@ namespace GoPcBackup
             string lsControlClass = e.OriginalSource.ToString();
 
             // Disable maximizing while clicking various controls.
-            if (       !lsControlClass.Contains("Text")
-                    && !lsControlClass.Contains("Bullet")
-                    && !lsControlClass.Contains("Scroll")
+            if (       !lsControlClass.Contains("Bullet")
+                    && !lsControlClass.Contains("Button")
                     && !lsControlClass.Contains("ClassicBorderDecorator")
+                    && !lsControlClass.Contains("Scroll")
+                    && !lsControlClass.Contains("Text")
                     )
             {
                 if ( WindowState.Normal == this.WindowState )
@@ -807,34 +817,6 @@ namespace GoPcBackup
         {
             TimeSpan loTimeSpan = DateTime.Parse(asTimeOnly) - DateTime.Today;
             this.sldBackupTime.Value = loTimeSpan.TotalMinutes / moProfile.iValue("-BackupTimeMinsPerTick", 15);
-        }
-
-        private bool StopTimerforUI()
-        {
-            bool lbStopTimerforUI = false;
-
-            // The main loop must be stopped to make keyboard input responsive enough.
-            if ( moProfile.bValue("-AllConfigWizardStepsCompleted", false) )
-            {
-                if ( tvMessageBoxResults.OK == tvMessageBox.Show(
-                              this
-                            , "The timer will be stopped while you change the setup."
-                            , "Timer Stopped"
-                            , tvMessageBoxButtons.OKCancel
-                            , tvMessageBoxIcons.Information
-                            , tvMessageBoxCheckBoxTypes.SkipThis
-                            , moProfile
-                            , "-WhyTimerStopped"
-                            , tvMessageBoxResults.OK
-                            )
-                        )
-                {
-                    this.chkUseTimer_SetChecked(false);
-                    lbStopTimerforUI = true;
-                }
-            }
-
-            return lbStopTimerforUI;
         }
 
         private void GetSetConfigurationDefaults()
@@ -1622,78 +1604,81 @@ You can continue this later wherever you left off. "
                     )
                 return;
 
-            do
+            if ( null == moMainLoopTimer )
             {
-                // "bMainLoopRestart" is used only once (if at all) then immediately
-                // reset. It's for breaking out of the inner loop as needed (see below).
+                moMainLoopTimer = new DispatcherTimer();
+                moMainLoopTimer.Tick += new EventHandler(moMainLoopTimer_Tick);
+                moMainLoopTimer.Interval = new TimeSpan(0, 0, 0, 0, moProfile.iValue("-MainLoopSleepMS", 200));
+            }
+
+            this.bMainLoopStopped = false;
+            this.bMainLoopRestart = true;
+
+            moMainLoopTimer.Start();
+        }
+
+        private void moMainLoopTimer_Tick(object sender, EventArgs e)
+        {
+            // This keeps the output window updated while the backup is running.
+            System.Windows.Forms.Application.DoEvents();
+
+            if ( this.bMainLoopStopped || this.bBackupRunning )
+                return;
+
+            if ( this.bMainLoopRestart )
+            {
+                mdtNextStart= this.dtBackupTime();
+
                 this.bMainLoopRestart = false;
+            }
 
-                try
+            try
+            {
+                string lsTimeLeft = ((TimeSpan)(mdtNextStart - DateTime.Now)).ToString();
+                lblNextBackupTimeLeft.Content = lsTimeLeft.Substring(0, lsTimeLeft.Length - 8);
+
+                // "ContainsKey" is used here to avoid storing "mcsNoPreviousText" as the 
+                // default -PreviousBackupTime. Doing so would throw an error next time.
+                if (moProfile.ContainsKey("-PreviousBackupTime"))
+                    lblPrevBackupTime.Content = moProfile["-PreviousBackupTime"];
+                else
+                    lblPrevBackupTime.Content = mcsNoPreviousText;
+
+                if ( DateTime.Now < mdtNextStart )
                 {
-                    DateTime ldtNextStart = DateTime.MinValue;
+                    if (!this.bBackupRunning)
+                        lblTimerStatus.Content = mcsWaitingText;
 
-                    this.bMainLoopStopped = false;
-
-                    ldtNextStart= this.dtBackupTime();
-
-                    do
-                    {
-                        if ( !this.bMainLoopStopped )
-                        {
-                            System.Windows.Forms.Application.DoEvents();
-                            System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 200));
-
-                            string lsTimeLeft = ((TimeSpan)(ldtNextStart - DateTime.Now)).ToString();
-                            lblNextBackupTimeLeft.Content = lsTimeLeft.Substring(0, lsTimeLeft.Length - 8);
-
-                            // "ContainsKey" is used here to avoid storing "mcsNoPreviousText" as the 
-                            // default -PreviousBackupTime. Doing so would throw an error next time.
-                            if (moProfile.ContainsKey("-PreviousBackupTime"))
-                                lblPrevBackupTime.Content = moProfile["-PreviousBackupTime"];
-                            else
-                                lblPrevBackupTime.Content = mcsNoPreviousText;
-
-                            if ( DateTime.Now < ldtNextStart )
-                            {
-                                if (!this.bBackupRunning)
-                                    lblTimerStatus.Content = mcsWaitingText;
-
-                                lblNextBackupTime.Content = (DateTime.Today.Date == ldtNextStart.Date
-                                        ? ""
-                                        : ldtNextStart.DayOfWeek.ToString()) + " " + ldtNextStart.ToShortTimeString();
-                            }
-                            else
-                            {
-                                ldtNextStart = DateTime.Now.AddMinutes(moProfile.iValue("-MainLoopMinutes", 1440));
-                                lblNextBackupTime.Content = (DateTime.Today.Date == ldtNextStart.Date
-                                        ? ""
-                                        : ldtNextStart.DayOfWeek.ToString()) + " " + ldtNextStart.ToShortTimeString();
-
-                                this.DoBackup();
-
-                                System.Windows.Forms.Application.DoEvents();
-
-                                // If it's time to run the backup again, the backup finished dialog must have
-                                // been up for more than a day (ie. more than -MainLoopMinutes). Wait another day.
-                                if ( DateTime.Now > ldtNextStart )
-                                    ldtNextStart = this.dtBackupTime();
-                            }
-                        }
-                    }
-                    while ( !this.bMainLoopStopped && !this.bMainLoopRestart );
+                    lblNextBackupTime.Content = (DateTime.Today.Date == mdtNextStart.Date
+                            ? ""
+                            : mdtNextStart.DayOfWeek.ToString()) + " " + mdtNextStart.ToShortTimeString();
                 }
-                catch (Exception ex)
+                else
                 {
-                    tvMessageBox.ShowError(this, ex);
-                }
-                finally
-                {
-                    this.Cursor = null;
+                    mdtNextStart = DateTime.Now.AddMinutes(moProfile.iValue("-MainLoopMinutes", 1440));
+                    lblNextBackupTime.Content = (DateTime.Today.Date == mdtNextStart.Date
+                            ? ""
+                            : mdtNextStart.DayOfWeek.ToString()) + " " + mdtNextStart.ToShortTimeString();
+
+                    this.DoBackup();
+
+                    // This kludge is needed to refresh "DateTime.Now" after a long pause.
+                    System.Windows.Forms.Application.DoEvents();
+
+                    // If it's time to run the backup again, the backup finished dialog must have
+                    // been up for more than a day (ie. more than -MainLoopMinutes). Wait another day.
+                    if ( DateTime.Now > mdtNextStart )
+                        mdtNextStart = this.dtBackupTime();
                 }
             }
-            while ( !this.bMainLoopStopped );
-
-            this.PopulateTimerDisplay(mcsStoppedText);
+            catch (Exception ex)
+            {
+                tvMessageBox.ShowError(this, ex);
+            }
+            finally
+            {
+                this.Cursor = null;
+            }
         }
     }
 }

@@ -115,8 +115,6 @@ This utility will run in the background unless its timer is turned off. Its
 simple user interface (UI) is usually minimized to the system tray.
 
 
-
-
 Command-Line Usage
 
 
@@ -651,8 +649,6 @@ Notes:
 
                     if ( !loProfile.bExit )
                     {
-                        GC.KeepAlive(loMutex);
-
                         if ( loProfile.bValue("-RunOnce", false) )
                         {
                             // Run in batch mode.
@@ -677,6 +673,8 @@ Notes:
                             }
                             catch (ObjectDisposedException) {}
                         }
+
+                        GC.KeepAlive(loMutex);
                     }
                 }
             }
