@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Input;
@@ -67,6 +69,29 @@ namespace GoPcBackup
 
             moProfile = aoDoGoPcBackup.oProfile;
             moDoGoPcBackup = aoDoGoPcBackup;
+        }
+
+
+        // This lets us handle windows messages.
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            HwndSource source = PresentationSource.FromVisual(this) as HwndSource;
+            source.AddHook(WndProc);
+        }
+
+        [DllImport("user32")]
+        public static extern int RegisterWindowMessage(string message);
+        public static readonly int WM_SHOWME = RegisterWindowMessage("WM_SHOWME_GoPcBackup");
+
+        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            // This handles the "WM_SHOWME" message so another
+            // instance can display this one before exiting.
+            if( WM_SHOWME == msg )
+                this.ShowMe();
+     
+            return IntPtr.Zero;
         }
 
 
@@ -711,13 +736,18 @@ namespace GoPcBackup
 
         private void ShowMe()
         {
+            bool lbTopmost = this.Topmost;
+
             this.AdjustWindowSize();
             this.MainCanvas.Visibility = Visibility.Visible;
             System.Windows.Forms.Application.DoEvents();
+            this.Topmost = true;
             this.Show();
             System.Windows.Forms.Application.DoEvents();
             this.bVisible = true;
             this.ShowMissingBackupDevices();
+
+            this.Topmost = lbTopmost;
         }
 
         private bool bShowInitBeginScriptWarning()

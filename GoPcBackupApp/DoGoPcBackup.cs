@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -89,7 +90,10 @@ namespace GoPcBackup
                 bool    lbFirstInstance;
                         Mutex loMutex = new Mutex(false, "Local\\" + Application.ResourceAssembly.GetName().Name, out lbFirstInstance);
                         if ( !lbFirstInstance )
+                        {
+                            DoGoPcBackup.ActivateAlreadyRunningInstance();
                             return;
+                        }
 
                 tvProfile loProfile = new tvProfile(args);
                 if ( !loProfile.bExit )
@@ -584,7 +588,7 @@ A brief description of each feature follows.
 
 -ZipToolLastRunCmdPathFile=Run Last Backup.cmd
 
-    This is a script file (text) which contains a copy of the last ZIP tool
+    This is a script file (text), which contains a copy of the last ZIP tool
     command line executed.
 
 
@@ -692,6 +696,20 @@ Notes:
                     loMain.oUI.Close();
             }
         }
+
+        [DllImport("user32")]
+        public static extern int RegisterWindowMessage(string message);
+        public static readonly int WM_SHOWME = RegisterWindowMessage("WM_SHOWME_GoPcBackup");
+        [DllImport("user32")]
+        public static extern bool PostMessage(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam);
+        public static readonly int HWND_BROADCAST = 0xffff;
+     
+        public static void ActivateAlreadyRunningInstance()
+        {
+            // This activates a previous instance before exiting.
+            PostMessage((IntPtr)HWND_BROADCAST, WM_SHOWME, IntPtr.Zero, IntPtr.Zero);
+        }
+
 
         /// <summary>
         /// This is the main application profile object.

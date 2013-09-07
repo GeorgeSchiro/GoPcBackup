@@ -208,6 +208,11 @@ namespace GoPcBackup
         {
             StringBuilder   lsbUnwrapText = new StringBuilder(asSourceText);
 
+            lsbUnwrapText.Replace("\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n", "\u0009");
+            lsbUnwrapText.Replace("\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n", "\u0008");
+            lsbUnwrapText.Replace("\r\n\r\n\r\n\r\n\r\n\r\n\r\n", "\u0007");
+            lsbUnwrapText.Replace("\r\n\r\n\r\n\r\n\r\n\r\n", "\u0006");
+            lsbUnwrapText.Replace("\r\n\r\n\r\n\r\n\r\n", "\u0005");
             lsbUnwrapText.Replace("\r\n\r\n\r\n\r\n", "\u0004");
             lsbUnwrapText.Replace("\r\n\r\n\r\n", "\u0003");
             lsbUnwrapText.Replace("\r\n\r\n", "\u0002");
@@ -228,6 +233,11 @@ namespace GoPcBackup
             lsbUnwrapText.Replace("\u0002", "\r\n\r\n");
             lsbUnwrapText.Replace("\u0003", "\r\n\r\n\r\n");
             lsbUnwrapText.Replace("\u0004", "\r\n\r\n\r\n\r\n");
+            lsbUnwrapText.Replace("\u0005", "\r\n\r\n\r\n\r\n\r\n");
+            lsbUnwrapText.Replace("\u0006", "\r\n\r\n\r\n\r\n\r\n\r\n");
+            lsbUnwrapText.Replace("\u0007", "\r\n\r\n\r\n\r\n\r\n\r\n\r\n");
+            lsbUnwrapText.Replace("\u0008", "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n");
+            lsbUnwrapText.Replace("\u0009", "\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n");
 
             return lsbUnwrapText.ToString();
         }
