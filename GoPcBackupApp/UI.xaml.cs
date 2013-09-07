@@ -741,6 +741,7 @@ namespace GoPcBackup
             this.AdjustWindowSize();
             this.MainCanvas.Visibility = Visibility.Visible;
             System.Windows.Forms.Application.DoEvents();
+            this.WindowState = WindowState.Normal;
             this.Topmost = true;
             this.Show();
             System.Windows.Forms.Application.DoEvents();

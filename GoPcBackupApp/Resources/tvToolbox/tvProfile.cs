@@ -2968,27 +2968,7 @@ namespace tvToolbox
             this.bLockProfileFile(this.sActualPathFile);
 
             if ( !lbAlreadyThere )
-            {
                 this.bFileJustCreated = true;
-
-                // Display the new profile file.
-                if ( tvProfileFileCreateActions.PromptToCreateFile == this.eFileCreateAction
-                        && mcsLoadSaveDefaultExtension == Path.GetExtension(this.sActualPathFile)
-                        )
-                {
-                    if ( !this.bInOwnFolder )
-                    {
-                        this.bEnableFileLock = false;
-
-                        Process.Start(this.sActualPathFile);
-
-                        // Give it time to load the file before locking it again.
-                        System.Threading.Thread.Sleep(500);
-
-                        this.bEnableFileLock = true;
-                    }
-                }
-            }
         }
 
         /// <summary>
