@@ -145,7 +145,7 @@ This tells the software to run in automatic mode:
 
 Author:  George Schiro (GeoCode@Schiro.name)
 
-Date:    10/21/2011
+Date:    7/3/2013
 
 
 
@@ -607,6 +607,10 @@ Notes:
                             .Replace("{{", "{")
                             .Replace("}}", "}")
                             );
+
+                    // Fetch MIT License.
+                    tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
+                            , "MIT License.txt", null);
 
                     // Fetch simple setup.
                     tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name

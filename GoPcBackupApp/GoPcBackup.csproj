@@ -221,6 +221,9 @@
     <Resource Include="Resources\tvToolbox\tvMessageBox\images\Info.png" />
     <Resource Include="Resources\tvToolbox\tvMessageBox\images\OK.png" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="MIT License.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
