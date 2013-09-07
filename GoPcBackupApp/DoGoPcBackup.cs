@@ -421,7 +421,7 @@ A brief description of each feature follows.
     This format string specifies the layout of the deleted file list output file
     header (see -DeletedFileListOutputPathFile below).
 
--DeletedFileListOutputPathFile=DeletedFileList.txt
+-DeletedFileListOutputPathFile=Logs\DeletedFileList.txt
 
     This is the output path\file that will contain the list of deleted files.
     The profile file name will be prepended to the default and the current date
@@ -457,7 +457,7 @@ A brief description of each feature follows.
     log file output filename (see -LogPathFile below). It is inserted between the
     filename and the extension.
 
--LogPathFile=Log.txt
+-LogPathFile=Logs\Log.txt
 
     This is the output path\file that will contain the backup / cleanup process
     log. The profile file name will be prepended to the default and the current
@@ -788,9 +788,14 @@ Notes:
         {
             get
             {
-                return moProfile.sValue("-LogPathFile"
-                        , Path.GetFileNameWithoutExtension(moProfile.sLoadedPathFile)
-                        + "Log.txt");
+                string  lsLogPathFileBase = moProfile.sValue("-LogPathFile"
+                                , Path.Combine("Logs", Path.GetFileNameWithoutExtension(moProfile.sLoadedPathFile)
+                                + "Log.txt"));
+                string  lsPath = Path.GetDirectoryName(this.oProfile.sRelativeToProfilePathFile(lsLogPathFileBase));
+                        if ( !Directory.Exists(lsPath) )
+                            Directory.CreateDirectory(lsPath);
+
+                return lsLogPathFileBase;
             }
         }
 
@@ -827,9 +832,14 @@ Notes:
         {
             get
             {
-                return moProfile.sValue("-DeletedFileListOutputPathFile"
-                        , Path.GetFileNameWithoutExtension(moProfile.sLoadedPathFile)
-                        + "DeletedFileList.txt");
+                string  lsDeletedFileListOutputPathFileBase = moProfile.sValue("-DeletedFileListOutputPathFile"
+                                , Path.Combine("Logs", Path.GetFileNameWithoutExtension(moProfile.sLoadedPathFile)
+                                + "DeletedFileList.txt"));
+                string  lsPath = Path.GetDirectoryName(this.oProfile.sRelativeToProfilePathFile(lsDeletedFileListOutputPathFileBase));
+                        if ( !Directory.Exists(lsPath) )
+                            Directory.CreateDirectory(lsPath);
+
+                return lsDeletedFileListOutputPathFileBase;
             }
         }
 
@@ -2365,6 +2375,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
                     loStreamWriter.WriteLine(string.Format(
                               moProfile.sValue("-DeletedFileListOutputColumnFormat", "{0, -22:MM-dd-yyyy hh:mm:ss tt}  {1, 13:#,#}  {2}")
                             , lsColumnHeaderArray[0], lsColumnHeaderArray[1], lsColumnHeaderArray[2]));
+                    loStreamWriter.WriteLine();
                 }
                 catch (Exception ex)
                 {
@@ -2440,9 +2451,11 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
     -FilesToDelete={2}*{3}
 
 "
-                            , Path.GetFileNameWithoutExtension(this.sLogPathFileBase)
+                            , Path.Combine(Path.GetDirectoryName(this.sLogPathFileBase)
+                                    , Path.GetFileNameWithoutExtension(this.sLogPathFileBase))
                             , Path.GetExtension(this.sLogPathFileBase)
-                            , Path.GetFileNameWithoutExtension(this.sDeletedFileListOutputPathFileBase)
+                            , Path.Combine(Path.GetDirectoryName(this.sDeletedFileListOutputPathFileBase)
+                                    , Path.GetFileNameWithoutExtension(this.sDeletedFileListOutputPathFileBase))
                             , Path.GetExtension(this.sDeletedFileListOutputPathFileBase)
                             ));
                 }
