@@ -736,19 +736,20 @@ namespace GoPcBackup
 
         private void ShowMe()
         {
-            bool lbTopmost = this.Topmost;
+            bool lTopmost = this.Topmost;
 
             this.AdjustWindowSize();
             this.MainCanvas.Visibility = Visibility.Visible;
-            System.Windows.Forms.Application.DoEvents();
             this.WindowState = WindowState.Normal;
             this.Topmost = true;
+            System.Windows.Forms.Application.DoEvents();
             this.Show();
             System.Windows.Forms.Application.DoEvents();
             this.bVisible = true;
-            this.ShowMissingBackupDevices();
+            this.Topmost = lTopmost;
+            System.Windows.Forms.Application.DoEvents();
 
-            this.Topmost = lbTopmost;
+            this.ShowMissingBackupDevices();
         }
 
         private bool bShowInitBeginScriptWarning()

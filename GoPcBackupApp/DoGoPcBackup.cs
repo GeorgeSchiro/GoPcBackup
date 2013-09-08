@@ -2023,7 +2023,7 @@ if %1=="""" goto :EOF
 ::
 :: Note: All arguments will be passed with double quotation marks included.
 ::       So don't use quotes here unless you want ""double double"" quotes.
-::
+::       Also, ERRORLEVEL is not reliable enough to be heavily used below.
 ::
 :: The following example copies the backup file to the root of drive C:
 :: (if its ""AdministratorFiles.zip""). Then it outputs a directory listing
@@ -2051,7 +2051,7 @@ echo This backs up the backup software:                                     >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo xcopy /y %7 %4\%6\                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      xcopy /y %7 %4\%6\                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %4\%6\%6.exe echo   Error: %4\%6\%6.exe not copied.       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %4\%6\%6.exe echo   Error: %4\%6\%6.exe is not there.     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if not exist %4\%6\%6.exe set /A CopyFailures += 1
 
@@ -2061,7 +2061,7 @@ echo to a subfolder with the backup output file base name:                  >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo echo F : xcopy  /y  %8 %4\%6\%3\%9.%2.txt                              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      echo F | xcopy  /y  %8 %4\%6\%3\%9.%2.txt                              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %4\%6\%3\%9.%2.txt echo   Error: %4\%6\%3\%9.%2.txt not copied. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %4\%6\%3\%9.%2.txt echo   Error: %4\%6\%3\%9.%2.txt is not there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if not exist %4\%6\%3\%9.%2.txt set /A CopyFailures += 1
 "
@@ -2073,7 +2073,7 @@ echo This copies the backup to the virtual machine host archive:            >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo copy %1 %5                                                             >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      copy %1 %5                                                             >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %5\%2 echo   Error: %5\%2 not copied.                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %5\%2 echo   Error: %5\%2 is not there.                   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if not exist %5\%2 set /A CopyFailures += 1
 "
@@ -2124,7 +2124,7 @@ echo This removes the previous backup (if any) from %1                      >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo del %1\%BackupBaseOutputFilename%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      del %1\%BackupBaseOutputFilename%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if exist %1\%BackupBaseOutputFilename% echo   Error: previous %BackupBaseOutputFilename% could not be removed from %1\. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if exist %1\%BackupBaseOutputFilename% echo   Error: %1\%BackupBaseOutputFilename% is still there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if exist %1\%BackupBaseOutputFilename% set /A CopyFailures += 1
 
@@ -2133,7 +2133,7 @@ echo This copies the current backup to %1                                   >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %1\%BackupBaseOutputFilename% echo   Error: %1\%BackupBaseOutputFilename% not copied. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %1\%BackupBaseOutputFilename% echo   Error: %1\%BackupBaseOutputFilename% is not there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if not exist %1\%BackupBaseOutputFilename% set /A CopyFailures += 1
 
@@ -2145,7 +2145,7 @@ echo This removes the previous backup software profile files:               >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo rd  /s/q  %1\%BackupToolName%\%BackupBaseOutputFilename%               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      rd  /s/q  %1\%BackupToolName%\%BackupBaseOutputFilename%               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* echo   Error: previous %BackupToolName%\%BackupBaseOutputFilename% could not be removed from %1\. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* echo   Error: %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* is still there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* set /A CopyFailures += 1
 
@@ -2154,7 +2154,7 @@ echo This copies the backup software to %1\%BackupToolName%:                >> "
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* echo   Error: %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* not copied. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* echo   Error: %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* is not there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if not exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* set /A CopyFailures += 1
 "
