@@ -1479,7 +1479,8 @@ You can continue this later wherever you left off. "
                 }
             }
 
-            ScrollingText   loHelp = new ScrollingText(moProfile["-Help"].ToString(), "Backup Help", Brushes.Khaki, true);
+            ScrollingText   loHelp = new ScrollingText(moProfile["-Help"].ToString(), "Backup Help", true);
+                            loHelp.TextBackground = Brushes.Khaki;
                             loHelp.Show();
 
                             moOtherWindows.Add(loHelp);

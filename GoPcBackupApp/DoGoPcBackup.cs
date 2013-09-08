@@ -9,6 +9,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using System.Windows;
+using System.Windows.Media;
 using tvToolbox;
 
 
@@ -105,7 +106,7 @@ Introduction
 
 This utility performs file backups and file cleanups in the background.
 
-It also acts as its own scheduler. First it checks for files to be removed on
+It also acts as its own scheduler. First, it checks for files to be removed on
 a given schedule. Then it runs a backup of your files automatically.
 
 There is no need to use a job scheduler unless this software is running on a 
@@ -518,9 +519,8 @@ A brief description of each feature follows.
 
 -ShowDeletedFileList=False
 
-    Set this switch True and the list of deleted files will be displayed (using
-    the application associated with -DeletedFileListOutputPathFile's filename
-    extension, see above).
+    Set this switch True and the list of deleted files will be displayed in a 
+    pop-up window.
 
 -ShowProfile=False
 
@@ -1304,26 +1304,36 @@ Notes:
         /// Displays the given file (ie. asPathFile) using whatever
         /// application is associated with its filename extension.
         /// </summary>
-        private void DisplayFileAsError(string asFileAsStream, string asCaption)
+        private void DisplayFileAsErrors(string asFileAsStream, string asCaption)
         {
-            ScrollingText   loHelp = new ScrollingText(asFileAsStream, asCaption);
-                            loHelp.Show();
+            ScrollingText   loErrors = new ScrollingText(asFileAsStream, asCaption);
+                            loErrors.Show();
 
-                            this.oUI.oOtherWindows.Add(loHelp);
+                            this.oUI.oOtherWindows.Add(loErrors);
         }
 
         /// <summary>
         /// Displays the file cleanup output file.
         /// </summary>
-        private bool DisplayDeletedFileList()
+        private void DisplayDeletedFileList()
         {
-            bool lbDisplayOutputFile = true;
-
             if ( moProfile.bValue("-ShowDeletedFileList", false) )
             {
-                string lsOutputPathFile = this.sDeletedFileListOutputPathFile;
+                if ( !this.mbHasNoDeletionGroups )
+                {
+                    string lsFileAsStream = this.sFileAsStream(this.sDeletedFileListOutputPathFile);
 
-                if ( this.mbHasNoDeletionGroups )
+                    if ( null != lsFileAsStream )
+                    {
+                        ScrollingText   loFileList = new ScrollingText(lsFileAsStream, "Deleted File List");
+                                        loFileList.TextBackground = Brushes.LightYellow;
+                                        loFileList.TextFontFamily = new FontFamily("Courier New");
+                                        loFileList.Show();
+
+                                        this.oUI.oOtherWindows.Add(loFileList);
+                    }
+                }
+                else
                 {
                     string lsFileGroup1 = moProfile.sValue("-CleanupSet", "One of many file groups to delete goes here.");
 
@@ -1340,39 +1350,49 @@ No file cleanup will be done until you update the configuration.
 "                           , lsFileGroup1)
                             , "No File Cleanup Sets Defined"
                             );
-
-                    lbDisplayOutputFile = false;
-                }
-                else
-                {
-                    string lsOutputFilename = Path.GetFileName(lsOutputPathFile);
-
-                    try
-                    {
-                        // First, close any previously displayed output file windows.
-                        foreach (Process loProcess in Process.GetProcesses())
-                        {
-                           if( loProcess.MainWindowTitle.Contains(lsOutputFilename) )
-                           {
-                                loProcess.CloseMainWindow();
-                                break;
-                           }
-                        }
-
-                        Process.Start(lsOutputPathFile);
-                    }
-                    catch (Exception ex)
-                    {
-                        this.ShowError(ex.Message);
-
-                        lbDisplayOutputFile = false;
-                    }
                 }
             }
-
-            return lbDisplayOutputFile;
         }
 
+        /// <summary>
+        /// Returns the contents of a given file as a string.
+        /// </summary>
+        /// <param name="asSourcePathFile"></param>
+        /// The path\file specification os the given file.
+        /// <returns></returns>
+        private string sFileAsStream(string asSourcePathFile)
+        {
+            string lsFileAsStream = null;
+
+            try
+            {
+                StreamReader loStreamReader = null;
+
+                try
+                {
+                    loStreamReader = new StreamReader(asSourcePathFile);
+                    lsFileAsStream = loStreamReader.ReadToEnd();
+                }
+                catch (Exception ex)
+                {
+                    this.ShowError(string.Format("File Read Failure: \"{0}\"\r\n"
+                            , asSourcePathFile) + ex.Message
+                            , "Failed Reading File"
+                            );
+                }
+                finally
+                {
+                    if ( null != loStreamReader )
+                        loStreamReader.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                this.ShowError(ex.Message);
+            }
+
+            return lsFileAsStream;
+        }
 
         /// <summary>
         /// Write the given asMessageText to a text file as well as
@@ -1898,31 +1918,12 @@ exit  %Errors%
 
                         // Get the output from the "backup begin" script.
 
-                        StreamReader loStreamReader = null;
-                        string lsFileAsStream = null;
-
-                        try
-                        {
-                            loStreamReader = new StreamReader(lsBackupBeginScriptOutputPathFile);
-                            lsFileAsStream = loStreamReader.ReadToEnd();
-                        }
-                        catch (Exception ex)
-                        {
-                            this.ShowError(string.Format("File Read Failure: \"{0}\"\r\n"
-                                    , lsBackupBeginScriptOutputPathFile) + ex.Message
-                                    , "Failed Reading File"
-                                    );
-                        }
-                        finally
-                        {
-                            if (null != loStreamReader)
-                                loStreamReader.Close();
-                        }
+                        string lsFileAsStream = this.sFileAsStream(lsBackupBeginScriptOutputPathFile);
 
                         this.LogIt("Here's output from the \"backup begin script\":\r\n\r\n" + lsFileAsStream);
 
                         if ( moProfile.bValue("-ShowBackupBeginScriptErrors", true) )
-                            this.DisplayFileAsError(lsFileAsStream, "Backup Begin Script Errors");
+                            this.DisplayFileAsErrors(lsFileAsStream, "Backup Begin Script Errors");
                     }
                 }
             }
@@ -2259,31 +2260,12 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
 
                             // Get the output from the "backup done" script.
 
-                            StreamReader loStreamReader = null;
-                            string lsFileAsStream = null;
-
-                            try
-                            {
-                                loStreamReader = new StreamReader(lsBackupDoneScriptOutputPathFile);
-                                lsFileAsStream = loStreamReader.ReadToEnd();
-                            }
-                            catch (Exception ex)
-                            {
-                                this.ShowError(string.Format("File Read Failure: \"{0}\"\r\n"
-                                        , lsBackupDoneScriptOutputPathFile) + ex.Message
-                                        , "Failed Reading File"
-                                        );
-                            }
-                            finally
-                            {
-                                if (null != loStreamReader)
-                                    loStreamReader.Close();
-                            }
+                            string lsFileAsStream = this.sFileAsStream(lsBackupDoneScriptOutputPathFile);
 
                             this.LogIt("Here's output from the \"backup done script\":\r\n\r\n" + lsFileAsStream);
 
                             if ( moProfile.bValue("-ShowBackupDoneScriptErrors", true) )
-                                this.DisplayFileAsError(lsFileAsStream, "Backup Done Script Errors");
+                                this.DisplayFileAsErrors(lsFileAsStream, "Backup Done Script Errors");
                         }
 
                         if ( 0 != loMissingBackupDevices.Count )
@@ -2512,7 +2494,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
                 }
 
                 if ( lbCleanupFiles )
-                    lbCleanupFiles = this.DisplayDeletedFileList();
+                    this.DisplayDeletedFileList();
             }
             catch (Exception ex)
             {

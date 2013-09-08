@@ -38,7 +38,7 @@ namespace GoPcBackup
         /// The summary caption for the message text.
         /// </param>
         public ScrollingText(string asMessageText, string asMessageCaption)
-                : this(asMessageText, asMessageCaption, Brushes.Tomato, false)
+                : this(asMessageText, asMessageCaption, false)
         {}
 
 
@@ -63,7 +63,6 @@ namespace GoPcBackup
         public ScrollingText(
                   string asMessageText
                 , string asMessageCaption
-                , Brush aoBackground
                 , bool abPrepareTextForWrap
                 )
         {
@@ -75,7 +74,23 @@ namespace GoPcBackup
             this.txtMessageText.Text = !abPrepareTextForWrap ? asMessageText : this.sPrepareTextForWrap(asMessageText);
             this.txtMessageCaption.Text = asMessageCaption;
             this.Title = asMessageCaption;
-            this.InnerBorder.Background = aoBackground;
+        }
+
+
+        public Brush TextBackground
+        {
+            set
+            {
+                this.InnerBorder.Background = value;
+            }
+        }
+
+        public FontFamily TextFontFamily
+        {
+            set
+            {
+                this.txtMessageText.FontFamily = value;
+            }
         }
 
 
