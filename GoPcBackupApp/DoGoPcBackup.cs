@@ -498,7 +498,7 @@ A brief description of each feature follows.
 
 -SelectedBackupDevices= NO DEFAULT VALUE
 
-    This is the list of selected backup devices in human readable text.
+    This is the list of selected backup devices as human readable text.
 
 -SelectedBackupDevicesBitField=0 (0 means not yet set)
 
@@ -607,10 +607,6 @@ Notes:
                             .Replace("{{", "{")
                             .Replace("}}", "}")
                             );
-
-                    // Fetch MIT License.
-                    tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
-                            , "MIT License.txt", null);
 
                     // Fetch simple setup.
                     tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
@@ -1174,7 +1170,7 @@ Notes:
             ));
         }
 
-        private void ShowError(string asMessageText, string asMessageCaption)
+        public void ShowError(string asMessageText, string asMessageCaption)
         {
             this.LogIt(asMessageText);
 
@@ -1360,7 +1356,7 @@ No file cleanup will be done until you update the configuration.
         /// <param name="asSourcePathFile"></param>
         /// The path\file specification os the given file.
         /// <returns></returns>
-        private string sFileAsStream(string asSourcePathFile)
+        public string sFileAsStream(string asSourcePathFile)
         {
             string lsFileAsStream = null;
 
@@ -1708,6 +1704,8 @@ No file cleanup will be done until you update the configuration.
 
                 moProfile["-PreviousBackupTime"] = DateTime.Now;
                 moProfile.Save();
+
+                this.oUI.GetSetOutputTextPanelErrorCache();
             }
 
             if ( this.bMainLoopStopped )
@@ -1935,7 +1933,12 @@ exit  %Errors%
             return liBackupBeginScriptErrors;
         }
 
-        private int iBackupDoneScriptCopyFailuresWithBitField()
+        public int iBackupDoneScriptCopyFailuresWithBitField()
+        {
+            // Run the "backup done" script with current (ie. fresh arguments).
+            return this.iBackupDoneScriptCopyFailuresWithBitField(false);
+        }
+        public int iBackupDoneScriptCopyFailuresWithBitField(bool abRerunLastArgs)
         {
             int liBackupDoneScriptCopyFailuresWithBitField = 0;
 
@@ -2199,20 +2202,44 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
                 this.LogIt("");
                 this.LogIt("Running \"backup done\" script ...");
 
+                // Cache the arguments passed to the script.
+                tvProfile  loArgs = new tvProfile();
+                            if ( abRerunLastArgs )
+                            {
+                                loArgs.LoadFromCommandLine(moProfile.sValue("-BackupDoneArgs", ""), tvProfileLoadActions.Append);
+                            }
+                            else
+                            {
+                                loArgs.Add("-BackupOutputPathFile"     , msCurrentBackupOutputPathFile                          );
+                                loArgs.Add("-BackupOutputFilename"     , Path.GetFileName(msCurrentBackupOutputPathFile)        );
+                                loArgs.Add("-BackupBaseOutputFilename" , Path.GetFileName(this.sBackupOutputPathFileBase())     );
+                                loArgs.Add("-LocalArchivePath"         , this.sArchivePath()                                    );
+                                loArgs.Add("-VirtualMachineHostArchive", moProfile.sValue("-VirtualMachineHostArchivePath", "") );
+                                loArgs.Add("-AppName"                  , Application.ResourceAssembly.GetName().Name            );
+                                loArgs.Add("-BackupExePathFile"        , Application.ResourceAssembly.Location                  );
+                                loArgs.Add("-BackupProfilePathFile"    , moProfile.sBackupPathFile                              );
+                                loArgs.Add("-BackupProfileFilename"    , Path.GetFileName(moProfile.sLoadedPathFile)            );
+                                loArgs.Add("-LogPathFile"              , moProfile.sRelativeToProfilePathFile(this.sLogPathFile));
+
+                                moProfile["-BackupDoneArgs"] = loArgs.sCommandBlock();
+                                moProfile.Save();
+                            }
+
+                // Run the "backup done" script.
                 Process loProcess = new Process();
                         loProcess.StartInfo.FileName = lsBackupDoneScriptPathFile;
                         loProcess.StartInfo.Arguments = string.Format(
                                   " \"{0}\" \"{1}\" \"{2}\" \"{3}\" \"{4}\" \"{5}\" \"{6}\" \"{7}\" \"{8}\" \"{9}\" "
-                                , msCurrentBackupOutputPathFile
-                                , Path.GetFileName(msCurrentBackupOutputPathFile)
-                                , Path.GetFileName(this.sBackupOutputPathFileBase())
-                                , this.sArchivePath()
-                                , moProfile.sValue("-VirtualMachineHostArchivePath", "")
-                                , Application.ResourceAssembly.GetName().Name
-                                , Application.ResourceAssembly.Location
-                                , moProfile.sBackupPathFile
-                                , Path.GetFileName(moProfile.sLoadedPathFile)
-                                , this.sLogPathFile
+                                , loArgs.sValue("-BackupOutputPathFile"     , "")
+                                , loArgs.sValue("-BackupOutputFilename"     , "")
+                                , loArgs.sValue("-BackupBaseOutputFilename" , "")
+                                , loArgs.sValue("-LocalArchivePath"         , "")
+                                , loArgs.sValue("-VirtualMachineHostArchive", "")
+                                , loArgs.sValue("-AppName"                  , "")
+                                , loArgs.sValue("-BackupExePathFile"        , "")
+                                , loArgs.sValue("-BackupProfilePathFile"    , "")
+                                , loArgs.sValue("-BackupProfileFilename"    , "")
+                                , loArgs.sValue("-LogPathFile"              , "")
                                 );
                         loProcess.StartInfo.UseShellExecute = true;
                         loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;

@@ -7,8 +7,9 @@
     Width="Auto"
     WindowStyle="None"
     Background="Transparent"
+    Loaded="Window_Loaded"
     MouseDown="Window_MouseDown"
-    Loaded="MainWindow_Loaded"
+    KeyDown="Window_KeyDown"
     >
     <Window.Resources>
         <ResourceDictionary>
@@ -41,8 +42,8 @@
                     </StackPanel>
                     <StackPanel Name="BottomPanel" Height="100" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Center">
                         <Button Name="btnOK"     Content="OK"     Click="btnOK_Click"     IsDefault="True"  Style="{StaticResource Button}" />
-                        <Button Name="btnYes"    Content="Yes"    Click="btnYes_Click"    IsDefault="True"  Style="{StaticResource Button}" />
-                        <Button Name="btnNo"     Content="No"     Click="btnNo_Click"     IsCancel="True"   Style="{StaticResource Button}" />
+                        <Button Name="btnYes"    Content="Yes"    Click="btnYes_Click"                      Style="{StaticResource Button}" />
+                        <Button Name="btnNo"     Content="No"     Click="btnNo_Click"                       Style="{StaticResource Button}" />
                         <Button Name="btnCancel" Content="Cancel" Click="btnCancel_Click" IsCancel="True"   Style="{StaticResource Button}" />
                         <Canvas VerticalAlignment="Center">
                             <CheckBox Name="chkDontAsk" Content="Don't ask." ToolTip="Don't ask this question again." IsChecked="False" Style="{StaticResource CheckBox}" />

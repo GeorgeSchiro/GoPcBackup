@@ -116,7 +116,7 @@
                         </Button>
                     </StackPanel>
                     <StackPanel Name="CloseButtonPanel" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Name="btnClose" Click="mnuExit_Click" Content="Close" ToolTip="Close" HorizontalAlignment="Right" Style="{StaticResource ScrollingTextButton}" />
+                        <Button Name="btnClose" Click="mnuExit_Click" IsDefault="True" IsCancel="True" Content="Close" ToolTip="Close" HorizontalAlignment="Right" Style="{StaticResource ScrollingTextButton}" />
                     </StackPanel>
                 </Grid>
                 <Grid Name="MiddlePanelOutputText">

@@ -330,8 +330,8 @@ namespace tvToolbox
 
             if ( lbShowProfile )
             {
-                if ( MessageBox.Show(this.sCommandLine(), this.sLoadedPathFile, MessageBoxButtons.OKCancel)
-                        == DialogResult.Cancel
+                if ( DialogResult.Cancel
+                        == MessageBox.Show(this.sCommandLine(), this.sLoadedPathFile, MessageBoxButtons.OKCancel)
                         )
                 {
                     this.bExit = true;
@@ -429,8 +429,8 @@ namespace tvToolbox
 
             if ( lbShowProfile )
             {
-                if ( MessageBox.Show(this.sCommandLine(), this.sLoadedPathFile, MessageBoxButtons.OKCancel)
-                        == DialogResult.Cancel
+                if ( DialogResult.Cancel
+                        == MessageBox.Show(this.sCommandLine(), this.sLoadedPathFile, MessageBoxButtons.OKCancel)
                         )
                 {
                     this.bExit = true;
@@ -1838,12 +1838,33 @@ namespace tvToolbox
         /// </returns>
         public String sCommandBlock()
         {
-            StringBuilder   lsbCommandBlock = new StringBuilder(this.sCommandLine());
-                            lsbCommandBlock.Replace("-", Environment.NewLine + "    -")
-                                           .Replace(mccHideHyphen, '-')
-                                           ;
-                            lsbCommandBlock.Append(Environment.NewLine);
-                            lsbCommandBlock.Append(Environment.NewLine);
+            const string    lcsIndent = "    ";
+            StringBuilder   lsbCommandBlock = new StringBuilder(Environment.NewLine);
+
+            foreach ( DictionaryEntry loEntry in this )
+            {
+                String lsValue = loEntry.Value.ToString();
+
+                if ( lsValue.Contains(Environment.NewLine) )
+                {
+                    lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + "=" + mcsBeginBlockMark + Environment.NewLine);
+                    lsbCommandBlock.Append(lsValue);
+                    lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + "=" + mcsEndBlockMark + Environment.NewLine);
+                }
+                else
+                {
+                    if ( lsValue.Contains(" ") || lsValue.Contains("-") )
+                    {
+                        lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + "=" + "\"" + lsValue + "\"" + Environment.NewLine);
+                    }
+                    else
+                    {
+                        lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + "=" + lsValue + Environment.NewLine);
+                    }
+                }
+            }
+
+            lsbCommandBlock.Append(Environment.NewLine);
 
             return lsbCommandBlock.ToString();
         }
@@ -1865,22 +1886,22 @@ namespace tvToolbox
             {
                 String lsValue = loEntry.Value.ToString();
 
-                if ( -1 == lsValue.IndexOf(Environment.NewLine) )
-                {
-                    if ( -1 == lsValue.IndexOf(" ") )
-                    {
-                        lsbCommandLine.Append(" " + loEntry.Key.ToString() + "=" + lsValue);
-                    }
-                    else
-                    {
-                        lsbCommandLine.Append(" " + loEntry.Key.ToString() + "=" + "\"" + lsValue + "\"");
-                    }
-                }
-                else
+                if ( lsValue.Contains(Environment.NewLine) )
                 {
                     lsbCommandLine.Append(" " + loEntry.Key.ToString() + "=" + mcsBeginBlockMark + Environment.NewLine);
                     lsbCommandLine.Append(lsValue);
                     lsbCommandLine.Append(" " + loEntry.Key.ToString() + "=" + mcsEndBlockMark + Environment.NewLine);
+                }
+                else
+                {
+                    if ( lsValue.Contains(" ") || lsValue.Contains("-") )
+                    {
+                        lsbCommandLine.Append(" " + loEntry.Key.ToString() + "=" + "\"" + lsValue + "\"");
+                    }
+                    else
+                    {
+                        lsbCommandLine.Append(" " + loEntry.Key.ToString() + "=" + lsValue);
+                    }
                 }
             }
 
@@ -1907,22 +1928,6 @@ namespace tvToolbox
             }
 
             return lsCommandLineArray;
-        }
-
-        /// <summary>
-        /// Temporarily replaces all hyphens in the given asSource string
-        /// with a placeholder character for later hyphen substitution.
-        /// 
-        /// This is typically used as a precursor to calling
-        /// "sCommandBlock()" where the placeholder characters, if
-        /// any, are finally replaced with hyphens once again.
-        /// </summary>
-        /// <param name="asSource"></param>
-        /// The source string to have hyphens replaced.
-        /// <returns></returns>
-        public String sHideHyphens(String asSource)
-        {
-            return asSource.Replace("-", mcsHideHyphen);
         }
 
         /// <summary>
@@ -2039,7 +2044,7 @@ namespace tvToolbox
                 loXml.WriteEndDocument();
 
             // !!!FIX THIS!!! Replace entities since they have no impact on subsequent successful XML reads.
-            lsbFileAsStream.Replace("&#xD;&#xA;", "\r\n");
+            lsbFileAsStream.Replace("&#xD;&#xA;", Environment.NewLine);
 
             // !!!FIX THIS!!! Replace "utf-16" with "UTF-8" to allow current browser support.
             lsbFileAsStream.Replace("encoding=\"utf-16\"", "encoding=\"UTF-8\"");
@@ -2402,10 +2407,10 @@ namespace tvToolbox
                                 ? "an existing folder ({0}) on your desktop."
                                 : "a new folder ({0}) on your desktop." ), lsFilnameOnly);
 
-                        if ( MessageBox.Show(String.Format(
+                        if ( DialogResult.OK == MessageBox.Show(String.Format(
                                       "For your convenience, this program will be copied to " + lsMessage + Environment.NewLine + Environment.NewLine
                                     + "Copy and proceed from there?", lsPathFile), "Copy EXE to Desktop?"
-                                    , MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK )
+                                    , MessageBoxButtons.OKCancel, MessageBoxIcon.Question) )
                         {
                             String lsNewExePathFile = Path.Combine(lsNewPath, Path.GetFileName(this.sExePathFile));
 
@@ -2418,21 +2423,23 @@ namespace tvToolbox
                                                 loStartInfo.WorkingDirectory = Path.GetDirectoryName(lsNewExePathFile);
 
                             Process.Start(loStartInfo);                
-                            this.bExit = true;
+                            //this.bExit = true;        // This was moved outside the block after disabling the other show below.
                         }
+
+                        this.bExit = true;
                     }
 
-                    if ( !this.bExit )
-                    {
-                        if ( !this.bInOwnFolder && MessageBox.Show(String.Format(
-                                      "The profile file for this program can't be found ({0}).\n\n"
-                                    + "Create it and proceed anyway?", lsPathFile)
-                                            , "Create Profile File?"
-                                    , MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.Cancel )
-                        {
-                            this.bExit = true;
-                        }
-                    }
+                    //if ( !this.bExit )
+                    //{
+                    //    if ( !this.bInOwnFolder && DialogResult.Cancel == MessageBox.Show(String.Format(
+                    //                  "The profile file for this program can't be found ({0}).\n\n"
+                    //                + "Create it and proceed anyway?", lsPathFile)
+                    //                        , "Create Profile File?"
+                    //                , MessageBoxButtons.OKCancel, MessageBoxIcon.Question) )
+                    //    {
+                    //        this.bExit = true;
+                    //    }
+                    //}
                 }
 
                 // Although technically the file was not loaded (since it doesn't exist yet),
@@ -3208,8 +3215,6 @@ namespace tvToolbox
         private const String mcsBeginBlockMark = "[";
         private const String mcsEndBlockMark = "]";
         private const char   mccSplitMark = '\u0001';
-        private const char   mccHideHyphen = '\u0001';
-        private const String mcsHideHyphen = "\u0001";
         private FileStream   moFileStreamProfileFileLock;
         private tvProfile    moInputCommandLineProfile;
 

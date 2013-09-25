@@ -85,7 +85,7 @@
                         </Button>
                     </StackPanel>
                     <StackPanel Name="CloseButtonPanel" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <StackPanel Name="CloseCheckboxes" VerticalAlignment="Center">
+                        <StackPanel Name="CloseCheckboxes" VerticalAlignment="Center" Visibility="Hidden">
                             <CheckBox Name="chkUseTimer" Content="Use Timer" ToolTip="Start Timer after Reopen" Click="chkUseTimer_Click" Style="{StaticResource MainCanvasCheckBox}" />
                             <CheckBox Name="chkCloseAndExit" Content="Full Exit" ToolTip="Exit GoPC after Close" Style="{StaticResource MainCanvasCheckBox}" />
                         </StackPanel>

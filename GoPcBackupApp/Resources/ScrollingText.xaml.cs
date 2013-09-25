@@ -53,10 +53,6 @@ namespace GoPcBackup
         /// <param name="asMessageCaption">
         /// The summary caption for the message text.
         /// </param>
-        /// </param>
-        /// <param name="aoBackground">
-        /// The brush color object to use for the background.
-        /// </param>
         /// <param name="abPrepareTextForWrap">
         /// The boolean for preparing block text for text wrapping.
         /// </param>

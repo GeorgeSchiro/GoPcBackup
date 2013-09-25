@@ -56,7 +56,22 @@ public partial class tvMessageBox : Window
         InitializeComponent();
     }
 
-    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+
+    public bool bDialogAccepted
+    {
+        get
+        {
+            return mbDialogAccepted;
+        }
+        set
+        {
+            mbDialogAccepted = value;
+        }
+    }
+    private bool mbDialogAccepted = false;
+
+
+    private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         // This kludge is necessary to center in screen
         // since the dimensions were wrong to start with.
@@ -72,6 +87,7 @@ public partial class tvMessageBox : Window
     private void btnOK_Click(object sender, RoutedEventArgs e)
     {
         this.eTvMessageBoxResult = tvMessageBoxResults.OK;
+        this.bDialogAccepted = true;
         this.Close();
     }
 
@@ -97,6 +113,16 @@ public partial class tvMessageBox : Window
     {
         if ( MouseButton.Left == e.ChangedButton )
             this.DragMove();
+    }
+
+    private void Window_KeyDown(object sender, KeyEventArgs e)
+    {
+        switch ( e.Key )
+        {
+            case Key.Enter:
+                this.bDialogAccepted = true;
+                break;
+        }
     }
 
     private void SelectIcon(tvMessageBoxIcons aeTvMessageBoxIcon)
@@ -525,6 +551,9 @@ public partial class tvMessageBox : Window
             {
                 System.Windows.Forms.Application.DoEvents();
                 System.Threading.Thread.Sleep(200);
+
+                if ( loMsgBox.bDialogAccepted )
+                    break;
             }
 
             loMsgBox.Close();
