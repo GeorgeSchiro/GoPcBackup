@@ -315,39 +315,7 @@ namespace GoPcBackup
         {
             mbStartupDone = true;
 
-            if ( moProfile.bValue("-AllConfigWizardStepsCompleted", false) )
-            {
-                this.HideMiddlePanels();
-                this.MainButtonPanel.IsEnabled = true;
-                this.CloseCheckboxes.Visibility = Visibility.Visible;
-                this.GetSetOutputTextPanelErrorCache();
-                this.PopulateTimerDisplay(mcsStoppedText);
-
-                if ( !(bool)this.chkUseTimer.IsChecked || mbPreviousBackupError )
-                {
-                    this.ShowMe();
-                }
-                else
-                {
-                    this.HideMe();
-                    this.ShowMissingBackupDevices();
-                }
-
-                this.ShowPreviousBackupStatus();
-                this.CreateSysTrayIcon();
-
-                if ( moProfile.ContainsKey("-PreviousBackupOk") && !moProfile.bValue("-PreviousBackupOk", false) )
-                    this.MiddlePanelOutputText.Visibility = Visibility.Visible;
-
-                if ( (bool)this.chkUseTimer.IsChecked )
-                {
-                    if ( !moProfile.ContainsKey("-PreviousBackupOk") || moProfile.bValue("-PreviousBackupOk", false) )
-                        this.MiddlePanelTimer.Visibility = Visibility.Visible;
-
-                    this.MainLoop();
-                }
-            }            
-            else
+            if ( !moProfile.bValue("-AllConfigWizardStepsCompleted", false) )
             {
                 if ( moProfile.bValue("-LicenseAccepted", false) )
                 {
@@ -363,7 +331,7 @@ namespace GoPcBackup
                             , lsLicensePathFile, null);
 
                     tvMessageBox.ShowBriefly(this, string.Format("The \"{0}\" will now be displayed. Please read it."
-                            , lsLicenseCaption), lsLicenseCaption, tvMessageBoxIcons.Information, 3);
+                            , lsLicenseCaption), lsLicenseCaption, tvMessageBoxIcons.Information, 2);
 
 
                     ScrollingText   loLicense = new ScrollingText(moDoGoPcBackup.sFileAsStream(
@@ -380,6 +348,47 @@ namespace GoPcBackup
 
                         this.ShowWizard();
                     }
+                }
+            }            
+            else
+            {
+                // Display all of the main application elements needed
+                // after the configuration wizard has been completed.
+                this.HideMiddlePanels();
+                this.MainButtonPanel.IsEnabled = true;
+                this.GetSetOutputTextPanelErrorCache();
+                this.PopulateTimerDisplay(mcsStoppedText);
+
+                // No timer checked or a previous backup error means show the window
+                // immediately. Otherwise, it will be accessible via the system tray.
+                if ( !(bool)this.chkUseTimer.IsChecked || mbPreviousBackupError )
+                {
+                    this.ShowMe();
+                }
+                else
+                {
+                    this.HideMe();
+                    this.ShowMissingBackupDevices();
+                }
+
+                this.ShowPreviousBackupStatus();
+                this.CreateSysTrayIcon();
+
+                // Since error output is cached (see "this.GetSetOutputTextPanelErrorCache()"),
+                // the cached error output text should be displayed right away.
+                if ( moProfile.ContainsKey("-PreviousBackupOk") && !moProfile.bValue("-PreviousBackupOk", false) )
+                    this.MiddlePanelOutputText.Visibility = Visibility.Visible;
+
+                // If the timer is checked, start the main loop.
+                if ( (bool)this.chkUseTimer.IsChecked )
+                {
+                    // Don't bother dislpaying the timer if there was a previous backup error.
+                    // FYI, "ContainsKey" is used since existence checking is done on this key
+                    // elsewhere (yeah I know, so much for black boxes).
+                    if ( !moProfile.ContainsKey("-PreviousBackupOk") || moProfile.bValue("-PreviousBackupOk", false) )
+                        this.MiddlePanelTimer.Visibility = Visibility.Visible;
+
+                    this.MainLoop();
                 }
             }
         }
@@ -1505,7 +1514,6 @@ You can continue this later wherever you left off. "
         private void ShowWizard()
         {
             this.MiddlePanelConfigWizard.Visibility = Visibility.Visible;
-            this.CloseCheckboxes.Visibility = Visibility.Visible;
         }
 
         private void HideMiddlePanels()
@@ -1707,6 +1715,10 @@ You can continue this later wherever you left off. "
                         "pack://application:,,,/Resources/images/GoPC.ico")).Stream);
                 moNotifyIcon.targetNotifyIcon.Text = "GoPC Backup";
             }
+
+            // Also make sure the timer / close checkboxes are visible
+            // since we can't fully exit the software without them.
+            this.CloseCheckboxes.Visibility = Visibility.Visible;
         }
 
 
