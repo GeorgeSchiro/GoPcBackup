@@ -68,7 +68,8 @@ namespace GoPcBackup
             base.Init();
 
             this.txtMessageText.Text = !abPrepareTextForWrap ? asMessageText : this.sPrepareTextForWrap(asMessageText);
-            this.txtMessageCaption.Text = asMessageCaption;
+            //this.txtMessageCaption.Text = asMessageCaption;
+            this.txtMessageCaption.Content = asMessageCaption;
             this.Title = asMessageCaption;
         }
 
@@ -111,6 +112,22 @@ namespace GoPcBackup
             }
         }
         private bool mbOkButtonClicked = false;
+
+        public bool bDefaultButtonDisabled
+        {
+            get
+            {
+                return mbDefaultButtonDisabled;
+            }
+            set
+            {
+                mbDefaultButtonDisabled = value;
+
+                if ( mbDefaultButtonDisabled )
+                    btnClose.IsDefault = false;
+            }
+        }
+        private bool mbDefaultButtonDisabled = false;
 
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -167,6 +184,11 @@ namespace GoPcBackup
             this.WindowState = WindowState.Minimized;
         }
 
+        private void btnCopy_Click(object sender, RoutedEventArgs e)
+        {
+            Clipboard.SetText(this.txtMessageText.Text);
+        }
+
         private void Window_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             string lsControlClass = e.OriginalSource.ToString();
@@ -177,7 +199,6 @@ namespace GoPcBackup
                     && !lsControlClass.Contains("ClassicBorderDecorator")
                     && !lsControlClass.Contains("Run")
                     && !lsControlClass.Contains("Scroll")
-                    && !lsControlClass.Contains("Text")
                     )
             {
                 if ( WindowState.Normal == this.WindowState )

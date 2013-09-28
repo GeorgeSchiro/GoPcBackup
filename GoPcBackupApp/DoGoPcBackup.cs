@@ -88,16 +88,13 @@ namespace GoPcBackup
 
             try
             {
-                bool    lbFirstInstance;
-                        Mutex loMutex = new Mutex(false, "Local\\" + Application.ResourceAssembly.GetName().Name, out lbFirstInstance);
-                        if ( !lbFirstInstance )
-                        {
-                            DoGoPcBackup.ActivateAlreadyRunningInstance();
-                            return;
-                        }
+                tvProfile   loProfile = new tvProfile(args);
+                bool        lbFirstInstance;
+                            Mutex loMutex = new Mutex(false, "Local\\" + Application.ResourceAssembly.GetName().Name, out lbFirstInstance);
+                            if ( !lbFirstInstance )
+                                DoGoPcBackup.ActivateAlreadyRunningInstance();
 
-                tvProfile loProfile = new tvProfile(args);
-                if ( !loProfile.bExit )
+                if ( lbFirstInstance && !loProfile.bExit )
                 {
                     loProfile.GetAdd("-Help",
                             @"

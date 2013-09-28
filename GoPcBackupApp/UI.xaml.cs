@@ -339,6 +339,7 @@ namespace GoPcBackup
                                                         , lsLicenseCaption, true);
                                     loLicense.TextBackground = Brushes.LightYellow;
                                     loLicense.OkButtonText = "Accept";
+                                    loLicense.bDefaultButtonDisabled = true;
                                     loLicense.ShowDialog();
 
                     if ( loLicense.bOkButtonClicked )

@@ -29,6 +29,17 @@
                 <Setter Property="Width" Value="Auto" />
             </Style>
 
+            <Style x:Key="HeaderLabel" TargetType="{x:Type Label}">
+                <Setter Property="Background" Value="WhiteSmoke" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="Padding" Value="0,4,0,0" />
+                <Setter Property="Height" Value="25" />
+                <Setter Property="FontFamily" Value="Global San Serif" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="FontWeight" Value="Bold" />
+                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            </Style>
+
             <Style x:Key="ScrollingTextButton" BasedOn="{StaticResource GlassButtonStyle}" TargetType="{x:Type Button}">
                 <Setter Property="Background" Value="{Binding ElementName=InnerBorder, Path=Background}" />
                 <Setter Property="FontFamily" Value="Global San Serif" />
@@ -44,44 +55,12 @@
                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             </Style>
 
-            <!-- Allows for selectable text in a TextBox that also looks like a TextBlock.
-                 Thanks to juanjo.arana: http://tinyurl.com/nk3o52b (stackoverflow) -->
-            <Style x:Key="ScrollingTextBlock" TargetType="TextBox">
-            <Setter Property="IsReadOnly" Value="True"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-            <Setter Property="IsTabStop" Value="False"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Padding" Value="-2,0,0,0"/>
-                <!-- The Padding -2,0,0,0 is required because the TextBox
-                                seems to have an inherent "Padding" of about 2 pixels.
-                                Without the Padding property,
-                                the text seems to be 2 pixels to the left
-                                compared to a TextBlock
-                                -->
-                <Style.Triggers>
-                  <MultiTrigger>
-                    <MultiTrigger.Conditions>
-                      <Condition Property="IsMouseOver" Value="False" />
-                      <Condition Property="IsFocused" Value="False" />
-                    </MultiTrigger.Conditions>
-                    <Setter Property="Template">
-                      <Setter.Value>
-                        <ControlTemplate TargetType="{x:Type TextBox}">
-                          <TextBlock Text="{TemplateBinding Text}" 
-                                     FontSize="{TemplateBinding FontSize}"
-                                     FontStyle="{TemplateBinding FontStyle}"
-                                     FontFamily="{TemplateBinding FontFamily}"
-                                     FontWeight="{TemplateBinding FontWeight}"
-                                     TextWrapping="{TemplateBinding TextWrapping}"
-                                     Foreground="{DynamicResource NormalText}"
-                                     Padding="0,0,0,0"
-                                               />
-                        </ControlTemplate>
-                      </Setter.Value>
-                    </Setter>
-                  </MultiTrigger>
-                </Style.Triggers>
+            <Style x:Key="ScrollingTextBlock" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Global San Serif" />
+                <Setter Property="FontSize" Value="18" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="TextWrapping" Value="Wrap"/>
             </Style>
         </ResourceDictionary>
     </Window.Resources>
@@ -105,7 +84,10 @@
                 </Grid>
                 <Grid Name="BottomPanel" DockPanel.Dock="Bottom">
                     <StackPanel Name="MainButtonPanel" Orientation="Horizontal">
-                        <Button Name="btnMaximize" Click="mnuMaximize_Click" ToolTip="Maximize" Margin="10,10,5,10" Style="{StaticResource ScrollingTextButton}">
+                        <Button Name="btnCopy" Click="btnCopy_Click" ToolTip="Minimize" Margin="10,10,5,10" Style="{StaticResource ScrollingTextButton}">
+                            Copy
+                        </Button>
+                        <Button Name="btnMaximize" Click="mnuMaximize_Click" ToolTip="Maximize" Margin="5,10,5,10" Style="{StaticResource ScrollingTextButton}">
                             Maximize
                         </Button>
                         <Button Name="btnRestore" Click="mnuRestore_Click" ToolTip="Maximize" Margin="5,10,5,10" Style="{StaticResource ScrollingTextButton}">
@@ -127,10 +109,10 @@
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Name="MiddlePanelCaption"
                             CornerRadius="10" BorderThickness="5" BorderBrush="WhiteSmoke" Margin="20,0,20,20">
-                        <TextBox Name="txtMessageCaption" Height="25" TextAlignment="Center" Background="WhiteSmoke" />
+                        <Label Name="txtMessageCaption" Style="{StaticResource HeaderLabel}" />
                     </Border>
                     <ScrollViewer Grid.Row="1" Name="scrMessageText" Margin="20,0,20,0" Style="{StaticResource ScrollingTextBar}">
-                        <TextBox Name="txtMessageText" Style="{StaticResource ScrollingTextBlock}" />
+                        <TextBlock Name="txtMessageText"  Style="{StaticResource ScrollingTextBlock}" />
                     </ScrollViewer>
                 </Grid>
             </DockPanel>

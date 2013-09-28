@@ -2404,14 +2404,22 @@ namespace tvToolbox
                         String lsNewPath = Path.Combine(
                                 Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), lsFilnameOnly);
                         String lsMessage = String.Format(( Directory.Exists(lsNewPath)
-                                ? "an existing folder ({0}) on your desktop."
-                                : "a new folder ({0}) on your desktop." ), lsFilnameOnly);
+                                ? "an existing folder ({0}) on your desktop"
+                                : "a new folder ({0}) on your desktop" ), lsFilnameOnly);
 
-                        if ( DialogResult.OK == MessageBox.Show(String.Format(
-                                      "For your convenience, this program will be copied to " + lsMessage + Environment.NewLine + Environment.NewLine
-                                    + "Copy and proceed from there?", lsPathFile), "Copy EXE to Desktop?"
-                                    , MessageBoxButtons.OKCancel, MessageBoxIcon.Question) )
+                        if ( DialogResult.OK == MessageBox.Show(String.Format(@"
+For your convenience, this program will be copied
+to {0}.
+
+Depending on your system, this may take several seconds.  
+
+Copy and proceed from there?
+
+"
+                                    , lsMessage), "Copy EXE to Desktop?", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) )
                         {
+                            Application.UseWaitCursor = true;
+
                             String lsNewExePathFile = Path.Combine(lsNewPath, Path.GetFileName(this.sExePathFile));
 
                             if ( !Directory.Exists(lsNewPath) )
@@ -2422,18 +2430,6 @@ namespace tvToolbox
                             ProcessStartInfo    loStartInfo = new ProcessStartInfo(lsNewExePathFile);
                                                 loStartInfo.WorkingDirectory = Path.GetDirectoryName(lsNewExePathFile);
                             Process             loProcess = Process.Start(loStartInfo);
-
-                            // I've noticed intermittent launch failures in Win7. This
-                            // kludge gives the OS a second chance to do its thing.
-
-                            System.Windows.Forms.Application.DoEvents();
-                            System.Threading.Thread.Sleep(200);
-
-                            if ( loProcess.HasExited
-                                    && DialogResult.OK == MessageBox.Show("The software has been copied to your desktop. Continue?"
-                                            , "Run EXE?", MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
-                                    )
-                                Process.Start(loStartInfo);
 
                             //this.bExit = true;        // This was moved outside the block after disabling the other show below.
                         }
@@ -2461,7 +2457,9 @@ namespace tvToolbox
             }
             else
             {
-                String  lsFileAsStream;
+                Application.UseWaitCursor = true;
+
+                String  lsFileAsStream = null;
                         this.UnlockProfileFile();
 
                         StreamReader loStreamReader = null;
@@ -2471,17 +2469,20 @@ namespace tvToolbox
                             loStreamReader = new StreamReader(lsPathFile);
                             lsFileAsStream = loStreamReader.ReadToEnd();
                         }
-                        catch (Exception)
+                        catch (IOException ex)
                         {
-                            // Wait a moment ...
-                            System.Threading.Thread.Sleep(200);
+                            if ( !ex.Message.Contains("being used by another process") )
+	                        {
+                                // Wait a moment ...
+                                System.Threading.Thread.Sleep(200);
 
-                            // Then try again.
-                            if ( null != loStreamReader )
-                                loStreamReader.Close();
+                                // Then try again.
+                                if ( null != loStreamReader )
+                                    loStreamReader.Close();
 
-                            loStreamReader = new StreamReader(lsPathFile);
-                            lsFileAsStream = loStreamReader.ReadToEnd();
+                                loStreamReader = new StreamReader(lsPathFile);
+                                lsFileAsStream = loStreamReader.ReadToEnd();
+	                        }
                         }
                         finally
                         {
@@ -3198,14 +3199,7 @@ namespace tvToolbox
 
                     lbLockProfileFile = true;
                 }
-                catch
-                {
-                    MessageBox.Show(String.Format(
-                              "The profile file for this program can't be locked ({0}).\n\n"
-                            + "Another process must have it open.", asPathFile)
-                                    , "Can't Access Profile File"
-                            , MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
+                catch {/* Most likely trying to run more than one instance. Let main app handle it. */}
             }
 
             return lbLockProfileFile;
