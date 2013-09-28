@@ -89,6 +89,29 @@ namespace GoPcBackup
             }
         }
 
+        public string OkButtonText
+        {
+            set
+            {
+                this.btnOK.Content = value;
+                this.btnOK.ToolTip = value;
+                this.btnOK.Visibility = Visibility.Visible;
+            }
+        }
+
+        public bool bOkButtonClicked
+        {
+            get
+            {
+                return mbOkButtonClicked;
+            }
+            set
+            {
+                mbOkButtonClicked = value;
+            }
+        }
+        private bool mbOkButtonClicked = false;
+
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -96,6 +119,12 @@ namespace GoPcBackup
             miOriginalScreenHeight = SystemParameters.PrimaryScreenHeight;
             miOriginalScreenWidth = SystemParameters.PrimaryScreenWidth;
             this.ShowMe();
+        }
+
+        private void btnOk_Click(object sender, RoutedEventArgs e)
+        {
+            mbOkButtonClicked = true;
+            this.Close();
         }
 
         private void mnuExit_Click(object sender, RoutedEventArgs e)
@@ -146,6 +175,7 @@ namespace GoPcBackup
             if (       !lsControlClass.Contains("Bullet")
                     && !lsControlClass.Contains("Button")
                     && !lsControlClass.Contains("ClassicBorderDecorator")
+                    && !lsControlClass.Contains("Run")
                     && !lsControlClass.Contains("Scroll")
                     && !lsControlClass.Contains("Text")
                     )

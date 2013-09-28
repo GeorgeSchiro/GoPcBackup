@@ -2421,8 +2421,20 @@ namespace tvToolbox
 
                             ProcessStartInfo    loStartInfo = new ProcessStartInfo(lsNewExePathFile);
                                                 loStartInfo.WorkingDirectory = Path.GetDirectoryName(lsNewExePathFile);
+                            Process             loProcess = Process.Start(loStartInfo);
 
-                            Process.Start(loStartInfo);                
+                            // I've noticed intermittent launch failures in Win7. This
+                            // kludge gives the OS a second chance to do its thing.
+
+                            System.Windows.Forms.Application.DoEvents();
+                            System.Threading.Thread.Sleep(200);
+
+                            if ( loProcess.HasExited
+                                    && DialogResult.OK == MessageBox.Show("The software has been copied to your desktop. Continue?"
+                                            , "Run EXE?", MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
+                                    )
+                                Process.Start(loStartInfo);
+
                             //this.bExit = true;        // This was moved outside the block after disabling the other show below.
                         }
 

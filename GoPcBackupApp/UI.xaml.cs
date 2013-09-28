@@ -330,18 +330,18 @@ namespace GoPcBackup
                     tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
                             , lsLicensePathFile, null);
 
-                    tvMessageBox.ShowBriefly(this, string.Format("The \"{0}\" will now be displayed. Please read it."
-                            , lsLicenseCaption), lsLicenseCaption, tvMessageBoxIcons.Information, 2);
-
+                    tvMessageBox.ShowBriefly(this, string.Format("The \"{0}\" will now be displayed."
+                                    + "\r\n\r\nPlease accept it if you would like to use this software."
+                            , lsLicenseCaption), lsLicenseCaption, tvMessageBoxIcons.Information, 3);
 
                     ScrollingText   loLicense = new ScrollingText(moDoGoPcBackup.sFileAsStream(
                                                           moProfile.sRelativeToProfilePathFile(lsLicensePathFile))
                                                         , lsLicenseCaption, true);
                                     loLicense.TextBackground = Brushes.LightYellow;
+                                    loLicense.OkButtonText = "Accept";
                                     loLicense.ShowDialog();
 
-                    if ( tvMessageBoxResults.Yes == tvMessageBox.Show(this, string.Format("Do you accept the license to use this software?"
-                                , lsLicenseCaption), lsLicenseCaption, tvMessageBoxButtons.YesNo, tvMessageBoxIcons.Question) )
+                    if ( loLicense.bOkButtonClicked )
                     {
                         moProfile["-LicenseAccepted"] = true;
                         moProfile.Save();
@@ -430,6 +430,11 @@ namespace GoPcBackup
                 gridBackupDevices.Children.Clear();
                 this.ConfigWizardTabs.SelectedIndex = 0;
             }
+        }
+
+        private void btnNextSetupStep_Click(object sender, RoutedEventArgs e)
+        {
+            this.ConfigWizardTabs.SelectedIndex++;
         }
 
         private void btnConfigureDetails_Click(object sender, RoutedEventArgs e)
@@ -569,6 +574,7 @@ namespace GoPcBackup
             if (       !lsControlClass.Contains("Bullet")
                     && !lsControlClass.Contains("Button")
                     && !lsControlClass.Contains("ClassicBorderDecorator")
+                    && !lsControlClass.Contains("Run")
                     && !lsControlClass.Contains("Scroll")
                     && !lsControlClass.Contains("Text")
                     )

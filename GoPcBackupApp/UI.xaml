@@ -99,8 +99,9 @@
                                 Style="{StaticResource ConfigWizardTab}"
                                 >
                         <TabItem Name="tabStep1" Header="Setup Step 1." Style="{StaticResource ConfigWizardTabItems}">
-                            <Viewbox>
-                            <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
+                            <Grid>
+                                <Viewbox>
+                                    <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
 <TextBlock Style="{StaticResource ConfigWizardTextTop}">
     1. To get started, please select your primary location to backup.
 </TextBlock>
@@ -119,13 +120,19 @@
     <Label>Folder to Backup:</Label>
     <TextBox Name="FolderToBackup" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
 </StackPanel>
-<Label Height="10"></Label>
-                            </StackPanel>
-                            </Viewbox>
+                                    </StackPanel>
+                                </Viewbox>
+                                <Button Click="btnNextSetupStep_Click" Style="{StaticResource ConfigWizardNextTabButton}">
+                                    <TextBlock Style="{StaticResource MainCanvasButtonMultiLineText}">
+                                        Next<LineBreak/>Step
+                                    </TextBlock>
+                                </Button>
+                            </Grid>
                         </TabItem>
-                        <TabItem Name="tabStep2" Header="Setup Step 2." Style="{StaticResource ConfigWizardTabItems}">
-                            <Viewbox>
-                            <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
+                        <TabItem Name="tabStep2" Header="Step 2." Style="{StaticResource ConfigWizardTabItems}">
+                            <Grid>
+                                <Viewbox>
+                                    <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
 <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextTop}">
     2. Select your backup output filename and archive location (ie. where all of your backups go).
 </TextBlock>
@@ -152,9 +159,9 @@
     Select Archive
     </Button>
 </Grid>  
-<CheckBox Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content="Back up to the virtual machine host?"
+<CheckBox Grid.Row="0" Grid.Column="1" Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content="Back up to the virtual machine host?"
         Checked="UseVirtualMachineHostArchive_Checked" Unchecked="UseVirtualMachineHostArchive_Unchecked" Style="{StaticResource ConfigWizardCheckBox}" />
-<Grid Name="VirtualMachineHostGrid" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
+<Grid Grid.Row="1" Grid.Column="1" Name="VirtualMachineHostGrid" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
     <Grid.RowDefinitions>
         <RowDefinition />
         <RowDefinition />
@@ -171,9 +178,9 @@
     Select Archive
     </Button>
 </Grid>                                
-<CheckBox Margin="90,10,10,10" Name="UseConnectVirtualMachineHost" Content="Force reconnect to virtual machine host before each backup?" Visibility="Hidden" 
+<CheckBox Grid.Row="2" Grid.Column="1" Margin="90,10,10,10" Name="UseConnectVirtualMachineHost" Content="Force reconnect to virtual machine host before each backup?" Visibility="Hidden" 
         Checked="UseConnectVirtualMachineHost_Checked" Unchecked="UseConnectVirtualMachineHost_Unchecked" Style="{StaticResource ConfigWizardCheckBox}" />
-<Grid Name="ConnectVirtualMachineHostGrid" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
+<Grid Grid.Row="3" Grid.Column="1" Name="ConnectVirtualMachineHostGrid" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
     <Grid.RowDefinitions>
         <RowDefinition />
         <RowDefinition />
@@ -189,12 +196,19 @@
     <Label Grid.Row="1" Grid.Column="0">VM Host Password:</Label>    
     <TextBox Width="300" Grid.Row="1" Grid.Column="1" Name="VirtualMachineHostPassword" Style="{StaticResource ConfigWizardTextSelected}"  />
 </Grid>                                
-                            </StackPanel>
-                            </Viewbox>
+                                    </StackPanel>
+                                </Viewbox>
+                                <Button Click="btnNextSetupStep_Click" Style="{StaticResource ConfigWizardNextTabButton}">
+                                    <TextBlock Style="{StaticResource MainCanvasButtonMultiLineText}">
+                                        Next<LineBreak/>Step
+                                    </TextBlock>
+                                </Button>
+                            </Grid>
                         </TabItem>
-                        <TabItem Name="tabStep3" Header="Setup Step 3." Style="{StaticResource ConfigWizardTabItems}">
-                            <Viewbox>
-                            <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
+                        <TabItem Name="tabStep3" Header="Step 3." Style="{StaticResource ConfigWizardTabItems}">
+                            <Grid>
+                                <Viewbox>
+                                    <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
 <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextTop}">
 3. Select the additional backup devices you would like to copy your backups to.
 </TextBlock>
@@ -246,12 +260,19 @@
 </Grid>
 
 
-                            </StackPanel>
-                            </Viewbox>
+                                    </StackPanel>
+                                </Viewbox>
+                                <Button Click="btnNextSetupStep_Click" Style="{StaticResource ConfigWizardNextTabButton}">
+                                    <TextBlock Style="{StaticResource MainCanvasButtonMultiLineText}">
+                                        Next<LineBreak/>Step
+                                    </TextBlock>
+                                </Button>
+                            </Grid>
                         </TabItem>
-                        <TabItem  Name="tabStep4" Header="Setup Step 4." Style="{StaticResource ConfigWizardTabItems}">
-                            <Viewbox>
-                            <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
+                        <TabItem  Name="tabStep4" Header="Step 4." Style="{StaticResource ConfigWizardTabItems}">
+                            <Grid>
+                                <Viewbox>
+                                    <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
 <TextBlock Style="{StaticResource ConfigWizardTextTop}">
     4. Select the time you would like to run the backup each day.
 </TextBlock>
@@ -282,8 +303,14 @@
     <TextBox Name="BackupTime" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
 </StackPanel>
 <Label Height="10"></Label>  
-                            </StackPanel>
-                            </Viewbox>
+                                    </StackPanel>
+                                </Viewbox>
+                                <Button Click="btnNextSetupStep_Click" Style="{StaticResource ConfigWizardNextTabButton}">
+                                    <TextBlock Style="{StaticResource MainCanvasButtonMultiLineText}">
+                                        Next<LineBreak/>Step
+                                    </TextBlock>
+                                </Button>
+                            </Grid>
                         </TabItem>
                         <TabItem Name="tabFinishSetup" Header="Finish Setup" Style="{StaticResource ConfigWizardTabItems}">
                             <Viewbox>

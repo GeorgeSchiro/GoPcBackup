@@ -2210,16 +2210,16 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
                             }
                             else
                             {
-                                loArgs.Add("-BackupOutputPathFile"     , msCurrentBackupOutputPathFile                          );
-                                loArgs.Add("-BackupOutputFilename"     , Path.GetFileName(msCurrentBackupOutputPathFile)        );
-                                loArgs.Add("-BackupBaseOutputFilename" , Path.GetFileName(this.sBackupOutputPathFileBase())     );
-                                loArgs.Add("-LocalArchivePath"         , this.sArchivePath()                                    );
-                                loArgs.Add("-VirtualMachineHostArchive", moProfile.sValue("-VirtualMachineHostArchivePath", "") );
-                                loArgs.Add("-AppName"                  , Application.ResourceAssembly.GetName().Name            );
-                                loArgs.Add("-BackupExePathFile"        , Application.ResourceAssembly.Location                  );
-                                loArgs.Add("-BackupProfilePathFile"    , moProfile.sBackupPathFile                              );
-                                loArgs.Add("-BackupProfileFilename"    , Path.GetFileName(moProfile.sLoadedPathFile)            );
-                                loArgs.Add("-LogPathFile"              , moProfile.sRelativeToProfilePathFile(this.sLogPathFile));
+                                loArgs.Add("-BackupOutputPathFile"     , msCurrentBackupOutputPathFile                                          );
+                                loArgs.Add("-BackupOutputFilename"     , Path.GetFileName(msCurrentBackupOutputPathFile)                        );
+                                loArgs.Add("-BackupBaseOutputFilename" , Path.GetFileName(this.sBackupOutputPathFileBase())                     );
+                                loArgs.Add("-LocalArchivePath"         , this.sArchivePath()                                                    );
+                                loArgs.Add("-VirtualMachineHostArchive", moProfile.sValue("-VirtualMachineHostArchivePath", "")                 );
+                                loArgs.Add("-AppName"                  , Path.GetFileNameWithoutExtension(Application.ResourceAssembly.Location));
+                                loArgs.Add("-BackupExePathFile"        , Application.ResourceAssembly.Location                                  );
+                                loArgs.Add("-BackupProfilePathFile"    , moProfile.sBackupPathFile                                              );
+                                loArgs.Add("-BackupProfileFilename"    , Path.GetFileName(moProfile.sLoadedPathFile)                            );
+                                loArgs.Add("-LogPathFile"              , moProfile.sRelativeToProfilePathFile(this.sLogPathFile)                );
 
                                 moProfile["-BackupDoneArgs"] = loArgs.sCommandBlock();
                                 moProfile.Save();
@@ -2439,7 +2439,7 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
 
 "
                             , Path.Combine(Path.Combine(lsBackupOutputPath
-                                    , Application.ResourceAssembly.GetName().Name)
+                                    , Path.GetFileNameWithoutExtension(Application.ResourceAssembly.Location))
                                     , Path.GetFileName(moProfile.sLoadedPathFile))
                             ));
 
