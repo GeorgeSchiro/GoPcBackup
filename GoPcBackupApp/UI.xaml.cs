@@ -202,6 +202,7 @@ namespace GoPcBackup
                     else
                         this.PopulateTimerDisplay(mcsStoppedText);
 
+                    this.CreateSysTrayIcon();
                     moNotifyIcon.targetNotifyIcon.Text = mcsNotifyIconIdleText;
                     this.EnableButtons();
                 }
@@ -215,6 +216,7 @@ namespace GoPcBackup
                     this.MiddlePanelOutputText.Visibility = Visibility.Visible;
 
                     this.PopulateTimerDisplay(mcsBackingUpText);
+                    this.CreateSysTrayIcon();
                     moNotifyIcon.targetNotifyIcon.Text = mcsNotifyIconProcText;
 
                     // Indicate that the backup has run at least once.
