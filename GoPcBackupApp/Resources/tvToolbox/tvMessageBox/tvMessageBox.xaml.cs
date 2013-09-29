@@ -51,6 +51,9 @@ public partial class tvMessageBox : Window
     private const string msProfilePromptKeyPrefix = "-MsgBoxPrompt";
     private const string msProfilePromptKeySuffix = "Answer";
 
+    private bool mbIsShowWait = false;
+
+
     public tvMessageBox()
     {
         InitializeComponent();
@@ -111,6 +114,9 @@ public partial class tvMessageBox : Window
 
     private void Window_MouseDown(object sender, MouseButtonEventArgs e)
     {
+        if ( mbIsShowWait )
+            this.Close();
+        else
         if ( MouseButton.Left == e.ChangedButton )
             this.DragMove();
     }
@@ -560,12 +566,35 @@ public partial class tvMessageBox : Window
         }
     }
 
-    public void ShowWait(Window aoWindow, string asMessageText)
+    public void ShowWait(Window aoWindow, string asMessageText, int aiStayOpenAtLeastMS)
     {
         this.Cursor = Cursors.Wait;
-        this.MessageText.Text = asMessageText;
+        mbIsShowWait = true;
         this.BottomPanel.Height = 35;
-        this.ShowDialog();
+        this.MessageText.Text = asMessageText;
+
+        // Use some parent window attributes, if available.
+        if ( null != aoWindow )
+        {
+            // Use the parent window's icon.
+            this.Icon = aoWindow.Icon;
+
+            // Use the parent window title with an added message.
+            this.Title = aoWindow.Title + " - wait ...";
+        }
+
+        this.Show();
+
+        if ( aiStayOpenAtLeastMS > 0 )
+        {
+            DateTime ldtOpenTime = DateTime.Now.AddMilliseconds(aiStayOpenAtLeastMS);
+
+            while ( DateTime.Now < ldtOpenTime )
+            {
+                System.Windows.Forms.Application.DoEvents();
+                System.Threading.Thread.Sleep(200);
+            }
+        }
     }
 
     public static void ShowError(Window aoWindow, Exception aoException)

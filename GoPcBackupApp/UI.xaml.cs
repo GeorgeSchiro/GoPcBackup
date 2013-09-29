@@ -21,10 +21,12 @@ namespace GoPcBackup
         private tvProfile       moProfile;
         private DoGoPcBackup    moDoGoPcBackup;
 
-        private const string mcsBackingUpText   = "Backup Running";
-        private const string mcsNoPreviousText  = "none";
-        private const string mcsStoppedText     = "stopped";
-        private const string mcsWaitingText     = "Waiting";
+        private const string mcsBackingUpText       = "Backup Running";
+        private const string mcsNoPreviousText      = "none";
+        private const string mcsStoppedText         = "stopped";
+        private const string mcsWaitingText         = "Waiting";
+        private const string mcsNotifyIconIdleText  = "GoPC Backup";
+        private const string mcsNotifyIconProcText  = "GoPC Backup - busy";
 
         private double  miOriginalScreenHeight;
         private double  miOriginalScreenWidth;
@@ -47,8 +49,10 @@ namespace GoPcBackup
 
         private Button              moStartStopButtonState = new Button();
         private DateTime            mdtNextStart = DateTime.MinValue;
-        private DispatcherTimer     moMainLoopTimer = null;
+        private DispatcherTimer     moMainLoopTimer;
         private ExtendedNotifyIcon  moNotifyIcon;
+        private tvMessageBox        moNotifyWaitMessage;
+        private WindowState         mePreviousWindowState;
 
 
         private UI() { }
@@ -78,21 +82,39 @@ namespace GoPcBackup
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
-            HwndSource source = PresentationSource.FromVisual(this) as HwndSource;
-            source.AddHook(WndProc);
+            HwndSource  loSource = PresentationSource.FromVisual(this) as HwndSource;
+                        loSource.AddHook(WndProc);
         }
 
         [DllImport("user32")]
-        public static extern int RegisterWindowMessage(string message);
-        public static readonly int WM_SHOWME = RegisterWindowMessage("WM_SHOWME_GoPcBackup");
+        public static extern int    RegisterWindowMessage(string message);
+        public static readonly int  WM_SHOWME = RegisterWindowMessage("WM_SHOWME_GoPcBackup");
+        [DllImport("user32")]
+        public static extern bool   PostMessage(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam);
+        public static readonly int  HWND_BROADCAST = 0xffff;
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             // This handles the "WM_SHOWME" message so another
             // instance can display this one before exiting.
             if( WM_SHOWME == msg )
+            {
                 this.ShowMe();
-     
+
+                if ( null != moNotifyWaitMessage )
+                {
+                    // Wait for the UI to redisplay.
+                    while ( Visibility.Visible != this.Visibility )
+                    {
+                        System.Windows.Forms.Application.DoEvents();
+                        System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 200));
+                    }
+
+                    moNotifyWaitMessage.Close();
+                    moNotifyWaitMessage = null;
+                }
+            }
+
             return IntPtr.Zero;
         }
 
@@ -180,6 +202,7 @@ namespace GoPcBackup
                     else
                         this.PopulateTimerDisplay(mcsStoppedText);
 
+                    moNotifyIcon.targetNotifyIcon.Text = mcsNotifyIconIdleText;
                     this.EnableButtons();
                 }
                 else
@@ -192,6 +215,7 @@ namespace GoPcBackup
                     this.MiddlePanelOutputText.Visibility = Visibility.Visible;
 
                     this.PopulateTimerDisplay(mcsBackingUpText);
+                    moNotifyIcon.targetNotifyIcon.Text = mcsNotifyIconProcText;
 
                     // Indicate that the backup has run at least once.
                     mbBackupRan = true;
@@ -249,6 +273,9 @@ namespace GoPcBackup
             // "this.chkUseTimer_SetChecked() is intentionally not used here.
             // We want the stored check value displayed with no side effects.
             this.chkUseTimer.IsChecked = moProfile.bValue("-AutoStart", true);
+
+            // Turns off the "loading" message.
+            moProfile.bAppFullyLoaded = true;
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -306,6 +333,14 @@ namespace GoPcBackup
             if ( 0 != moOtherWindows.Count )
                 foreach (ScrollingText loWindow in moOtherWindows)
                     loWindow.Close();
+        }
+
+        private void Window_StateChanged(object sender, EventArgs e)
+        {
+            // This kludge is needed since attempting to restore a window that is busy
+            // processing (after a system minimize) will typically not be responsive.
+            if ( this.bBackupRunning && WindowState.Minimized == this.WindowState )
+                this.HideMe();
         }
 
         // This method is called before anything else (after init & load events).
@@ -378,12 +413,12 @@ namespace GoPcBackup
                 // Since error output is cached (see "this.GetSetOutputTextPanelErrorCache()"),
                 // the cached error output text should be displayed right away.
                 if ( moProfile.ContainsKey("-PreviousBackupOk") && !moProfile.bValue("-PreviousBackupOk", false) )
-                    this.MiddlePanelOutputText.Visibility = Visibility.Visible;
+                    this.ShowOutputText();
 
                 // If the timer is checked, start the main loop.
                 if ( (bool)this.chkUseTimer.IsChecked )
                 {
-                    // Don't bother dislpaying the timer if there was a previous backup error.
+                    // Don't bother displaying the timer if there was a previous backup error.
                     // FYI, "ContainsKey" is used since existence checking is done on this key
                     // elsewhere (yeah I know, so much for black boxes).
                     if ( !moProfile.ContainsKey("-PreviousBackupOk") || moProfile.bValue("-PreviousBackupOk", false) )
@@ -553,6 +588,8 @@ namespace GoPcBackup
             this.WindowState = WindowState.Maximized;
             this.Height = SystemParameters.MaximizedPrimaryScreenHeight;
             this.Width = SystemParameters.MaximizedPrimaryScreenWidth;
+
+            mePreviousWindowState = WindowState.Maximized;
         }
 
         private void mnuRestore_Click(object sender, RoutedEventArgs e)
@@ -560,6 +597,8 @@ namespace GoPcBackup
             this.WindowState = WindowState.Normal;
             this.Height = miAdjustedWindowHeight;
             this.Width = miAdjustedWindowWidth;
+
+            mePreviousWindowState = WindowState.Normal;
         }
 
         private void mnuMinimize_Click(object sender, RoutedEventArgs e)
@@ -765,7 +804,7 @@ namespace GoPcBackup
                     if (Visibility.Visible != this.MiddlePanelOutputText.Visibility)
                     {
                         this.HideMiddlePanels();
-                        this.MiddlePanelOutputText.Visibility = Visibility.Visible;
+                        this.ShowOutputText();
                     }
                 }
                 else
@@ -777,7 +816,22 @@ namespace GoPcBackup
                     }
                 }
 
-                this.ShowMe();
+                if ( !this.bBackupRunning )
+                {
+                    this.ShowMe();
+                }
+                else
+                {
+                    if ( null == moNotifyWaitMessage )
+                        moNotifyWaitMessage = new tvMessageBox();
+
+                    moNotifyWaitMessage.ShowWait(this, mcsNotifyIconProcText + " - please wait ...", 350);
+
+                    // This kludge is necessary to overcome sometimes severe
+                    // delays processing click events to redisplay the main 
+                    // window during heavy backup or cleanup processing.
+                    PostMessage((IntPtr)HWND_BROADCAST, WM_SHOWME, IntPtr.Zero, IntPtr.Zero);
+                }
             }
         }
 
@@ -786,6 +840,7 @@ namespace GoPcBackup
         private void HideMe()
         {
             this.MainCanvas.Visibility = Visibility.Hidden;
+            this.WindowState = mePreviousWindowState;
             this.Hide();
             moNotifyIcon_OnHideWindow();
             this.bVisible = false;
@@ -797,12 +852,12 @@ namespace GoPcBackup
 
             this.AdjustWindowSize();
             this.MainCanvas.Visibility = Visibility.Visible;
-            this.WindowState = WindowState.Normal;
+            this.WindowState = mePreviousWindowState;
             this.Topmost = true;
             System.Windows.Forms.Application.DoEvents();
             this.Show();
-            System.Windows.Forms.Application.DoEvents();
             this.bVisible = true;
+            System.Windows.Forms.Application.DoEvents();
             this.Topmost = lTopmost;
             System.Windows.Forms.Application.DoEvents();
 
@@ -1523,6 +1578,14 @@ You can continue this later wherever you left off. "
             this.MiddlePanelConfigWizard.Visibility = Visibility.Visible;
         }
 
+        private void ShowOutputText()
+        {
+            if ( "" != this.BackupProcessOutput.Text.Trim() )
+                this.MiddlePanelOutputText.Visibility = Visibility.Visible;
+            else
+                this.MiddlePanelTimer.Visibility = Visibility.Visible;
+        }
+
         private void HideMiddlePanels()
         {
             this.MiddlePanelTimer.Visibility = Visibility.Collapsed;
@@ -1720,7 +1783,7 @@ You can continue this later wherever you left off. "
                 moNotifyIcon.targetNotifyIcon.Icon = new System.Drawing.Icon(
                         Application.GetResourceStream(new Uri(
                         "pack://application:,,,/Resources/images/GoPC.ico")).Stream);
-                moNotifyIcon.targetNotifyIcon.Text = "GoPC Backup";
+                moNotifyIcon.targetNotifyIcon.Text = mcsNotifyIconIdleText;
             }
 
             // Also make sure the timer / close checkboxes are visible

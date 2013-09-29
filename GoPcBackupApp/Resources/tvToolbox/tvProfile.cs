@@ -1154,6 +1154,26 @@ namespace tvToolbox
         private bool mbFileJustCreated = false;
 
         /// <summary>
+        /// Returns true after the application informs
+        /// the profile object it has been fully loaded.
+        /// </summary>
+        public  bool  bAppFullyLoaded
+        {
+            get
+            {
+                return mbAppFullyLoaded;
+            }
+            set
+            {
+                mbAppFullyLoaded = value;
+
+                if ( mbAppFullyLoaded && null != moAppLoadingWaitMsg )
+                    moAppLoadingWaitMsg.Close();
+            }
+        }
+        private bool mbAppFullyLoaded = false;
+
+        /// <summary>
         /// Returns true if the EXE is in a folder (or subfolder) with the same name.
         /// </summary>
         public bool bInOwnFolder
@@ -2379,7 +2399,9 @@ namespace tvToolbox
         {
             // If asPathFile is not null, check existence. Otherwise check for the existence
             // of one of several default filenames. Returned null means none exist.
-            String lsPathFile = this.sFileExistsFromList(this.sRelativeToProfilePathFile(asPathFile));
+            String  lsPathFile = this.sFileExistsFromList(this.sRelativeToProfilePathFile(asPathFile));
+            String  lsFilnameOnly = Path.GetFileNameWithoutExtension(this.sExePathFile);
+            String  lcsLoadingMsg = lsFilnameOnly + " loading, please wait ...";
 
             if ( null == lsPathFile )
             {
@@ -2394,9 +2416,6 @@ namespace tvToolbox
 
                 if ( tvProfileFileCreateActions.PromptToCreateFile == this.eFileCreateAction )
                 {
-                    String lsPathOnly = Path.GetDirectoryName(this.sExePathFile);
-                    String lsFilnameOnly = Path.GetFileNameWithoutExtension(this.sExePathFile);
-
                     // If the EXE is not already in a folder with a matching name and if the 
                     // EXE is not already installed in a typical installation folder, proceed.
                     if ( !this.bInOwnFolder && !this.bInstalledAlready )
@@ -2418,7 +2437,8 @@ Copy and proceed from there?
 "
                                     , lsMessage), "Copy EXE to Desktop?", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) )
                         {
-                            Application.UseWaitCursor = true;
+                            moAppLoadingWaitMsg = new tvMessageBox();
+                            moAppLoadingWaitMsg.ShowWait(null, lcsLoadingMsg, 250);
 
                             String lsNewExePathFile = Path.Combine(lsNewPath, Path.GetFileName(this.sExePathFile));
 
@@ -2457,7 +2477,8 @@ Copy and proceed from there?
             }
             else
             {
-                Application.UseWaitCursor = true;
+                moAppLoadingWaitMsg = new tvMessageBox();
+                moAppLoadingWaitMsg.ShowWait(null, lcsLoadingMsg, 250);
 
                 String  lsFileAsStream = null;
                         this.UnlockProfileFile();
@@ -3223,6 +3244,7 @@ Copy and proceed from there?
         private const char   mccSplitMark = '\u0001';
         private FileStream   moFileStreamProfileFileLock;
         private tvProfile    moInputCommandLineProfile;
+        private tvMessageBox moAppLoadingWaitMsg;
 
 
         private class tvProfileEnumerator : IEnumerator

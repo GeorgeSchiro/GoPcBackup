@@ -654,6 +654,9 @@ Notes:
                         {
                             // Run in batch mode.
 
+                            // Turns off the "loading" message.
+                            loProfile.bAppFullyLoaded = true;
+
                             DoGoPcBackup    loDoDa = new DoGoPcBackup(loProfile);
                                             loDoDa.CleanupFiles();
                                             loDoDa.BackupFiles();

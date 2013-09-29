@@ -9,6 +9,7 @@
         KeyDown="Window_KeyDown"
         MouseDown="Window_MouseDown"
         MouseDoubleClick="Window_MouseDoubleClick"
+        StateChanged="Window_StateChanged"
         Visibility="Hidden"
         >
     <Window.Resources>
