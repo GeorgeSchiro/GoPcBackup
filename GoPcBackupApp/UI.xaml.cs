@@ -870,18 +870,22 @@ namespace GoPcBackup
         {
             bool lbShowInitBeginScriptWarning = true;
 
-            // Don't bother to ask (just do it) if the "backup begin" script doesn't exist yet.
-            if ( moProfile.ContainsKey("-BackupBeginScriptPathFile") )
+            // Don't bother asking if the "backup begin" script
+            // doesn't exist or the "init" switch has been set already.
+            if ( moProfile.ContainsKey("-BackupBeginScriptPathFile")
+                    && !moProfile.bValue("-BackupBeginScriptInit", false) )
+            {
                 lbShowInitBeginScriptWarning = tvMessageBoxResults.OK == tvMessageBox.Show(this
                         , "Are you sure you want reinitialize the \"backup begin\" script to its default state?"
                         , "Reinitialize Begin Script", tvMessageBoxButtons.OKCancel, tvMessageBoxIcons.Exclamation
                         , tvMessageBoxCheckBoxTypes.DontAsk, moProfile, "-InitBeginScript", tvMessageBoxResults.OK
                         );
 
-            if ( lbShowInitBeginScriptWarning )
-            {
-                moProfile["-BackupBeginScriptInit"] = true;
-                moProfile.Save();
+                if ( lbShowInitBeginScriptWarning )
+                {
+                    moProfile["-BackupBeginScriptInit"] = true;
+                    moProfile.Save();
+                }
             }
 
             return lbShowInitBeginScriptWarning;
@@ -891,19 +895,26 @@ namespace GoPcBackup
         {
             bool lbShowInitScriptsWarning = true;
 
-            // Don't bother to ask (just do it) if neither script exists yet.
-            if ( moProfile.ContainsKey("-BackupBeginScriptPathFile") || moProfile.ContainsKey("-BackupDoneScriptPathFile") )
+            // Don't bother asking if neither script exists
+            // or both "init" switches have been set already.
+            if ( (moProfile.ContainsKey("-BackupBeginScriptPathFile")
+                    && !moProfile.bValue("-BackupBeginScriptInit", false))
+                    || (moProfile.ContainsKey("-BackupDoneScriptPathFile")
+                        && !moProfile.bValue("-BackupDoneScriptInit", false))
+                    )
+            {
                 lbShowInitScriptsWarning = tvMessageBoxResults.OK == tvMessageBox.Show(this
                         , "Are you sure you want reinitialize both backup scripts to their default states?"
                         , "Reinitialize Both Scripts", tvMessageBoxButtons.OKCancel, tvMessageBoxIcons.Exclamation
                         , tvMessageBoxCheckBoxTypes.DontAsk, moProfile, "-InitBothScripts", tvMessageBoxResults.OK
                         );
 
-            if ( lbShowInitScriptsWarning )
-            {
-                moProfile["-BackupBeginScriptInit"] = true;
-                moProfile["-BackupDoneScriptInit"] = true;
-                moProfile.Save();
+                if ( lbShowInitScriptsWarning )
+                {
+                    moProfile["-BackupBeginScriptInit"] = true;
+                    moProfile["-BackupDoneScriptInit"] = true;
+                    moProfile.Save();
+                }
             }
 
             return lbShowInitScriptsWarning;

@@ -1305,7 +1305,8 @@ Notes:
             ScrollingText   loErrors = new ScrollingText(asFileAsStream, asCaption);
                             loErrors.Show();
 
-                            this.oUI.oOtherWindows.Add(loErrors);
+                            if ( null != this.oUI )
+                                this.oUI.oOtherWindows.Add(loErrors);
         }
 
         /// <summary>
@@ -1326,7 +1327,8 @@ Notes:
                                         loFileList.TextFontFamily = new FontFamily("Courier New");
                                         loFileList.Show();
 
-                                        this.oUI.oOtherWindows.Add(loFileList);
+                                        if ( null != this.oUI )
+                                            this.oUI.oOtherWindows.Add(loFileList);
                     }
                 }
                 else
@@ -1705,7 +1707,8 @@ No file cleanup will be done until you update the configuration.
                 moProfile["-PreviousBackupTime"] = DateTime.Now;
                 moProfile.Save();
 
-                this.oUI.GetSetOutputTextPanelErrorCache();
+                if ( null != this.oUI )
+                    this.oUI.GetSetOutputTextPanelErrorCache();
             }
 
             if ( this.bMainLoopStopped )
@@ -1749,8 +1752,6 @@ No file cleanup will be done until you update the configuration.
                 bool    lbUseConnectMainhost    = moProfile.bValue("-UseConnectVirtualMachineHost", false);
                 string  lsBackupBeginScript     = (moProfile.sValue("-BackupBeginScriptHelp", @"
 @echo off
-if %1=="""" goto :EOF
-::
 :: *** Backup started script goes here. ***
 ::
 :: This script is executed before each backup starts. If you prompt for 

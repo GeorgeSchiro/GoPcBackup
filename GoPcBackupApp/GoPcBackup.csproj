@@ -18,7 +18,7 @@
     </StartupObject>
     <ApplicationIcon>Resources\images\GoPC.ico</ApplicationIcon>
     <TargetZone>LocalIntranet</TargetZone>
-    <GenerateManifests>true</GenerateManifests>
+    <GenerateManifests>false</GenerateManifests>
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
     <SignManifests>true</SignManifests>
     <SignAssembly>true</SignAssembly>
