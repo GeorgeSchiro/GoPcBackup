@@ -160,7 +160,7 @@
     Select Archive
     </Button>
 </Grid>  
-<CheckBox Grid.Row="0" Grid.Column="1" Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content="Back up to the virtual machine host?"
+<CheckBox Grid.Row="0" Grid.Column="1" Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content='Back up to the virtual machine host (uses "backup done" script).'
         Checked="UseVirtualMachineHostArchive_Checked" Unchecked="UseVirtualMachineHostArchive_Unchecked" Style="{StaticResource ConfigWizardCheckBox}" />
 <Grid Grid.Row="1" Grid.Column="1" Name="VirtualMachineHostGrid" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
     <Grid.RowDefinitions>
@@ -179,7 +179,7 @@
     Select Archive
     </Button>
 </Grid>                                
-<CheckBox Grid.Row="2" Grid.Column="1" Margin="90,10,10,10" Name="UseConnectVirtualMachineHost" Content="Force reconnect to virtual machine host before each backup?" Visibility="Hidden" 
+<CheckBox Grid.Row="2" Grid.Column="1" Margin="90,10,10,10" Name="UseConnectVirtualMachineHost" Content="Force reconnect to virtual machine host before each backup." Visibility="Hidden" 
         Checked="UseConnectVirtualMachineHost_Checked" Unchecked="UseConnectVirtualMachineHost_Unchecked" Style="{StaticResource ConfigWizardCheckBox}" />
 <Grid Grid.Row="3" Grid.Column="1" Name="ConnectVirtualMachineHostGrid" Margin="90,0,10,10" HorizontalAlignment="Left" Visibility="Hidden">
     <Grid.RowDefinitions>
@@ -215,7 +215,7 @@
 </TextBlock>
 <Border Margin="10,10,10,30" Style="{StaticResource ConfigWizardTextBorder}">
     <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
-    Your backups will be copied to the root folder of each device you select. After each backup,
+    Your backups will be copied to the root folder of each device you select (uses "backup done" script). After each backup,
     you will be reminded if any of your backup devices were missing. <LineBreak/><LineBreak/>
         
     Notes:  <LineBreak/>
@@ -388,10 +388,10 @@
         <ColumnDefinition />
     </Grid.ColumnDefinitions>
 
-    <CheckBox Grid.Row="0"  Grid.Column="0" Name="BackupFiles" Content="Include backup files process?" Style="{StaticResource ConfigWizardCheckBox}" />
-    <CheckBox Grid.Row="1"  Grid.Column="0" Name="CleanupFiles" Content="Include cleanup files process?" Style="{StaticResource ConfigWizardCheckBox}" />
-    <CheckBox Grid.Row="2"  Grid.Column="0" Name="BackupBeginScriptEnabled" Content='Use "backup begin" script?' Style="{StaticResource ConfigWizardCheckBox}" />
-    <CheckBox Grid.Row="3"  Grid.Column="0" Name="BackupDoneScriptEnabled" Content='Use "backup done" script?' Style="{StaticResource ConfigWizardCheckBox}" />
+    <CheckBox Grid.Row="0"  Grid.Column="0" Name="BackupFiles" Content="Include backup files process." Style="{StaticResource ConfigWizardCheckBox}" />
+    <CheckBox Grid.Row="1"  Grid.Column="0" Name="CleanupFiles" Content="Include cleanup files process." Style="{StaticResource ConfigWizardCheckBox}" />
+    <CheckBox Grid.Row="2"  Grid.Column="0" Name="BackupBeginScriptEnabled" Content='Use "backup begin" script.' Style="{StaticResource ConfigWizardCheckBox}" />
+    <CheckBox Grid.Row="3"  Grid.Column="0" Name="BackupDoneScriptEnabled" Content='Use "backup done" script.' Style="{StaticResource ConfigWizardCheckBox}" />
 </Grid>
 <Button Name="btnSetupGeneralResetAllPrompts" Content="Reset All Prompts" Margin="0,20,0,0"
         Click="btnSetupGeneralResetAllPrompts_Click" Style="{StaticResource ConfigWizardButton}" />
