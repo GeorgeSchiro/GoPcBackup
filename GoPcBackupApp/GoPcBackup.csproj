@@ -24,7 +24,7 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>GoPcBackupSigned.snk</AssemblyOriginatorKeyFile>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <ManifestCertificateThumbprint>32A6E48478873E5B6BF25A3579ED30D831B00A49</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>8E386C069C63DC0481CF6FD219B557CFDB2A15BF</ManifestCertificateThumbprint>
     <ManifestKeyFile>GoPcBackup_TemporaryKey.pfx</ManifestKeyFile>
     <PublishUrl>C:\Desktop\tmp\</PublishUrl>
     <Install>true</Install>

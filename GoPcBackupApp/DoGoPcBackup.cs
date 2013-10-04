@@ -2050,36 +2050,56 @@ set CopyFailures=0
 :: Initialize the ""backup done"" script log file. It's for this run only.
 echo.                    > ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
+
+:: This references the backup software destination copy:
+set FileSpec=%4\%6\%6.exe
+
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo This removes the previous version of the backup software (if any)      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo del %FileSpec%                                                         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     del %FileSpec%                                                         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if exist %FileSpec% echo   Error: %FileSpec% is still there.           >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+
+     if exist %FileSpec% set /A CopyFailures += 1
+
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This backs up the backup software:                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo xcopy /y %7 %4\%6\                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      xcopy /y %7 %4\%6\                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %4\%6\%6.exe echo   Error: %4\%6\%6.exe is not there.     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %FileSpec% echo   Error: %FileSpec% is not there.         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if not exist %4\%6\%6.exe set /A CopyFailures += 1
+     if not exist %FileSpec% set /A CopyFailures += 1
+
+
+:: This references the backup software profile file destination copy:
+set FileSpec=%4\%6\%3\%9.%2.txt
 
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This copies the backup software's current profile file                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo to a subfolder with the backup output file base name:                  >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo echo F : xcopy  /y  %8 %4\%6\%3\%9.%2.txt                              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     echo F | xcopy  /y  %8 %4\%6\%3\%9.%2.txt                              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %4\%6\%3\%9.%2.txt echo   Error: %4\%6\%3\%9.%2.txt is not there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo echo F : xcopy  /y  %8 %FileSpec%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     echo F | xcopy  /y  %8 %FileSpec%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %FileSpec% echo   Error: %FileSpec% is not there.         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if not exist %4\%6\%3\%9.%2.txt set /A CopyFailures += 1
+     if not exist %FileSpec% set /A CopyFailures += 1
 "
 +
 (!lbUseMainhostArchive ? "" :
 @"
+:: This references the backup destination copy on the VM host:
+set FileSpec=%5\%2
+
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This copies the backup to the virtual machine host archive:            >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo copy %1 %5                                                             >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      copy %1 %5                                                             >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %5\%2 echo   Error: %5\%2 is not there.                   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %FileSpec% echo   Error: %FileSpec% is not there.         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if not exist %5\%2 set /A CopyFailures += 1
+     if not exist %FileSpec% set /A CopyFailures += 1
 "
 )
 +
@@ -2123,44 +2143,53 @@ for /L %%x in (1, 1, %BackupDevicePositionExponent%) do set /A BitFieldDevicePos
 :: Add the calculated positional value to the bit field for the current backup device.
 set /A BackupDeviceDecimalBitField += %BitFieldDevicePosition%
 
+
+:: This references the backup destination copy on the current backup device (%1):
+set FileSpec=%1\%BackupBaseOutputFilename%
+
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This removes the previous backup (if any) from %1                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo del %1\%BackupBaseOutputFilename%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     del %1\%BackupBaseOutputFilename%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if exist %1\%BackupBaseOutputFilename% echo   Error: %1\%BackupBaseOutputFilename% is still there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo del %FileSpec%                                                         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     del %FileSpec%                                                         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if exist %FileSpec% echo   Error: %FileSpec% is still there.           >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if exist %1\%BackupBaseOutputFilename% set /A CopyFailures += 1
+     if exist %FileSpec% set /A CopyFailures += 1
 
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This copies the current backup to %1                                   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     copy %BackupOutputPathFile% %1\%BackupBaseOutputFilename%              >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %1\%BackupBaseOutputFilename% echo   Error: %1\%BackupBaseOutputFilename% is not there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo copy %BackupOutputPathFile% %FileSpec%                                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     copy %BackupOutputPathFile% %FileSpec%                                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %FileSpec% echo   Error: %FileSpec% is not there.         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if not exist %1\%BackupBaseOutputFilename% set /A CopyFailures += 1
+     if not exist %FileSpec% set /A CopyFailures += 1
+
 
 :: Exit if the following variables are both empty.
 if %BackupToolName%%BackupBaseOutputFilename%=="""""""" goto :EOF
 
+
+:: This references the backup software destination copy on the current backup device (%1):
+set FileSpec=%1\%BackupToolName%\%BackupBaseOutputFilename%
+
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This removes the previous backup software profile files:               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo rd  /s/q  %1\%BackupToolName%\%BackupBaseOutputFilename%               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     rd  /s/q  %1\%BackupToolName%\%BackupBaseOutputFilename%               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* echo   Error: %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* is still there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo rd  /s/q  %FileSpec%                                                   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     rd  /s/q  %FileSpec%                                                   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if exist %FileSpec%\*.* echo   Error: %FileSpec%\*.* is still there.   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* set /A CopyFailures += 1
+     if exist %FileSpec%\*.* set /A CopyFailures += 1
 
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This copies the backup software to %1\%BackupToolName%:                >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* echo   Error: %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* is not there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %FileSpec%\*.* echo   Error: %FileSpec%\*.* is not there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if not exist %1\%BackupToolName%\%BackupBaseOutputFilename%\*.* set /A CopyFailures += 1
+     if not exist %FileSpec%\*.* set /A CopyFailures += 1
 "
 )                       .Replace("{ProfileFile}", Path.GetFileName(moProfile.sLoadedPathFile))
                         .Replace("{BackupDoneScriptOutputPathFile}", Path.GetFileName(lsBackupDoneScriptOutputPathFile))
