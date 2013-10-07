@@ -153,8 +153,8 @@ After clicking "GoPC" in the system tray, the backup timer is displayed to let y
 ![Next Backup Waiting ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot11.png)
 
 
-    Command-Line Usage
-    ==================
+Command-Line Usage
+==================
 
 
     Open this utility's profile file to see additional options available. It is usually located in the same folder as "GoPcBackup.exe" and has the same name with ".txt" added (see "GoPcBackup.exe.txt").
@@ -181,7 +181,8 @@ After clicking "GoPC" in the system tray, the backup timer is displayed to let y
 
 
  
-    Options and Features
+Options and Features
+====================
 
 
     The main options for this utility are listed below with their default values. A brief description of each feature follows.
