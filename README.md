@@ -86,37 +86,37 @@ Whatever you can't configure through the <b>GoPC Backup</b> UI you can configure
 <br>
 Here's an example of some of what you might see in a profile file:
 
-    -BackupTime="4:00 AM"  
-    -UseVirtualMachineHostArchive=True  
-    -VirtualMachineHostArchivePath=\\Mainhost\Archive  
-    -BackupSet=[  
-   
-        -FolderToBackup=C:\Desktop  
-        -FolderToBackup=C:\Documents and Settings\Admin\My Documents  
-        -OutputFilename=AdminFiles.zip  
-  
-    -BackupSet=]  
-    -BackupSet=[  
-   
-        -FolderToBackup=D:\OtherFiles   
-        -OutputFilename=AdminOtherFiles.zip  
-  
-    -BackupSet=]  
-    -CleanupSet=[  
-  
-        -AgeDays=365  
-        -FilesToDelete=C:\Archive\AdminFiles*.zip  
-        -FilesToDelete=C:\Archive\AdminOtherFiles*.zip  
-        -ApplyDeletionLimit  
-  
-    -CleanupSet=]  
-    -CleanupSet=[  
-  
-        -AgeDays=30  
-        -FilesToDelete=Logs\GoPcBackup.exeLog*.txt  
-        -FilesToDelete=Logs\GoPcBackup.exeDeletedFileList*.txt  
-  
-    -CleanupSet=]  
+    -BackupTime="4:00 AM"
+    -UseVirtualMachineHostArchive=True
+    -VirtualMachineHostArchivePath=\\Mainhost\Archive
+    -BackupSet=[
+ 
+        -FolderToBackup=C:\Desktop
+        -FolderToBackup=C:\Documents and Settings\Admin\My Documents
+        -OutputFilename=AdminFiles.zip
+
+    -BackupSet=]
+    -BackupSet=[
+ 
+        -FolderToBackup=D:\OtherFiles 
+        -OutputFilename=AdminOtherFiles.zip
+
+    -BackupSet=]
+    -CleanupSet=[
+
+        -AgeDays=365
+        -FilesToDelete=C:\Archive\AdminFiles*.zip
+        -FilesToDelete=C:\Archive\AdminOtherFiles*.zip
+        -ApplyDeletionLimit
+
+    -CleanupSet=]
+    -CleanupSet=[
+
+        -AgeDays=30
+        -FilesToDelete=Logs\GoPcBackup.exeLog*.txt
+        -FilesToDelete=Logs\GoPcBackup.exeDeletedFileList*.txt
+
+    -CleanupSet=]
 
 
 <br>
