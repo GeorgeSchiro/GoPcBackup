@@ -33,6 +33,7 @@ If you like the software, you can leave it on your desktop or you can run "Setup
 Features
 ========
 
+
 -   Simple setup - try it out fast!
 -   Uses standard ZIP files for backups
 -   Backs up any number of folders anywhere (local or LAN)
@@ -150,3 +151,482 @@ With "Use Timer" checked, the software closes to the system tray. There it is re
 After clicking "GoPC" in the system tray, the backup timer is displayed to let you know the result of the previous backup and when the next one starts.
 
 ![Next Backup Waiting ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot11.png)
+
+
+    Command-Line Usage
+    ==================
+
+
+    Open this utility's profile file to see additional options available. It is usually located in the same folder as "GoPcBackup.exe" and has the same name with ".txt" added (see "GoPcBackup.exe.txt").
+
+    Profile file options can be overridden with command-line arguments. The keys for any "-key=value" pairs passed on the command-line must match those that appear in the profile (with the exception of the "-ini" key).
+
+    For example, the following invokes the use of an alternative profile file:
+
+    GoPcBackup.exe -ini=NewProfile.txt
+
+    This tells the software to run in automatic mode:
+
+    GoPcBackup.exe -AutoStart
+
+    or
+
+    GoPcBackup.exe -Auto*
+
+
+    Author:  George Schiro (GeoCode@Schiro.name)
+
+    Date:    7/3/2013
+
+
+
+ 
+    Options and Features
+
+
+    The main options for this utility are listed below with their default values. A brief description of each feature follows.
+
+    -ArchivePath=C:\Archive
+
+        This is the destination folder of the backup output files unless
+        overridden in -BackupSet (see below).
+
+    -AutoStart=True
+
+        This tells the software to run in automatic mode. Set this switch False
+        and the main loop in the UI will only start manually. The software will
+        also vacate memory after the UI window closes. This is the timer switch.
+
+    -BackupBeginScriptEnabled=True
+
+        Set this switch False to skip running the "backup begin" script.
+
+    -BackupBeginScriptHelp= SEE PROFILE FOR DEFAULT VALUE
+
+        This is the default content of the DOS script that is initially written to
+        -BackupBeginScriptPathFile and run before each backup starts. It contains
+        a description of the command-line arguments passed to the script at runtime.
+
+    -BackupBeginScriptInit=False
+
+        Set this switch True and the "backup begin" script will be automatically
+        overwritten from the content of -BackupBeginScriptHelp. Once used this switch
+        will be reset to False.
+
+        Note: the content of -BackupBeginScriptHelp will also be overwritten from the
+        default value embedded in the executable file.
+
+    -BackupBeginScriptPathFile=BackupBegin.cmd
+
+        This DOS shell script is run before each backup starts. Edit the contents
+        of the file or point this parameter to another file. If you delete the file,
+        it will be recreated from the content found in -BackupBeginScriptHelp (see 
+        above).
+
+    -BackupDoneScriptEnabled=True
+
+        Set this switch False to skip running the "backup done" script.
+
+    -BackupDoneScriptHelp= SEE PROFILE FOR DEFAULT VALUE
+
+        This is the default content of the DOS script that is initially written to
+        -BackupDoneScriptPathFile and run after each successful backup. It contains
+        a description of the command-line arguments passed to the script at runtime.
+
+    -BackupDoneScriptInit=False
+
+        Set this switch True and the "backup done" script will be automatically
+        overwritten from the content of -BackupDoneScriptHelp. Once used this switch
+        will be reset to False.
+
+        Note: the content of -BackupDoneScriptHelp will also be overwritten from the
+        default value embedded in the executable file.
+
+    -BackupDoneScriptPathFile=BackupDone.cmd
+
+        This DOS shell script is run after each successful backup completes. You 
+        can edit the contents of the file or point this parameter to another file.
+        If you delete the file, it will be recreated from the content found in 
+        -BackupDoneScriptHelp (see above).
+
+    -BackupDriveToken=(This is my GoPC backup drive.)
+
+        This is the filename looked for in the root of every storage device attached
+        to the computer. If found, a copy of the backup will be written there.
+
+    -BackupFileSpec=*
+
+        This wildcard is appended to folders to backup (see -FolderToBackup).
+
+    -BackupFiles=True
+
+        Set this switch False to disable backups (ie. do file cleanups only).
+
+    -BackupOutputExtension=.zip
+
+        This is appended to all backup path\filenames (see -OutputFilename below).
+
+    -BackupOutputFilenameDateFormat=-yyyy-MM-dd
+
+        This format string is used to form the variable part of each backup
+        output filename. It is inserted between the filename and the extension
+        (see -OutputFilename below and -BackupOutputExtension above).
+
+    -BackupSet="One of many file sets to backup goes here."
+
+        Each file backup set has its own profile:
+
+            -ArchivePath= INHERITED
+
+                This is the destination folder of the backup output files. If
+                provided, this value will override the parent -ArchivePath (see
+                above).
+
+            -BackupFileSpec= INHERITED
+
+                This wildcard is appended to each folder to backup. If provided,
+                it will override the parent -BackupFileSpec (see above).
+
+            -FolderToBackup="One of many folders to backup goes here."
+
+                This is the full path\file specification of a folder to backup.
+                This parameter can appear multiple times in each backup set.
+
+            -OutputFilename="The backup output filename goes here."
+
+                This is the backup output filename with no path and no extension.
+                This parameter will be combined with -BackupOutputExtension, 
+                -ArchivePath and -BackupOutputFilenameDateFormat to produce a
+                full backup output path\file specification.
+
+    -BackupTime=12:00 AM
+
+        This is the time each day that the backup starts.
+
+    -BackupTimeMinsPerTick=15
+
+        This determines how many minutes the backup time changes with each tick
+        of the backup time selection slider.
+
+    -CleanupFiles=True
+
+        Set this switch False to disable cleanups (ie. do file backups only).
+
+    -CleanupLoopSleepMS=1
+
+        This is the number of milliseconds of process thread sleep time between
+        file deletions. The default of 1 ms should result in rapid deletions. You 
+        can increase this value if you are concerned that the UI is not responsive
+        enough or the process is using too much CPU while deleting.
+
+    -CleanupSet="One of many file sets to cleanup goes here."
+
+        Each file cleanup set has its own profile:
+
+            -AgeDays=365000
+
+                This is the maximum file age in days. It is 1000 years by default.
+                Only files older than this will be considered for deletion.
+
+            -ApplyDeletionLimit=False
+
+                Set this switch True and the cleanup process will limit deletions
+                only to files that are regularly replaced by newer files. This way
+                a large collection of very old files won't be wiped out in one run.
+                Old files will only be removed if newer files exist to replace them.
+
+                In other words, with this switch set, there should always be as many
+                files retained as there are days in "-AgeDays" multiplied by the
+                frequency of backups (1440 divided by -MainLoopMinutes, see below).
+
+            -CleanupHidden=False
+
+                Set this switch True and the file cleanup process will include
+                hidden files as well. If -Recurse is also True (see below), hidden
+                folders will also be removed.
+
+            -CleanupReadOnly=False
+
+                Set this switch True and the file cleanup process will include
+                read-only files as well. If -Recurse is also True (see below), 
+                read-only folders will also be removed.
+
+            -DeletedFileListDateTimeType=LastWriteTime
+
+                Each file has 3 timestamps: CreationTime, LastAccessTime
+                and LastWriteTime.
+
+                The default ("LastWriteTime") is the file modification date.
+
+            -FilesToDelete="One of many path\file specifications goes here."
+
+                These are the files evaluated for deletion based on their age
+                (see -AgeDays above). Wildcards are expected but not required
+                (you can reference a single file if you like).
+
+            -Recurse=False
+
+                Set this switch True and the file cleanup process will recurse 
+                through all subdirectories starting from the path of the given
+                -FilesToDelete (see above) looking for files to remove with the
+                same file specification found in the -FilesToDelete parameter.
+
+            -RecurseFolder=""
+
+                This identifies subfolders found within the folder defined by
+                -FilesToDelete (see above). These subfolders can occur at any
+                level of the directory hierarchy above the path provided in
+                -FilesToDelete. If -RecurseFolder is non-empty, only files found
+                within the -FilesToDelete path and also within any subfolder
+                (from the given path upward) with the given subfolder name will
+                be evaluated for removal.
+
+                This parameter has the effect of greatly limiting the recursion.
+
+                BE CAREFUL! If you don't provide this parameter or you specify
+                an empty value, all files matching the file specification in the
+                given -FilesToDelete at every level of the directory structure
+                (starting at the path found in -FilesToDelete) will be evaluated
+                for removal.
+
+                IMPORTANT! Every empty folder found within the given recursive
+                subfolder (at any level above the starting path) will also be
+                removed.
+
+
+            Here's a single line example:
+
+            -CleanupSet= -AgeDays=90 -FilesToDelete=C:\WINDOWS\TEMP\*.*
+
+
+            Here's a multi-line example:
+
+            -CleanupSet=[
+
+                -AgeDays=60
+                -FilesToDelete=C:\WINDOWS\TEMP\*.*
+                -FilesToDelete=C:\WINDOWS\system32\*.log
+                -FilesToDelete=C:\WINDOWS\system32\LogFiles\W3SVC1\*.log
+                -FilesToDelete=C:\Documents and Settings\Administrator\Local Settings\Temp\*.*
+                -FilesToDelete=C:\Program Files\GoPcBackup\GoPcBackupList*.txt
+
+            -CleanupSet=]
+            -CleanupSet=[
+
+                -AgeDays=14
+                -FilesToDelete=C:\Documents and Settings\*.*
+                -CleanupHidden
+                -CleanupReadOnly
+                -Recurse
+                -RecurseFolder=Local Settings\Temp
+
+            -CleanupSet=]
+            -CleanupSet=[
+
+                -AgeDays=90
+                -FilesToDelete=C:\Archive\*.*
+                -ApplyDeletionLimit
+
+            -CleanupSet=]
+
+    -DeletedFileListDateFormat=-yyyy-MM-dd
+
+        This format string is used to form the variable part of each deleted file
+        list output filename (see -DeletedFileListOutputPathFile below). It is 
+        inserted between the filename and the extension.
+
+    -DeletedFileListOutputColumnFormat={0, -22:MM-dd-yyyy hh:mm:ss tt}  {1, 13:#,#}  {2}
+
+        This format string specifies the layout of the three file attribute output 
+        columns (last modified date, file size and path\file name, resp.) for each
+        file in the deleted file list (see -DeletedFileListOutputPathFile below).
+
+    -DeletedFileListOutputColumnHeaderArray=Deleted File Time,File Size,Former File Location
+
+        This array of names specifies the column headers of the deleted file list
+        (see -DeletedFileListOutputPathFile below).
+
+    -DeletedFileListOutputHeader={0, -10:MM-dd-yyyy} File Cleanup List
+
+        This format string specifies the layout of the deleted file list output file
+        header (see -DeletedFileListOutputPathFile below).
+
+    -DeletedFileListOutputPathFile=Logs\DeletedFileList.txt
+
+        This is the output path\file that will contain the list of deleted files.
+        The profile file name will be prepended to the default and the current date
+        (see -DeletedFileListDateFormat) will be inserted between the filename and 
+        the extension.
+
+    -FetchSource=False
+
+        Set this switch True to fetch the source code for this utility from the EXE.
+        Look in the containing folder for a ZIP file with the full project sources.
+
+    -Help= SEE PROFILE FOR DEFAULT VALUE
+
+        This help text.
+
+    -KillProcessRetries=10
+
+        This is the number of retries to kill a process that has been requested
+        to stop.
+
+    -KillProcessWaitMS=1000
+
+        This is the number of milliseconds between process kill retry attempts.
+
+    -LogEntryDateTimeFormatPrefix"yyyy-MM-dd hh:mm:ss:fff tt  "
+
+        This format string is used to prepend a timestamp prefix to each log entry in
+        the process log file (see -LogPathFile below).    
+
+    -LogFileDateFormat=-yyyy-MM-dd
+
+        This format string is used to form the variable part of each backup / cleanup
+        log file output filename (see -LogPathFile below). It is inserted between the
+        filename and the extension.
+
+    -LogPathFile=Logs\Log.txt
+
+        This is the output path\file that will contain the backup / cleanup process
+        log. The profile file name will be prepended to the default and the current
+        date (see -LogFileDateFormat) will be inserted between the filename and the
+        extension (see -LogFileDateFormat above).
+
+    -MainLoopMinutes=1440
+
+        This is the number of minutes until the next run. One day is the default.
+
+    -MainLoopSleepMS=200
+
+        This is the number of milliseconds of process thread sleep wait time between
+        loops. The default of 200 ms should be a happy medium between a responsive
+        overall UI and a responsive process timer UI. You can increase this value
+        if you are concerned that the timer UI is using too much CPU while waiting.
+
+    -PreviousBackupOk= NO DEFAULT VALUE
+
+        This is the True or False "Ok" status of the previous backup / cleanup run.
+
+    -PreviousBackupTime= NO DEFAULT VALUE
+
+        This is the timestamp of the previous backup / cleanup run.
+
+    -RunOnce=False
+
+        Set this switch True to run this utility in one loop only (with no UI) and 
+        then shutdown automatically thereafter. This switch is useful if the utility
+        is run in a batch process or if it is run by a job scheduler.
+
+    -SaveProfile=True
+
+        Set this switch False to prevent saving to the profile file by the backup
+        software itself. This is not recommended since backup status information is 
+        written to the profile after each backup runs.
+
+    -SelectedBackupDevices= NO DEFAULT VALUE
+
+        This is the list of selected backup devices in human readable text.
+
+    -SelectedBackupDevicesBitField=0 (0 means not yet set)
+
+        This is the list of selected backup devices as a bit field. All bit fields
+        have a leading 1 bit to preserve leading zeros. The second bit starts the
+        device list (ie. drive letter list). Drive C: is not available as a backup
+        device. So the second bit identifies drive D:.
+
+    -ShowBackupBeginScriptErrors=True
+
+        Set this switch False to suppress the pop-up display of "backup begin" script
+        errors (see -BackupBeginScriptPathFile above).
+
+    -ShowBackupDoneScriptErrors=True
+
+        Set this switch False to suppress the pop-up display of "backup done" script
+        errors (see -BackupDoneScriptPathFile above).
+
+    -ShowDeletedFileList=False
+
+        Set this switch True and the list of deleted files will be displayed in a
+        pop-up window.
+
+    -ShowProfile=False
+
+        Set this switch True to immediately display the entire contents of the profile
+        file at startup in command-line format. This is sometimes helpful to diagnose
+        problems.
+
+    -UseConnectVirtualMachineHost=False
+
+        Set this switch True to force a connection to the virtual machine share archive
+        before each backup starts (ie. during the "backup begin" script).
+
+    -UseVirtualMachineHostArchive=False
+
+        Set this switch True and code will be added to the "backup done" script
+        (see -BackupDoneScriptPathFile above) that copies backups to your virtual
+        machine host computer (assuming you have one).
+
+    -VirtualMachineHostArchivePath= NO DEFAULT VALUE
+
+        This value is used within the "backup done" script to copy backups to the
+        virtual machine host share (see -UseVirtualMachineHostArchive above).
+
+        You may want to reference your VM host by IP address rather than by name.
+        Doing so is often more reliable than using netbios names on your local area
+        network.
+
+    -VirtualMachineHostPassword= NO DEFAULT VALUE
+
+        This value is the password used within the "backup begin" script to log
+        into the virtual machine host share (see -UseConnectVirtualMachineHost
+        above).
+
+    -VirtualMachineHostUsername= NO DEFAULT VALUE
+
+        This value is the username used within the "backup begin" script to log
+        into the virtual machine host share (see -UseConnectVirtualMachineHost
+        above).
+
+    -XML_Profile=False
+
+        Set this switch True to change the profile file from command-line format
+        to XML format.
+
+    -ZipToolEXE=7z.exe
+
+        This is the ZIP tool executable that performs the backup compression.
+
+    -ZipToolEXEargs=a -r -spf -ssw "{BackupOutputPathFile}" @"{BackupPathFiles}" -w"{BackupOutputPath}"
+
+        These are the command-line arguments passed to the ZIP compression tool
+        (see -ZipToolEXE above). The tokens (in curly brackets) are self-evident
+        and they are replaced at runtime.
+
+    -ZipToolEXEargsMore= NO DEFAULT VALUE
+
+        These are additional command line arguments for the ZIP tool. Using this
+        parameter makes it easier to add functionality to the ZIP command line
+        without changing the existing command line. A typical example would be
+        to supply a password on the command line to "GoPcBackup.exe" itself.
+
+    -ZipToolFileListPathFile=ZipFileList.txt
+
+        This is the file used to store the list of filenames to be compressed.
+
+    -ZipToolLastRunCmdPathFile=Run Last Backup.cmd
+
+        This is a script file (text), which contains a copy of the last ZIP tool
+        command line executed.
+
+
+    Notes:
+
+        There may be various other settings that can be adjusted also (user
+        interface settings, etc). See the profile file ("GoPcBackup.exe.txt")
+        for all available options.
+
+        To see the options related to any particular behavior, you must run that
+        part of the software first. Configuration options are added "on the fly"
+        (in order of execution) to "GoPcBackup.exe.txt" as the software runs.
