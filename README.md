@@ -157,9 +157,13 @@ Command-Line Usage
 ==================
 
 
-    Open this utility's profile file to see additional options available. It is usually located in the same folder as "GoPcBackup.exe" and has the same name with ".txt" added (see "GoPcBackup.exe.txt").
+    Open this utility's profile file to see additional options available. It is
+    usually located in the same folder as "GoPcBackup.exe" and has the same name
+    with ".txt" added (see "GoPcBackup.exe.txt").
 
-    Profile file options can be overridden with command-line arguments. The keys for any "-key=value" pairs passed on the command-line must match those that appear in the profile (with the exception of the "-ini" key).
+    Profile file options can be overridden with command-line arguments. The
+    keys for any "-key=value" pairs passed on the command-line must match
+    those that appear in the profile (with the exception of the "-ini" key).
 
     For example, the following invokes the use of an alternative profile file:
 
@@ -178,14 +182,13 @@ Command-Line Usage
 
     Date:    7/3/2013
 
-
-
  
 Options and Features
 ====================
 
 
-    The main options for this utility are listed below with their default values. A brief description of each feature follows.
+    The main options for this utility are listed below with their default values.
+    A brief description of each feature follows.
 
     -ArchivePath=C:\Archive
 
@@ -528,7 +531,7 @@ Options and Features
 
     -SelectedBackupDevices= NO DEFAULT VALUE
 
-        This is the list of selected backup devices in human readable text.
+        This is the list of selected backup devices as human readable text.
 
     -SelectedBackupDevicesBitField=0 (0 means not yet set)
 
@@ -549,7 +552,7 @@ Options and Features
 
     -ShowDeletedFileList=False
 
-        Set this switch True and the list of deleted files will be displayed in a
+        Set this switch True and the list of deleted files will be displayed in a 
         pop-up window.
 
     -ShowProfile=False
