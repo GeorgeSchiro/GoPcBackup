@@ -1,6 +1,5 @@
 Overview
 ========
-<br>
 
 
 <b>GoPC Backup</b> is a simple software utility used for backing up virtual machines.
@@ -55,7 +54,6 @@ Features
 <br>
 Details
 =======
-<br>
 
 
 <b>GoPC Backup</b> was designed for programmers.
@@ -129,3 +127,37 @@ You will notice that the profile data is not formatted as XML. It is expressed i
 <b>GoPC Backup</b> uses "7-zip" as its ZIP compression engine. "7-zip" is an excellent tool.  
 
 <b>GoPC Backup</b> is essentially an automation front-end for "7-zip". That said, you can replace "7-zip" with any other command-line driven ZIP tool you might prefer instead. The choice of compression tool is entirely yours. This change is made in the profile file like everything else (see "-ZipToolEXE" below).
+
+
+<br>
+Screenshots
+===========
+<br>
+
+![Copy EXE to Desktop?] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot00i.png)
+![Main UI             ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot00j.png)
+
+<br>
+The following setup wizard tabs are displayed when the software is started the first time. They ask a few basic questions about what you want to backup, to where and on what schedule.
+
+The screenshots after that show an actual backup run.
+<br>
+
+![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot01.png)
+![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot02.png)
+![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot03.png)
+![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot04.png)
+![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot05.png)
+![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot06.png)
+![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot07.png)
+![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot08.png)
+![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot09.png)
+![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot10.png)
+
+<br>
+With "Use Timer" checked, the software closes to the system tray. There it is ready for the next scheduled backup.
+
+After clicking "GoPC" in the system tray, the backup timer is displayed to let you know the result of the previous backup and when the next one starts.
+<br>
+
+![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot11.png)
