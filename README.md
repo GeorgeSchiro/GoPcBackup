@@ -148,7 +148,7 @@ The screenshots after that show an actual backup run.
 
 With "Use Timer" checked, the software closes to the system tray. There it is ready for the next scheduled backup.
 
-After clicking "GoPC" in the system tray, the backup timer is displayed to let you know the result of the previous backup and when the next one starts.
+After clicking "GoPC" in the system tray then "Show Timer" you can see when the next backup starts, the previous run and the result.
 
 ![Next Backup Waiting ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot11.png)
 
