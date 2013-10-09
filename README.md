@@ -8,7 +8,9 @@ It backs up files from a virtual PC (running Windows) to its virtual machine hos
 
 <b>GoPC Backup</b> is not limited to virtual machines. It can also backup and cleanup files on any Windows PC.
 
-It uses the standard ZIP file format for its backups. So any ZIP software can browse and restore your backup files. It also creates date-named ZIP files. That way you can keep and review previous versions of your files as an archive.
+In a crisis you don't want to scramble to assemble pieces of your backups to restore. You want to have everything in one place when you need it. You also don't want to worry that you will actually be able to restore your data during a crisis. How many times have you heard about backup restorations that were never tested until needed? Then they failed.
+
+For these reasons <b>GoPC Backup</b> does full backups (rather than incremental backups) and it uses common ZIP files that can be verified anytime simply by opening them and browsing their contents. So any ZIP software can browse and restore your backup files. It also creates date-named ZIP files. That way you can keep and review previous versions of your files as an archive.
 
 This utility performs file backups and file cleanups in the background.
 
