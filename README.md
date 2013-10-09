@@ -2,7 +2,7 @@ Overview
 ========
 
 
-<b>GoPC Backup</b> is a simple software utility used for backing up virtual machines.
+<b>GoPC Backup</b> is a simple software utility used for backing up virtual machines (see screenshots below).
 
 It backs up files from a virtual PC (running Windows) to its virtual machine host. It can also automatically copy each backup to network shares as well as any attached devices (eg. thumb drives). It can also clean up files older than a given number of days.
 
