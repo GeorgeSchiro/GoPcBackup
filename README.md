@@ -66,7 +66,7 @@ Losing a single file can often do serious damage to a software project. Seeing a
 
 If you are not a programmer, yet you have many relatively small files to backup (general data files, documents and images, not large audio / video files), this software may be helpful to you too. This is especially true if you keep your files in various folders in one place (eg. on your desktop or some other central location like "My Documents").
 
-<b>GoPC Backup</b> initially presents a setup wizard to make it easy to get the software up-and-running fast. All of its flexibility is managed through a plain-text profile file (ie. a configuration file). Everything is managed through the profile file. <b>GoPC Backup</b> does not use the windows registry at all.
+<b>GoPC Backup</b> initially presents a setup wizard to make it easy to get the software up-and-running fast. All of its flexibility is managed through a single plain-text profile file (ie. a configuration file). Everything is managed through the profile file. <b>GoPC Backup</b> does not use the windows registry at all.
 
 The setup wizard asks for a few basic pieces of information, most of which have default values:
 
