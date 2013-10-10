@@ -2,15 +2,15 @@ Overview
 ========
 
 
-<b>GoPC Backup</b> is a simple software utility used for backing up virtual machines (see screenshots below).
+<b>GoPC Backup</b> is a simple software utility for backing up virtual machines (screenshots below).
 
 It backs up files from a virtual PC (running Windows) to its virtual machine host. It can also automatically copy each backup to network shares as well as any attached devices (eg. thumb drives). It can also clean up files older than a given number of days.
 
 <b>GoPC Backup</b> is not limited to virtual machines. It can also backup and cleanup files on any Windows PC.
 
-During a crisis you don't want to be scrambling to assemble pieces of backups to restore. You want to have everything in one place. Have you ever worried that your backup may not actually be restorable when you need it? How many times have you heard about backup restorations that were never tested until needed? Then they failed.
+During a crisis, scrambling to assemble pieces of backups to restore can be harrowing. Having everything in one place really makes more sense. Have you heard about backups that were never tested until a system crash? Have you ever worried that your backup may fail to restore when you need it?
 
-For these reasons <b>GoPC Backup</b> does full backups (rather than incremental backups) and it uses common ZIP files that can be verified anytime simply by opening them and browsing their contents. Any ZIP file software can browse and restore your backup files. This means that you can easily restore individual files or all of them.
+For these reasons <b>GoPC Backup</b> does full backups rather than incremental backups and it uses common ZIP files that can be verified anytime simply by opening them and browsing their contents. Any ZIP file software can browse and restore your backups. This means that you can easily restore individual files or all of them.
 
 <b>GoPC Backup</b> creates date-named ZIP files. That way you can keep and review previous versions of your files as an archive.
 
@@ -22,13 +22,13 @@ There is no need to use a job scheduler unless this software is running on a ser
 
 You provide various file specifications (ie. path\file locations of the files to backup and to cleanup) as well as file age limits for the files to cleanup. The rest is automatic.
 
-<b>GoPC Backup</b> will run in the background unless its timer is turned off. Its simple user interface (UI) is usually minimized to the system tray.
+<b>GoPC Backup</b> will run in the background unless its timer is turned off. The simple user interface (UI) is usually minimized to the system tray.
 
 Give it a try.
 
 The first time you run "GoPcBackup.exe" it will prompt you to create a "GoPcBackup" folder on your desktop. It will copy itself and continue running from there.
 
-Everything the software needs to run is created in the "GoPcBackup" folder. Nothing is written anywhere else (except your backups).
+Everything the software needs is written to the "GoPcBackup" folder. Nothing is written anywhere else (except your backups).
 
 If you like the software, you can leave it on your desktop or you can run "Setup in Program Files.exe" (also in the "GoPcBackup" folder, be sure to run it as administrator). If you decide not to keep the software, simply delete the "GoPcBackup" folder from your desktop.
 
@@ -37,10 +37,10 @@ Features
 ========
 
 
--   Simple setup - try it out fast!
+-   Simple setup - try it out fast
 -   Uses standard ZIP files for backups
--   Backs up any number of folders anywhere (local or LAN)
--   Cleans up any number of files anywhere (local or LAN)
+-   Backs up any number of folders (local or LAN)
+-   Cleans up any number of files (local or LAN)
 -   Runs automatically in the background on a simple daily timer
 -   Automatically copies backups to the virtual machine host
 -   Automatically copies backups to any number of attached devices
@@ -64,7 +64,7 @@ Programmers work with many small files (mostly text). These files usually change
 
 Losing a single file can often do serious damage to a software project. Seeing a previous version of a file (and restoring it) is often a saving grace. The ability to see old versions of your files without the complexity of a version control system is also a benefit.
 
-If you are not a programmer, yet you have many relatively small files to backup (general documents and images, not large audio / video files), this software may be helpful to you too. This is especially true if you keep your files in various folders in one place (eg. on your desktop or some other central location like "My Documents").
+If you are not a programmer, yet you have many relatively small files to backup (general data files, documents and images, not large audio / video files), this software may be helpful to you too. This is especially true if you keep your files in various folders in one place (eg. on your desktop or some other central location like "My Documents").
 
 <b>GoPC Backup</b> initially presents a setup wizard to make it easy to get the software up-and-running fast. All of its flexibility is managed through a plain-text profile file (ie. a configuration file). Everything is managed through the profile file. <b>GoPC Backup</b> does not use the windows registry at all.
 
@@ -151,7 +151,7 @@ The screenshots after that show an actual backup run.
 
 With "Use Timer" checked, the software closes to the system tray. There it is ready for the next scheduled backup.
 
-After clicking "GoPC" in the system tray then "Show Timer" you can see when the next backup starts, the previous run and the result.
+After clicking "GoPC" in the system tray and"Show Timer" you can see when the next backup starts, the previous run and the previous backup result.
 
 ![Next Backup Waiting ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot11.png)
 
