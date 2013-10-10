@@ -8,11 +8,11 @@ It backs up files from a virtual PC (running Windows) to its virtual machine hos
 
 <b>GoPC Backup</b> is not limited to virtual machines. It can also backup and cleanup files on any Windows PC.
 
-In a crisis you don't want to scramble to assemble pieces of your backups to restore. You want to have everything in one place when you need it. You also don't want to worry that you will actually be able to restore your data during a crisis. How many times have you heard about backup restorations that were never tested until needed? Then they failed.
+During a crisis you don't want to be scrambling to assemble pieces of backups to restore. You want to have everything in one place. Have you ever worried that your backup may not actually be restorable when you need it? How many times have you heard about backup restorations that were never tested until needed? Then they failed.
 
-For these reasons <b>GoPC Backup</b> does full backups (rather than incremental backups) and it uses common ZIP files that can be verified anytime simply by opening them and browsing their contents. So any ZIP software can browse and restore your backup files.
+For these reasons <b>GoPC Backup</b> does full backups (rather than incremental backups) and it uses common ZIP files that can be verified anytime simply by opening them and browsing their contents. Any ZIP file software can browse and restore your backup files. This means that you can easily restore individual files or all of them.
 
-<b>GoPC Backup</b> also creates date-named ZIP files. That way you can keep and review previous versions of your files as an archive.
+<b>GoPC Backup</b> creates date-named ZIP files. That way you can keep and review previous versions of your files as an archive.
 
 This utility performs file backups and file cleanups in the background.
 
@@ -22,8 +22,7 @@ There is no need to use a job scheduler unless this software is running on a ser
 
 You provide various file specifications (ie. path\file locations of the files to backup and to cleanup) as well as file age limits for the files to cleanup. The rest is automatic.
 
-This utility will run in the background unless its timer is turned off. Its simple user interface (UI) is usually minimized to the system tray.
-
+<b>GoPC Backup</b> will run in the background unless its timer is turned off. Its simple user interface (UI) is usually minimized to the system tray.
 
 Give it a try.
 
@@ -31,7 +30,7 @@ The first time you run "GoPcBackup.exe" it will prompt you to create a "GoPcBack
 
 Everything the software needs to run is created in the "GoPcBackup" folder. Nothing is written anywhere else (except your backups).
 
-If you like the software, you can leave it on your desktop or you can run "Setup in Program Files.exe" (be sure to run it as an administrator). If you decide not to keep the software, simply delete the "GoPcBackup" folder from your desktop.
+If you like the software, you can leave it on your desktop or you can run "Setup in Program Files.exe" (also in the "GoPcBackup" folder, be sure to run it as administrator). If you decide not to keep the software, simply delete the "GoPcBackup" folder from your desktop.
 
 
 Features
@@ -83,7 +82,7 @@ After running a backup you can inspect the results and make adjustments as neede
 
 Whatever you can't configure through the <b>GoPC Backup</b> UI you can configure by editing the profile file by hand (ie. "GoPcBackup.exe.txt"). This is typically done with notepad. The profile file is usually located in the same folder as the backup software (ie. "GoPcBackup.exe").
 
-Here's an example of some of what you might see in a profile file:
+Here's some of what you might see in a profile file:
 
     -BackupTime="4:00 AM"
     -UseVirtualMachineHostArchive=True
