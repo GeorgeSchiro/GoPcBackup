@@ -41,7 +41,7 @@ Features
 -   Uses standard ZIP files for backups
 -   Backs up any number of folders (local or LAN)
 -   Cleans up any number of files (local or LAN)
--   Runs automatically in the background on a simple daily timer
+-   Runs automatically in the background on a daily timer
 -   Automatically copies backups to the virtual machine host
 -   Automatically copies backups to any number of attached devices
 -   Comprehensive dated log files are produced with every backup
