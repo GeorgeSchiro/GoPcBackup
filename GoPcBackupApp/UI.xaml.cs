@@ -1483,42 +1483,7 @@ You can continue this later wherever you left off. "
                                 , "-DeviceReattached"
                                 )
                             )
-                {
-                    this.ShowMe();
-                    this.bBackupRunning = true;
-
-                    // Append a blank line to the error output before proceeding.
-                    moDoGoPcBackup.LogIt("");
-
-                    // Run the "backup done" script and return the failed file count with bit field.
-                    // The exit code is defined in the script as a combination of two integers-
-                    // a bit field of found backup devices and a count of copy failures (99 max).
-                    // The integer part of the composite number is the bit field.
-                    double ldCompositeResult = moDoGoPcBackup.iBackupDoneScriptCopyFailuresWithBitField(true) / 100.0;
-
-                    // The fractional part (x 100) is the actual number of copy failures.
-                    int liCopyFailures = (int)Math.Round(100 * (ldCompositeResult - (int)ldCompositeResult));
-
-                    if ( 0 != liCopyFailures )
-                    {
-                        moProfile["-PreviousBackupOk"] = false;
-                        moProfile.Save();
-
-                        moDoGoPcBackup.ShowError(
-                                  string.Format("The \"backup done\" script failed with ({0}) copy failures. Check the log for errors."
-                                        + moDoGoPcBackup.sSysTrayMsg, liCopyFailures)
-                                , "Backup Failed");
-                    }
-
-                    // Update the error text cache (as needed).
-                    this.GetSetOutputTextPanelErrorCache();
-
-                    this.bBackupRunning = false;
-
-                    // Don't bother to show the previous backup
-                    // status since we just did all of this anyway.
-                    mbShowPreviousBackupStatus = false;
-                }
+                    this.RerunBackupDoneScript();
             }
 
             mbInShowMissingBackupDevices = false;
@@ -1574,6 +1539,18 @@ You can continue this later wherever you left off. "
             }
 
             return leTvMessageBoxResults;
+        }
+
+        private void btnRerunBackupDoneScript_Click(object sender, RoutedEventArgs e)
+        {
+            if (tvMessageBoxResults.OK == tvMessageBox.Show(
+                      this
+                    , "Are you sure you want to rerun the last \"backup done\" script?"
+                    , "Rerun Script"
+                    , tvMessageBoxButtons.YesNo
+                    , tvMessageBoxIcons.Question
+                    ))
+                this.RerunBackupDoneScript();
         }
 
         private void btnSetupGeneralResetAllPrompts_Click(object sender, RoutedEventArgs e)
@@ -1804,6 +1781,43 @@ You can continue this later wherever you left off. "
             this.CloseCheckboxes.Visibility = Visibility.Visible;
         }
 
+        private void RerunBackupDoneScript()
+        {
+            this.ShowMe();
+            this.bBackupRunning = true;
+
+            // Append a blank line to the error output before proceeding.
+            moDoGoPcBackup.LogIt("");
+
+            // Run the "backup done" script and return the failed file count with bit field.
+            // The exit code is defined in the script as a combination of two integers-
+            // a bit field of found backup devices and a count of copy failures (99 max).
+            // The integer part of the composite number is the bit field.
+            double ldCompositeResult = moDoGoPcBackup.iBackupDoneScriptCopyFailuresWithBitField(true) / 100.0;
+
+            // The fractional part (x 100) is the actual number of copy failures.
+            int liCopyFailures = (int)Math.Round(100 * (ldCompositeResult - (int)ldCompositeResult));
+
+            if ( 0 != liCopyFailures )
+            {
+                moProfile["-PreviousBackupOk"] = false;
+                moProfile.Save();
+
+                moDoGoPcBackup.ShowError(
+                          string.Format("The \"backup done\" script failed with ({0}) copy failures. Check the log for errors."
+                                + moDoGoPcBackup.sSysTrayMsg, liCopyFailures)
+                        , "Backup Failed");
+            }
+
+            // Update the error text cache (as needed).
+            this.GetSetOutputTextPanelErrorCache();
+
+            this.bBackupRunning = false;
+
+            // Don't bother to show the previous backup
+            // status since we just did all of this anyway.
+            mbShowPreviousBackupStatus = false;
+        }
 
         private void DoBackup()
         {
