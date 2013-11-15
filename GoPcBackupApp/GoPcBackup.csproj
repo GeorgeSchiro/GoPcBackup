@@ -22,7 +22,8 @@
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
     <SignManifests>true</SignManifests>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>GoPcBackupSigned.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <ManifestCertificateThumbprint>8E386C069C63DC0481CF6FD219B557CFDB2A15BF</ManifestCertificateThumbprint>
     <ManifestKeyFile>GoPcBackup_TemporaryKey.pfx</ManifestKeyFile>
@@ -159,12 +160,12 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="GoPcBackup.zip" />
-    <None Include="GoPcBackupSigned.snk" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <EmbeddedResource Include="SetupAppFolder.zip" />
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
@@ -173,9 +174,6 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\images\GoPC.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Setup in Program Files.exe" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
@@ -223,6 +221,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="MIT License.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Setup Application Folder.exe" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

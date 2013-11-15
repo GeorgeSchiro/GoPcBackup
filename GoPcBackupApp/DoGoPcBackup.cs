@@ -566,7 +566,7 @@ A brief description of each feature follows.
 
     This is the ZIP tool executable that performs the backup compression.
 
--ZipToolEXEargs=a -r -spf -ssw ""{{BackupOutputPathFile}}"" @""{{BackupPathFiles}}"" -w""{{BackupOutputPath}}""
+-ZipToolEXEargs=a -r -ssw ""{{BackupOutputPathFile}}"" @""{{BackupPathFiles}}"" -w""{{BackupOutputPath}}""
 
     These are the command-line arguments passed to the ZIP compression tool
     (see -ZipToolEXE above). The tokens (in curly brackets) are self-evident
@@ -607,13 +607,15 @@ Notes:
 
                     // Fetch simple setup.
                     tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
-                            , "Setup in Program Files.exe", null);
+                            , "Setup Application Folder.exe", null);
 
                     // Fetch source code.
                     if ( loProfile.bValue("-FetchSource", false) )
                     {
                         tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
                                 , Application.ResourceAssembly.GetName().Name + ".zip", null);
+                        tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
+                                , "SetupAppFolder.zip", null);
                     }
 
 
@@ -1530,7 +1532,7 @@ No file cleanup will be done until you update the configuration.
 
                     string  lsProcessPathFile = moProfile.sRelativeToProfilePathFile(moProfile.sValue("-ZipToolEXE", mcsZipToolExeFilename));
                     string  lsProcessArgs = moProfile.sValue("-ZipToolEXEargs"
-                                    , "a -r -spf -ssw \"{BackupOutputPathFile}\" @\"{BackupPathFiles}\" -w\"{BackupOutputPath}\" ")
+                                    , "a -r -ssw \"{BackupOutputPathFile}\" @\"{BackupPathFiles}\" -w\"{BackupOutputPath}\" ")
                                     + " " + moProfile.sValue("-ZipToolEXEargsMore", "");
                             lsProcessArgs = lsProcessArgs.Replace("{BackupPathFiles}", lsZipToolFileListPathFile);
                             lsProcessArgs = lsProcessArgs.Replace("{BackupOutputPath}", Path.GetDirectoryName(msCurrentBackupOutputPathFile));
