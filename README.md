@@ -605,7 +605,7 @@ Options and Features
 
         This is the ZIP tool executable that performs the backup compression.
 
-    -ZipToolEXEargs=a -r -spf -ssw "{BackupOutputPathFile}" @"{BackupPathFiles}" -w"{BackupOutputPath}"
+    -ZipToolEXEargs=a -r -ssw "{BackupOutputPathFile}" @"{BackupPathFiles}" -w"{BackupOutputPath}"
 
         These are the command-line arguments passed to the ZIP compression tool
         (see -ZipToolEXE above). The tokens (in curly brackets) are self-evident
