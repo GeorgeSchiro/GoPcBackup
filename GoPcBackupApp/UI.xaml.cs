@@ -1543,13 +1543,13 @@ You can continue this later wherever you left off. "
 
         private void btnRerunBackupDoneScript_Click(object sender, RoutedEventArgs e)
         {
-            if (tvMessageBoxResults.OK == tvMessageBox.Show(
+            if ( tvMessageBoxResults.Yes == tvMessageBox.Show(
                       this
                     , "Are you sure you want to rerun the last \"backup done\" script?"
                     , "Rerun Script"
                     , tvMessageBoxButtons.YesNo
                     , tvMessageBoxIcons.Question
-                    ))
+                    ) )
                 this.RerunBackupDoneScript();
         }
 
@@ -1804,8 +1804,8 @@ You can continue this later wherever you left off. "
                 moProfile.Save();
 
                 moDoGoPcBackup.ShowError(
-                          string.Format("The \"backup done\" script failed with ({0}) copy failures. Check the log for errors."
-                                + moDoGoPcBackup.sSysTrayMsg, liCopyFailures)
+                          string.Format("The \"backup done\" script failed with {0} copy failure{1}. Check the log for errors."
+                                + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
                         , "Backup Failed");
             }
 
