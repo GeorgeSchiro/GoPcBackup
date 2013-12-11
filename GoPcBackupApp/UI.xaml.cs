@@ -40,7 +40,6 @@ namespace GoPcBackup
         private bool    mbGetSetDefaultsDone;
         private bool    mbIgnoreCheck;                                  // This is needed to avoid double hits in checkbox events.
         private bool    mbInShowMissingBackupDevices;                   // This prevents recursive calls into "ShowMissingBackupDevices()".
-        private bool    mbPreviousBackupError;                          // Tracks the success or failure status of the previous backup run.
         private bool    mbShowBackupOutputAfterSysTray;                 // Determines if the text output console is displayed after a systray click.
         private bool    mbShowPreviousBackupStatus = true;              // Determines if the previous backup status is displayed at startup.
         private bool    mbStartupDone;                                  // Indicates all activities prior to logo animation are completed.
@@ -399,7 +398,7 @@ namespace GoPcBackup
 
                 // No timer checked or a previous backup error means show the window
                 // immediately. Otherwise, it will be accessible via the system tray.
-                if ( !(bool)this.chkUseTimer.IsChecked || mbPreviousBackupError )
+                if ( !(bool)this.chkUseTimer.IsChecked || this.ShowPreviousBackupStatus() )
                 {
                     this.ShowMe();
                 }
@@ -409,7 +408,6 @@ namespace GoPcBackup
                     this.ShowMissingBackupDevices();
                 }
 
-                this.ShowPreviousBackupStatus();
                 this.CreateSysTrayIcon();
 
                 // Since error output is cached (see "this.GetSetOutputTextPanelErrorCache()"),
@@ -1709,61 +1707,65 @@ You can continue this later wherever you left off. "
                             moOtherWindows.Add(loHelp);
         }
 
-        private void ShowPreviousBackupStatus()
+        private bool ShowPreviousBackupStatus()
         {
-            if ( !mbShowPreviousBackupStatus )
-                return;
+            bool lbPreviousBackupError = false;
 
-            mbPreviousBackupError = false;
-
-            // "ContainsKey" is used here to prevent "DateTime.MinValue"
-            // being written as the default value for -PreviousBackupTime.
-
-            // If the backup just finished (ie. less than 1 minute ago), don't bother.
-            if ( !moProfile.ContainsKey("-PreviousBackupTime") || (DateTime.Now - moProfile.dtValue(
-                    "-PreviousBackupTime", DateTime.MinValue)).Minutes > 1 )
+            if ( mbShowPreviousBackupStatus )
             {
-                if ( !moProfile.ContainsKey("-PreviousBackupOk") )
-                {
-                    mbPreviousBackupError = true;
-                    mbShowBackupOutputAfterSysTray = true;
+                lbPreviousBackupError = false;
 
-                    tvMessageBox.ShowError(this, "The previous backup did not complete. Check the log."
-                            + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
-                }
-                else
+                // "ContainsKey" is used here to prevent "DateTime.MinValue"
+                // being written as the default value for -PreviousBackupTime.
+
+                // If the backup just finished (ie. less than 1 minute ago), don't bother.
+                if ( !moProfile.ContainsKey("-PreviousBackupTime") || (DateTime.Now - moProfile.dtValue(
+                        "-PreviousBackupTime", DateTime.MinValue)).Minutes > 1 )
                 {
-                    if ( !moProfile.bValue("-PreviousBackupOk", false) )
+                    if ( !moProfile.ContainsKey("-PreviousBackupOk") )
                     {
-                        mbPreviousBackupError = true;
+                        lbPreviousBackupError = true;
                         mbShowBackupOutputAfterSysTray = true;
 
-                        tvMessageBox.ShowError(this, "The previous backup failed. Check the log for errors."
+                        tvMessageBox.ShowError(this, "The previous backup did not complete. Check the log."
                                 + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
                     }
                     else
                     {
-                        int liPreviousBackupDays = (DateTime.Now - moProfile.dtValue("-PreviousBackupTime"
-                                                        , DateTime.MinValue)).Days;
+                        if ( !moProfile.bValue("-PreviousBackupOk", false) )
+                        {
+                            lbPreviousBackupError = true;
+                            mbShowBackupOutputAfterSysTray = true;
 
-                        tvMessageBox.Show(this, string.Format(
-                                "The previous backup finished successfully ({0} {1} day{2} ago)."
-                                        , liPreviousBackupDays < 1 ? "less than" : "about"
-                                        , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
-                                        , liPreviousBackupDays <= 1 ? "" : "s"
-                                        )
-                                + moDoGoPcBackup.sSysTrayMsg
-                                , "Backup Finished"
-                                , tvMessageBoxButtons.OK, tvMessageBoxIcons.Done
-                                , tvMessageBoxCheckBoxTypes.SkipThis
-                                , moProfile
-                                , "-PreviousBackupFinished"
-                                );
+                            tvMessageBox.ShowError(this, "The previous backup failed. Check the log for errors."
+                                    + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
+                        }
+                        else
+                        {
+                            int liPreviousBackupDays = (DateTime.Now - moProfile.dtValue("-PreviousBackupTime"
+                                                            , DateTime.MinValue)).Days;
+
+                            tvMessageBox.Show(this, string.Format(
+                                    "The previous backup finished successfully ({0} {1} day{2} ago)."
+                                            , liPreviousBackupDays < 1 ? "less than" : "about"
+                                            , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
+                                            , liPreviousBackupDays <= 1 ? "" : "s"
+                                            )
+                                    + moDoGoPcBackup.sSysTrayMsg
+                                    , "Backup Finished"
+                                    , tvMessageBoxButtons.OK, tvMessageBoxIcons.Done
+                                    , tvMessageBoxCheckBoxTypes.SkipThis
+                                    , moProfile
+                                    , "-PreviousBackupFinished"
+                                    );
+                        }
                     }
                 }
+
+                this.GetSetOutputTextPanelErrorCache();
             }
 
-            this.GetSetOutputTextPanelErrorCache();
+            return lbPreviousBackupError;
         }
 
         private void CreateSysTrayIcon()
