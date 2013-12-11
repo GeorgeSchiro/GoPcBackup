@@ -20,5 +20,6 @@ del bin\*.xml         /s/q
 del bin\*.pdb         /s/q
 del bin\*.vshost.*    /s/q
 del bin\Release\*.z*  /s/q
+del bin\Release\Setup*.exe /s/q
 rd  bin\Debug         /s/q
 rd  obj               /s/q
