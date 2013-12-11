@@ -1614,17 +1614,21 @@ You can continue this later wherever you left off. "
 
         public void GetSetOutputTextPanelErrorCache()
         {
-            if ( moProfile.ContainsKey("-PreviousBackupOk")
-                    && !moProfile.bValue("-PreviousBackupOk", false) )
+            if ( !moProfile.ContainsKey("-PreviousBackupOk")
+                    || moProfile.bValue("-PreviousBackupOk", false) )
+            {
+                moProfile.Remove("-PreviousBackupErrorOutputText");
+            }
+            else
             {
                 if ( "" == this.BackupProcessOutput.Text )
                 {
                     this.BackupProcessOutput.Text = moProfile.sValue("-PreviousBackupErrorOutputText", "");
                     this.scrBackupProcessOutput.ScrollToEnd();
 
-                    // Indicate that the backup has run at least once.
-                    // This is necessary so that the output text panel
-                    // will be displayed when the timer button is toggled.
+                    // Indicate the backup has run at least once.
+                    // This is necessary so the output text panel will
+                    // be displayed when the timer button is toggled.
                     mbBackupRan = true;
                 }
                 else
@@ -1842,10 +1846,16 @@ You can continue this later wherever you left off. "
                 {
                     this.InitProgressBar(moDoGoPcBackup.iBackupFilesCount());
 
-                    if ( !moDoGoPcBackup.BackupFiles() )
-                        this.InitProgressBar(0);
-                    else
+                    if ( moDoGoPcBackup.BackupFiles() )
+                    {
                         this.IncrementProgressBar(true);
+                    }
+                    else
+                    {
+                        // The backup failed. So update the error text cache.
+                        this.GetSetOutputTextPanelErrorCache();
+                        this.InitProgressBar(0);
+                    }
 
                     if ( this.bVisible )
                         this.ShowMissingBackupDevices();

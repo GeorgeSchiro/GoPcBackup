@@ -1708,9 +1708,6 @@ No file cleanup will be done until you update the configuration.
 
                 moProfile["-PreviousBackupTime"] = DateTime.Now;
                 moProfile.Save();
-
-                if ( null != this.oUI )
-                    this.oUI.GetSetOutputTextPanelErrorCache();
             }
 
             if ( this.bMainLoopStopped )
