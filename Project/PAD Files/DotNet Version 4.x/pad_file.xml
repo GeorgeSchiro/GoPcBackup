@@ -1,0 +1,97 @@
+<?xml version="1.0" ?>
+<XML_DIZ_INFO>
+	<MASTER_PAD_VERSION_INFO>
+		<MASTER_PAD_VERSION>3.11</MASTER_PAD_VERSION>
+		<MASTER_PAD_EDITOR>PADGen 3.1.1.51 http://www.padgen.org</MASTER_PAD_EDITOR>
+		<MASTER_PAD_INFO>Portable Application Description, or PAD for short, is a data set that is used by shareware authors to disseminate information to anyone interested in their software products. To find out more go to http://pad.asp-software.org</MASTER_PAD_INFO>
+	</MASTER_PAD_VERSION_INFO>
+	<Company_Info>
+		<Company_Name>Tirion Solutions</Company_Name>
+		<Address_1>PO Box 796185</Address_1>
+		<Address_2 />
+		<City_Town>Dallas</City_Town>
+		<State_Province>TX</State_Province>
+		<Zip_Postal_Code>75379</Zip_Postal_Code>
+		<Country>USA</Country>
+		<Company_WebSite_URL>http://TirionSolutions.com</Company_WebSite_URL>
+		<Contact_Info>
+			<Author_First_Name>George</Author_First_Name>
+			<Author_Last_Name>Schiro</Author_Last_Name>
+			<Author_Email>97202013cnetupload@schiro.name</Author_Email>
+			<Contact_First_Name>George</Contact_First_Name>
+			<Contact_Last_Name>Schiro</Contact_Last_Name>
+			<Contact_Email>97202013cnetupload@schiro.name</Contact_Email>
+		</Contact_Info>
+		<Support_Info>
+			<Sales_Email>CNetSupport@schiro.name</Sales_Email>
+			<Support_Email>CNetSupport@schiro.name</Support_Email>
+			<General_Email>CNetSupport@schiro.name</General_Email>
+			<Sales_Phone>956-332-3192</Sales_Phone>
+			<Support_Phone>956-332-3192</Support_Phone>
+			<General_Phone>956-332-3192</General_Phone>
+			<Fax_Phone />
+		</Support_Info>
+	</Company_Info>
+	<Program_Info>
+		<Program_Name>GoPC Backup (Windows 8)</Program_Name>
+		<Program_Version>2.6</Program_Version>
+		<Program_Release_Month>07</Program_Release_Month>
+		<Program_Release_Day>03</Program_Release_Day>
+		<Program_Release_Year>2013</Program_Release_Year>
+		<Program_Cost_Dollars />
+		<Program_Cost_Other_Code />
+		<Program_Cost_Other />
+		<Program_Type>Freeware</Program_Type>
+		<Program_Release_Status>New Release</Program_Release_Status>
+		<Program_Install_Support>Install Only</Program_Install_Support>
+		<Program_OS_Support>WinVista</Program_OS_Support>
+		<Program_Language>English</Program_Language>
+		<Program_Change_Info />
+		<Program_Specific_Category>Utilities</Program_Specific_Category>
+		<Program_Category_Class>System Utilities::Backup &amp; Restore</Program_Category_Class>
+		<Program_System_Requirements>.Net Framework 4.x</Program_System_Requirements>
+		<File_Info>
+			<File_Size_Bytes>3915264</File_Size_Bytes>
+			<File_Size_K>3823</File_Size_K>
+			<File_Size_MB>3.73</File_Size_MB>
+		</File_Info>
+		<Expire_Info>
+			<Has_Expire_Info>N</Has_Expire_Info>
+			<Expire_Count />
+			<Expire_Based_On>Days</Expire_Based_On>
+			<Expire_Other_Info />
+			<Expire_Month />
+			<Expire_Day />
+			<Expire_Year />
+		</Expire_Info>
+	</Program_Info>
+	<Program_Descriptions>
+		<English>
+			<Keywords>backup, cleanup, 7-zip, c#, WPF</Keywords>
+			<Char_Desc_45 />
+			<Char_Desc_80>Back up and clean up Windows based virtual machines.</Char_Desc_80>
+			<Char_Desc_250 />
+			<Char_Desc_450>GoPC Backup is a simple software utility for backing up virtual machines. It backs up files from a virtual PC (running Windows) to its virtual machine host. It can also automatically copy each backup to network shares as well as any attached devices (eg. thumb drives). It can also clean up files older than a given number of days. GoPC Backup is not limited to virtual machines. It can also backup and clean up files on any Windows PC.</Char_Desc_450>
+			<Char_Desc_2000 />
+		</English>
+	</Program_Descriptions>
+	<Web_Info>
+		<Application_URLs>
+			<Application_Info_URL>http://github.com/GeorgeSchiro/GoPcBackup</Application_Info_URL>
+			<Application_Order_URL />
+			<Application_Screenshot_URL>http://github.com/GeorgeSchiro/GoPcBackup/raw/master/Project/Screenshots/Shot01.png</Application_Screenshot_URL>
+			<Application_Icon_URL>http://github.com/GeorgeSchiro/GoPcBackup/raw/master/Project/Screenshots/GoPC32.png</Application_Icon_URL>
+			<Application_XML_File_URL>http://github.com/GeorgeSchiro/GoPcBackup/raw/master/Project/PAD%20Files/DotNet%20Version%204.x/pad_file.xml</Application_XML_File_URL>
+		</Application_URLs>
+		<Download_URLs>
+			<Primary_Download_URL>http://github.com/GeorgeSchiro/GoPcBackup/raw/master/DotNet%20EXEs/DotNet%20Version%204.x/GoPcBackup.exe</Primary_Download_URL>
+			<Secondary_Download_URL />
+			<Additional_Download_URL_1 />
+			<Additional_Download_URL_2 />
+		</Download_URLs>
+	</Web_Info>
+	<Permissions>
+		<Distribution_Permissions />
+		<EULA />
+	</Permissions>
+</XML_DIZ_INFO>
