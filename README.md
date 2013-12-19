@@ -30,7 +30,7 @@ The first time you run "GoPcBackup.exe" it will prompt you to create a "GoPcBack
 
 Everything the software needs is written to the "GoPcBackup" folder. Nothing is written anywhere else (except your backups).
 
-If you like the software, you can leave it on your desktop or you can run "Setup in Program Files.exe" (also in the "GoPcBackup" folder, be sure to run it as administrator). If you decide not to keep the software, simply delete the "GoPcBackup" folder from your desktop.
+If you like the software, you can leave it on your desktop or you can run "Setup Application Folder.exe" (also in the "GoPcBackup" folder, be sure to run it as administrator). If you decide not to keep the software, simply delete the "GoPcBackup" folder from your desktop.
 
 
 Features
