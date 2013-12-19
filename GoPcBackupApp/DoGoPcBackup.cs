@@ -109,9 +109,9 @@ a given schedule. Then it runs a backup of your files automatically.
 There is no need to use a job scheduler unless this software is running on a 
 server computer that has no regular user activity (see -RunOnce below).
 
-You provide various file specifications (ie. path\file locations of the files
-to backup and to cleanup) as well as file age limits for the files to cleanup.
-The rest is automatic.
+You provide various file specifications (ie. locations of the files to backup
+and to cleanup) as well as file age limits for the files to cleanup. The rest
+is automatic.
 
 This utility will run in the background unless its timer is turned off. Its
 simple user interface (UI) is usually minimized to the system tray.

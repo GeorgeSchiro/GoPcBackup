@@ -20,7 +20,7 @@ It also acts as its own scheduler. First, it checks for files to be removed on a
 
 There is no need to use a job scheduler unless this software is running on a server computer that has no regular user activity (see -RunOnce below).
 
-You provide various file specifications (ie. path\file locations of the files to backup and to cleanup) as well as file age limits for the files to cleanup. The rest is automatic.
+You provide various file specifications (ie. locations of the files to backup and to cleanup) as well as file age limits for the files to cleanup. The rest is automatic.
 
 <b>GoPC Backup</b> will run in the background unless its timer is turned off. The simple user interface (UI) is usually minimized to the system tray.
 
