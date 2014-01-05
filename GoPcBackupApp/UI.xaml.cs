@@ -41,10 +41,10 @@ namespace GoPcBackup
         private bool    mbIgnoreCheck;                                  // This is needed to avoid double hits in checkbox events.
         private bool    mbInShowMissingBackupDevices;                   // This prevents recursive calls into "ShowMissingBackupDevices()".
         private bool    mbShowBackupOutputAfterSysTray;                 // Determines if the text output console is displayed after a systray click.
-        private bool    mbShowPreviousBackupStatus = true;              // Determines if the previous backup status is displayed at startup.
         private bool    mbStartupDone;                                  // Indicates all activities prior to logo animation are completed.
         private bool    mbUpdateSelectedBackupDevices;                  // Indicates when the selected backup devices list can be updated.
                                                                         // (which differs from the usual "GetSet()" "always update" behavior)
+        private string  msGetSetConfigurationDefaultsError = null;      // This allows configuration errors to be display asynchronously.
 
         private Button              moStartStopButtonState = new Button();
         private DateTime            mdtNextStart = DateTime.MinValue;
@@ -81,6 +81,7 @@ namespace GoPcBackup
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
+
             HwndSource  loSource = PresentationSource.FromVisual(this) as HwndSource;
                         loSource.AddHook(WndProc);
         }
@@ -396,9 +397,11 @@ namespace GoPcBackup
                 this.GetSetOutputTextPanelErrorCache();
                 this.PopulateTimerDisplay(mcsStoppedText);
 
+                bool lbPreviousBackupError = this.ShowPreviousBackupStatus();
+
                 // No timer checked or a previous backup error means show the window
                 // immediately. Otherwise, it will be accessible via the system tray.
-                if ( !(bool)this.chkUseTimer.IsChecked || this.ShowPreviousBackupStatus() )
+                if ( !(bool)this.chkUseTimer.IsChecked || lbPreviousBackupError )
                 {
                     this.ShowMe();
                 }
@@ -443,6 +446,7 @@ namespace GoPcBackup
             {
                 this.HideMiddlePanels();
                 this.GetSetConfigurationDefaults();
+
                 if ( this.bValidateConfiguration() )
                     this.DoBackup();
                 else
@@ -988,35 +992,41 @@ namespace GoPcBackup
 
             if ( !mbGetSetDefaultsDone )
             {
-                // Step 1
-                this.FolderToBackup.Text = loBackupSet1Profile.sValue("-FolderToBackup",
-                        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
+                try
+                {
+                    // General
+                    this.CleanupFiles.IsChecked = moProfile.bValue("-CleanupFiles", true);
+                    this.BackupFiles.IsChecked = moProfile.bValue("-BackupFiles", true);
+                    this.BackupBeginScriptEnabled.IsChecked = moProfile.bValue("-BackupBeginScriptEnabled", true);
+                    this.BackupDoneScriptEnabled.IsChecked = moProfile.bValue("-BackupDoneScriptEnabled", true);
 
 
-                // Step 2
-                this.BackupOutputFilename.Text = loBackupSet1Profile.sValue("-OutputFilename",
-                        string.Format("{0}Files", Environment.GetEnvironmentVariable("USERNAME")));
-
-                this.ArchivePath.Text = moDoGoPcBackup.sArchivePath();
-
-                this.UseVirtualMachineHostArchive.IsChecked = moProfile.bValue("-UseVirtualMachineHostArchive", false);
-                this.VirtualMachineHostArchivePath.Text = moProfile.sValue("-VirtualMachineHostArchivePath", "");
-                this.UseConnectVirtualMachineHost.IsChecked = moProfile.bValue("-UseConnectVirtualMachineHost", false);
-                this.VirtualMachineHostUsername.Text = moProfile.sValue("-VirtualMachineHostUsername", "");
-                this.VirtualMachineHostPassword.Text = moProfile.sValue("-VirtualMachineHostPassword", "");
+                    // Step 1
+                    this.FolderToBackup.Text = loBackupSet1Profile.sValue("-FolderToBackup",
+                            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
 
 
-                // Step 4
-                this.BackupTime.Text = moProfile.sValue("-BackupTime", "12:00 AM");
-                this.sldBackupTime_ValueFromString(this.BackupTime.Text);
+                    // Step 2
+                    this.BackupOutputFilename.Text = loBackupSet1Profile.sValue("-OutputFilename",
+                            string.Format("{0}Files", Environment.GetEnvironmentVariable("USERNAME")));
+
+                    this.ArchivePath.Text = moDoGoPcBackup.sArchivePath();
+
+                    this.UseVirtualMachineHostArchive.IsChecked = moProfile.bValue("-UseVirtualMachineHostArchive", false);
+                    this.VirtualMachineHostArchivePath.Text = moProfile.sValue("-VirtualMachineHostArchivePath", "");
+                    this.UseConnectVirtualMachineHost.IsChecked = moProfile.bValue("-UseConnectVirtualMachineHost", false);
+                    this.VirtualMachineHostUsername.Text = moProfile.sValue("-VirtualMachineHostUsername", "");
+                    this.VirtualMachineHostPassword.Text = moProfile.sValue("-VirtualMachineHostPassword", "");
 
 
-                // General
-                this.CleanupFiles.IsChecked = moProfile.bValue("-CleanupFiles", true);
-                this.BackupFiles.IsChecked = moProfile.bValue("-BackupFiles", true);
-                this.BackupBeginScriptEnabled.IsChecked = moProfile.bValue("-BackupBeginScriptEnabled", true);
-                this.BackupDoneScriptEnabled.IsChecked = moProfile.bValue("-BackupDoneScriptEnabled", true);
-
+                    // Step 4
+                    this.BackupTime.Text = moProfile.sValue("-BackupTime", "12:00 AM");
+                    this.sldBackupTime_ValueFromString(this.BackupTime.Text);
+                }
+                catch (Exception ex)
+                {
+                    msGetSetConfigurationDefaultsError = ex.Message;
+                }
 
                 mbGetSetDefaultsDone = true;
             }
@@ -1101,7 +1111,7 @@ namespace GoPcBackup
                             loCheckBox.Unchecked += new RoutedEventHandler(BackupDeviceCheckboxStateChanged);
                         }
                     }
-                    catch { }
+                    catch {}
                 }
             }
 
@@ -1130,33 +1140,36 @@ namespace GoPcBackup
             loBackupSet1Profile["-FolderToBackup"] = this.ReviewFolderToBackup.Text;
             loBackupSet1Profile["-OutputFilename"] = this.ReviewOutputFilename.Text;
 
-            moProfile["-BackupSet"] = loBackupSet1Profile.sCommandBlock();
-            moProfile["-ArchivePath"] = this.ReviewArchivePath.Text;
-            moProfile["-BackupTime"] = this.ReviewBackupTime.Text;
-
-            moProfile["-UseVirtualMachineHostArchive"] = this.UseVirtualMachineHostArchive.IsChecked;
-            moProfile["-VirtualMachineHostArchivePath"] = this.VirtualMachineHostArchivePath.Text;
-            moProfile["-UseConnectVirtualMachineHost"] = this.UseConnectVirtualMachineHost.IsChecked;
-            moProfile["-VirtualMachineHostUsername"] = this.VirtualMachineHostUsername.Text;
-            moProfile["-VirtualMachineHostPassword"] = this.VirtualMachineHostPassword.Text;
-
-            // Only update the selected backup devices list (and bit field) if the backup devices
-            // tab has been viewed or one of the backup device checkboxes has been clicked.
-            if ( mbUpdateSelectedBackupDevices )
+            if ( null == msGetSetConfigurationDefaultsError )
             {
-                // Make the list of selected backup devices a multi-line block by inserting newlines before hyphens.
-                moProfile["-SelectedBackupDevices"] = loSelectedBackupDevices.sCommandBlock();
-                moProfile["-SelectedBackupDevicesBitField"] = Convert.ToString(this.iSelectedBackupDevicesBitField(), 2);
+                moProfile["-BackupSet"] = loBackupSet1Profile.sCommandBlock();
+                moProfile["-ArchivePath"] = this.ReviewArchivePath.Text;
+                moProfile["-BackupTime"] = this.ReviewBackupTime.Text;
 
-                mbUpdateSelectedBackupDevices = false;
+                moProfile["-UseVirtualMachineHostArchive"] = this.UseVirtualMachineHostArchive.IsChecked;
+                moProfile["-VirtualMachineHostArchivePath"] = this.VirtualMachineHostArchivePath.Text;
+                moProfile["-UseConnectVirtualMachineHost"] = this.UseConnectVirtualMachineHost.IsChecked;
+                moProfile["-VirtualMachineHostUsername"] = this.VirtualMachineHostUsername.Text;
+                moProfile["-VirtualMachineHostPassword"] = this.VirtualMachineHostPassword.Text;
+
+                // Only update the selected backup devices list (and bit field) if the backup devices
+                // tab has been viewed or one of the backup device checkboxes has been clicked.
+                if ( mbUpdateSelectedBackupDevices )
+                {
+                    // Make the list of selected backup devices a multi-line block by inserting newlines before hyphens.
+                    moProfile["-SelectedBackupDevices"] = loSelectedBackupDevices.sCommandBlock();
+                    moProfile["-SelectedBackupDevicesBitField"] = Convert.ToString(this.iSelectedBackupDevicesBitField(), 2);
+
+                    mbUpdateSelectedBackupDevices = false;
+                }
+
+                moProfile["-CleanupFiles"] = this.CleanupFiles.IsChecked;
+                moProfile["-BackupFiles"] = this.BackupFiles.IsChecked;
+                moProfile["-BackupBeginScriptEnabled"] = this.BackupBeginScriptEnabled.IsChecked;
+                moProfile["-BackupDoneScriptEnabled"] = this.BackupDoneScriptEnabled.IsChecked;
+
+                moProfile.Save();
             }
-
-            moProfile["-CleanupFiles"] = this.CleanupFiles.IsChecked;
-            moProfile["-BackupFiles"] = this.BackupFiles.IsChecked;
-            moProfile["-BackupBeginScriptEnabled"] = this.BackupBeginScriptEnabled.IsChecked;
-            moProfile["-BackupDoneScriptEnabled"] = this.BackupDoneScriptEnabled.IsChecked;
-
-            moProfile.Save();
 
             if ( !this.bMainLoopStopped )
                 this.bMainLoopRestart = true;
@@ -1263,7 +1276,7 @@ namespace GoPcBackup
 
                 if ( !DateTime.TryParse(BackupTime.Text, out ldtBackupTime) )
                     lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
-                            + "Step 2. Select a valid backup time."
+                            + "Step 4. Select a valid backup time."
                             ;
             }
 
@@ -1564,6 +1577,13 @@ You can continue this later wherever you left off. "
         private void ShowWizard()
         {
             this.MiddlePanelConfigWizard.Visibility = Visibility.Visible;
+
+            if ( null != msGetSetConfigurationDefaultsError )
+            {
+                // This kludge (the "Replace()") is needed to correct for bad MS grammar.
+                tvMessageBox.ShowError(this, msGetSetConfigurationDefaultsError.Replace("a unknown", "an unknown"), "Error Loading Configuration");
+                msGetSetConfigurationDefaultsError = null;
+            }
         }
 
         private void ShowOutputText()
@@ -1711,59 +1731,54 @@ You can continue this later wherever you left off. "
         {
             bool lbPreviousBackupError = false;
 
-            if ( mbShowPreviousBackupStatus )
+            // "ContainsKey" is used here to prevent "DateTime.MinValue"
+            // being written as the default value for -PreviousBackupTime.
+
+            // If the backup just finished (ie. less than 1 minute ago), don't bother.
+            if ( !moProfile.ContainsKey("-PreviousBackupTime") || (DateTime.Now - moProfile.dtValue(
+                    "-PreviousBackupTime", DateTime.MinValue)).Minutes > 1 )
             {
-                lbPreviousBackupError = false;
-
-                // "ContainsKey" is used here to prevent "DateTime.MinValue"
-                // being written as the default value for -PreviousBackupTime.
-
-                // If the backup just finished (ie. less than 1 minute ago), don't bother.
-                if ( !moProfile.ContainsKey("-PreviousBackupTime") || (DateTime.Now - moProfile.dtValue(
-                        "-PreviousBackupTime", DateTime.MinValue)).Minutes > 1 )
+                if ( !moProfile.ContainsKey("-PreviousBackupOk") )
                 {
-                    if ( !moProfile.ContainsKey("-PreviousBackupOk") )
+                    lbPreviousBackupError = true;
+                    mbShowBackupOutputAfterSysTray = true;
+
+                    tvMessageBox.ShowError(this, "The previous backup did not complete. Check the log."
+                            + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
+                }
+                else
+                {
+                    if ( !moProfile.bValue("-PreviousBackupOk", false) )
                     {
                         lbPreviousBackupError = true;
                         mbShowBackupOutputAfterSysTray = true;
 
-                        tvMessageBox.ShowError(this, "The previous backup did not complete. Check the log."
+                        tvMessageBox.ShowError(this, "The previous backup failed. Check the log for errors."
                                 + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
                     }
                     else
                     {
-                        if ( !moProfile.bValue("-PreviousBackupOk", false) )
-                        {
-                            lbPreviousBackupError = true;
-                            mbShowBackupOutputAfterSysTray = true;
+                        int liPreviousBackupDays = (DateTime.Now - moProfile.dtValue("-PreviousBackupTime"
+                                                        , DateTime.MinValue)).Days;
 
-                            tvMessageBox.ShowError(this, "The previous backup failed. Check the log for errors."
-                                    + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
-                        }
-                        else
-                        {
-                            int liPreviousBackupDays = (DateTime.Now - moProfile.dtValue("-PreviousBackupTime"
-                                                            , DateTime.MinValue)).Days;
-
-                            tvMessageBox.Show(this, string.Format(
-                                    "The previous backup finished successfully ({0} {1} day{2} ago)."
-                                            , liPreviousBackupDays < 1 ? "less than" : "about"
-                                            , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
-                                            , liPreviousBackupDays <= 1 ? "" : "s"
-                                            )
-                                    + moDoGoPcBackup.sSysTrayMsg
-                                    , "Backup Finished"
-                                    , tvMessageBoxButtons.OK, tvMessageBoxIcons.Done
-                                    , tvMessageBoxCheckBoxTypes.SkipThis
-                                    , moProfile
-                                    , "-PreviousBackupFinished"
-                                    );
-                        }
+                        tvMessageBox.Show(this, string.Format(
+                                "The previous backup finished successfully ({0} {1} day{2} ago)."
+                                        , liPreviousBackupDays < 1 ? "less than" : "about"
+                                        , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
+                                        , liPreviousBackupDays <= 1 ? "" : "s"
+                                        )
+                                + moDoGoPcBackup.sSysTrayMsg
+                                , "Backup Finished"
+                                , tvMessageBoxButtons.OK, tvMessageBoxIcons.Done
+                                , tvMessageBoxCheckBoxTypes.SkipThis
+                                , moProfile
+                                , "-PreviousBackupFinished"
+                                );
                     }
                 }
-
-                this.GetSetOutputTextPanelErrorCache();
             }
+
+            this.GetSetOutputTextPanelErrorCache();
 
             return lbPreviousBackupError;
         }
@@ -1815,14 +1830,7 @@ You can continue this later wherever you left off. "
                         , "Backup Failed");
             }
 
-            // Update the error text cache (as needed).
-            this.GetSetOutputTextPanelErrorCache();
-
             this.bBackupRunning = false;
-
-            // Don't bother to show the previous backup
-            // status since we just did all of this anyway.
-            mbShowPreviousBackupStatus = false;
         }
 
         private void DoBackup()
@@ -1844,7 +1852,11 @@ You can continue this later wherever you left off. "
             {
                 this.IncrementProgressBar(true);
 
-                if ( moProfile.bValue("-BackupFiles", true) )
+                if ( !moProfile.bValue("-BackupFiles", true) )
+                {
+                    moDoGoPcBackup.LogIt("Backup files is disabled.");
+                }
+                else
                 {
                     this.InitProgressBar(moDoGoPcBackup.iBackupFilesCount());
 
@@ -1854,8 +1866,6 @@ You can continue this later wherever you left off. "
                     }
                     else
                     {
-                        // The backup failed. So update the error text cache.
-                        this.GetSetOutputTextPanelErrorCache();
                         this.InitProgressBar(0);
                     }
 
@@ -1901,7 +1911,8 @@ You can continue this later wherever you left off. "
             {
                 this.bMainLoopStopped = true;
 
-                tvMessageBox.ShowError(this, ex.Message, "Error Setting Backup Time");
+                // This kludge (the "Replace()") is needed to correct for bad MS grammar.
+                tvMessageBox.ShowError(this, ex.Message.Replace("a unknown", "an unknown"), "Error Setting Backup Time");
             }
 
             return ldtBackupTime;
@@ -1942,6 +1953,9 @@ You can continue this later wherever you left off. "
 
                 this.bMainLoopRestart = false;
             }
+
+            if ( DateTime.MinValue == mdtNextStart )
+                return;
 
             try
             {
