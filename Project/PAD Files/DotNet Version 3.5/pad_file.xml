@@ -82,8 +82,8 @@
     <Program_OS_Support>Win7 x32,Win7 x64,WinVista,WinVista x64,WinXP</Program_OS_Support>
     <Program_Language>English</Program_Language>
     <Program_Change_Info>Added support for multiple instances started from the command-line.</Program_Change_Info>
-    <Program_System_Requirements>.Net Framework 4</Program_System_Requirements>
-    <Limitations>Requires .Net Framework 4</Limitations>
+    <Program_System_Requirements>.Net Framework 3.5</Program_System_Requirements>
+    <Limitations>Requires .Net Framework 3.5</Limitations>
     <Awards></Awards>
     <File_Info>
       <File_Size_Bytes>3870720</File_Size_Bytes>
