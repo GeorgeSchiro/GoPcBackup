@@ -65,7 +65,7 @@
   </ASP>
   <Program_Info>
     <AppID>app-a20025d79bd3</AppID>
-    <Program_Name>GoPC Backup (Windows 8)</Program_Name>
+    <Program_Name>GoPC Backup</Program_Name>
     <Program_Version>2.7</Program_Version>
     <Program_Release_Month>07</Program_Release_Month>
     <Program_Release_Day>03</Program_Release_Day>
@@ -79,7 +79,7 @@
     <Program_Categories></Program_Categories>
     <Program_Release_Status>Minor Update</Program_Release_Status>
     <Program_Install_Support>Install Only</Program_Install_Support>
-    <Program_OS_Support>Windows 8</Program_OS_Support>
+    <Program_OS_Support>Win7 x32,Win7 x64,WinVista,WinVista x64,WinXP</Program_OS_Support>
     <Program_Language>English</Program_Language>
     <Program_Change_Info>Added support for multiple instances started from the command-line.</Program_Change_Info>
     <Program_System_Requirements>.Net Framework 4</Program_System_Requirements>
