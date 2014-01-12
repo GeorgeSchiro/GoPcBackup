@@ -92,7 +92,7 @@ namespace GoPcBackup
                 bool        lbFirstInstance;
                             Mutex loMutex = new Mutex(false, "Local\\" + Application.ResourceAssembly.GetName().Name, out lbFirstInstance);
                             if ( !lbFirstInstance )
-                                DoGoPcBackup.ActivateAlreadyRunningInstance(args);
+                                DoGoPcBackup.ActivateAlreadyRunningInstance(args, loProfile);
 
                 if ( lbFirstInstance && !loProfile.bExit )
                 {
@@ -611,12 +611,8 @@ Notes:
 
                     // Fetch source code.
                     if ( loProfile.bValue("-FetchSource", false) )
-                    {
                         tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
                                 , Application.ResourceAssembly.GetName().Name + ".zip", null);
-                        tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
-                                , "SetupAppFolder.zip", null);
-                    }
 
 
                     // Updates start here.
@@ -706,7 +702,7 @@ Notes:
         public static extern bool PostMessage(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam);
         public static readonly int HWND_BROADCAST = 0xffff;
      
-        public static void ActivateAlreadyRunningInstance(string[] args)
+        public static void ActivateAlreadyRunningInstance(string[] args, tvProfile aoProfile)
         {
             if ( 0 == args.Length )
             {
@@ -715,11 +711,12 @@ Notes:
             }
             else
             {
+                aoProfile.bAppFullyLoaded = true;   // Turns off the "loading" message.
+
                 // If arguments were passed, then start a new "-RunOnce" instance.
-                
+
                 tvProfile   loProfile = new tvProfile("-RunOnce -BackupBeginScriptEnabled=false -BackupDoneScriptEnabled=false");
                             loProfile.LoadFromCommandLineArray(args, tvProfileLoadActions.Merge);
-                            loProfile.bAppFullyLoaded = true;   // Turns off the "loading" message.
 
                 DoGoPcBackup    loDoDa = new DoGoPcBackup(loProfile);
                                 loDoDa.BackupFiles();
@@ -2586,31 +2583,26 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
                             , Path.Combine(this.sArchivePath(), "*" + Path.GetExtension(lsBackupOutputPathFileBase))
                             ));
 
-                    // Set the cleanup of backup / cleanup log files to 30 days.
+                    // Set the cleanup of file lists and backup / cleanup log files to 30 days.
                     moProfile.Add("-CleanupSet", string.Format(@"
     -AgeDays=30
     -FilesToDelete={0}*{1}
     -FilesToDelete={2}*{3}
-    -FilesToDelete=Log-*.txt
+    -FilesToDelete={4}*{5}
+    -FilesToDelete={6}*{7}
 
 "
+                            , Path.Combine(Path.GetDirectoryName(this.sZipToolFileListPathFileBase)
+                                    , Path.GetFileNameWithoutExtension(this.sZipToolFileListPathFileBase))
+                            , Path.GetExtension(this.sZipToolFileListPathFileBase)
                             , Path.Combine(Path.GetDirectoryName(this.sLogPathFileBase)
                                     , Path.GetFileNameWithoutExtension(this.sLogPathFileBase))
                             , Path.GetExtension(this.sLogPathFileBase)
                             , Path.Combine(Path.GetDirectoryName(this.sDeletedFileListOutputPathFileBase)
                                     , Path.GetFileNameWithoutExtension(this.sDeletedFileListOutputPathFileBase))
                             , Path.GetExtension(this.sDeletedFileListOutputPathFileBase)
-                            ));
-
-                    // Set the cleanup of backup file lists to 30 days.
-                    moProfile.Add("-CleanupSet", string.Format(@"
-    -AgeDays=30
-    -FilesToDelete={0}*{1}
-
-"
-                            , Path.Combine(Path.GetDirectoryName(this.sZipToolFileListPathFileBase)
-                                    , Path.GetFileNameWithoutExtension(this.sZipToolFileListPathFileBase))
-                            , Path.GetExtension(this.sZipToolFileListPathFileBase)
+                            , Path.Combine(Path.GetDirectoryName(this.sLogPathFileBase), "Log")
+                            , Path.GetExtension(this.sLogPathFileBase)
                             ));
                 }
 

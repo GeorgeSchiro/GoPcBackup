@@ -718,7 +718,7 @@ namespace tvToolbox
         private static tvProfile goGlobal;
 
 
-        #region "SortedList Member Emulation"
+        #region "SortedList Member Emulation and Other Overrides"
 
         // The following methods don't necessarily augment or override ArrayList
         // members. They allow this class to emulate SortedList with added support
@@ -1049,6 +1049,15 @@ namespace tvToolbox
 
             base[aiIndex] = new DictionaryEntry(lsKey, aoValue);
         }
+
+        /// <summary>
+        /// Overrides base ToString() method.
+        /// </summary>
+        /// <returns>tvProfile contents in command-line block format.</returns>
+        public override string ToString()
+        {
+            return this.sCommandBlock();
+        }
         #endregion
 
         #endregion
@@ -1168,7 +1177,8 @@ namespace tvToolbox
                 mbAppFullyLoaded = value;
 
                 if ( mbAppFullyLoaded && null != moAppLoadingWaitMsg )
-                    moAppLoadingWaitMsg.Close();
+                    mttvMessageBox.InvokeMember("Close", BindingFlags.InvokeMethod, null, moAppLoadingWaitMsg
+                                                , null);
             }
         }
         private bool mbAppFullyLoaded = false;
@@ -1743,6 +1753,42 @@ namespace tvToolbox
         /// <param name="asKey">
         /// The key string used to find the corresponding value in the profile.
         /// </param>
+        /// <param name="aoDefaultProfile">
+        /// The tvProfile object value returned if asKey is not found.
+        /// </param>
+        /// <returns>
+        /// The tvProfile object value found or aoDefaultProfile (see <see cref="GetAdd"/>).
+        /// </returns>
+        public tvProfile oProfile(String asKey, tvProfile aoDefaultProfile)
+        {
+            return (tvProfile)this.GetAdd(asKey, aoDefaultProfile);
+        }
+
+        /// <summary>
+        /// The "<see cref="GetAdd"/> Object" value found for asKey.
+        /// </summary>
+        /// <param name="asKey">
+        /// The key string used to find the corresponding value in the profile.
+        /// </param>
+        /// <param name="asDefaultProfile">
+        /// The tvProfile object value (converted from a command-line string)
+        /// returned if asKey is not found.
+        /// </param>
+        /// <returns>
+        /// The tvProfile object value found or asDefaultProfile 
+        /// (converted to a tvProfile object, see <see cref="GetAdd"/>).
+        /// </returns>
+        public tvProfile oProfile(String asKey, string asDefaultProfile)
+        {
+            return (tvProfile)this.GetAdd(asKey, new tvProfile(asDefaultProfile));
+        }
+
+        /// <summary>
+        /// The "<see cref="GetAdd"/> Object" value found for asKey.
+        /// </summary>
+        /// <param name="asKey">
+        /// The key string used to find the corresponding value in the profile.
+        /// </param>
         /// <param name="aoDefault">
         /// The object value returned if asKey is not found.
         /// </param>
@@ -1755,7 +1801,8 @@ namespace tvToolbox
         }
 
         /// <summary>
-        /// The "<see cref="GetAdd"/> Object" value found for asKey, cast as a trimmed string.
+        /// The "<see cref="GetAdd"/> Object" value found for asKey,
+        /// cast as a trimmed string.
         /// </summary>
         /// <param name="asKey">
         /// The key string used to find the corresponding value in the profile.
@@ -1858,7 +1905,9 @@ namespace tvToolbox
         /// </returns>
         public String sCommandBlock()
         {
-            const string    lcsIndent = "    ";
+            ++miCommandBlockRecursionLevel;
+
+            string          lcsIndent = "".PadRight(4 * miCommandBlockRecursionLevel);
             StringBuilder   lsbCommandBlock = new StringBuilder(Environment.NewLine);
 
             foreach ( DictionaryEntry loEntry in this )
@@ -1886,8 +1935,11 @@ namespace tvToolbox
 
             lsbCommandBlock.Append(Environment.NewLine);
 
+            --miCommandBlockRecursionLevel;
+
             return lsbCommandBlock.ToString();
         }
+        private static int miCommandBlockRecursionLevel = 0;
 
         /// <summary>
         /// Returns the entire contents of the profile as a "command line" string
@@ -2437,8 +2489,12 @@ Copy and proceed from there?
 "
                                     , lsMessage), "Copy EXE to Desktop?", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) )
                         {
-                            moAppLoadingWaitMsg = new tvMessageBox();
-                            moAppLoadingWaitMsg.ShowWait(null, lcsLoadingMsg, 250);
+                            if ( null != mttvMessageBox )
+                            {
+                                moAppLoadingWaitMsg = Activator.CreateInstance(mttvMessageBox);
+                                mttvMessageBox.InvokeMember("ShowWait", BindingFlags.InvokeMethod, null, moAppLoadingWaitMsg
+                                                            , new object[]{null, lcsLoadingMsg, 250});
+                            }
 
                             String lsNewExePathFile = Path.Combine(lsNewPath, Path.GetFileName(this.sExePathFile));
 
@@ -2477,8 +2533,12 @@ Copy and proceed from there?
             }
             else
             {
-                moAppLoadingWaitMsg = new tvMessageBox();
-                moAppLoadingWaitMsg.ShowWait(null, lcsLoadingMsg, 250);
+                if ( null != mttvMessageBox )
+                {
+                    moAppLoadingWaitMsg = Activator.CreateInstance(mttvMessageBox);
+                    mttvMessageBox.InvokeMember("ShowWait", BindingFlags.InvokeMethod, null, moAppLoadingWaitMsg
+                                                , new object[]{null, lcsLoadingMsg, 250});
+                }
 
                 String  lsFileAsStream = null;
                         this.UnlockProfileFile();
@@ -3244,7 +3304,8 @@ Copy and proceed from there?
         private const char   mccSplitMark = '\u0001';
         private FileStream   moFileStreamProfileFileLock;
         private tvProfile    moInputCommandLineProfile;
-        private tvMessageBox moAppLoadingWaitMsg;
+        private Type         mttvMessageBox = Type.GetType("tvMessageBox");
+        private object       moAppLoadingWaitMsg;
 
 
         private class tvProfileEnumerator : IEnumerator

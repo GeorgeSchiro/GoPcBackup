@@ -200,8 +200,11 @@ namespace tvToolbox
 
         //internal static void Message(Window aoWindow, string asMessage)
         //{
-        //    tvMessageBox.Show(aoWindow, asMessage, System.Windows.Forms.Application.ProductName
-        //            , tvMessageBoxButtons.OK, tvMessageBoxIcons.Information);
+        //    Type    lttvMessageBox = Type.GetType("tvMessageBox");
+        //    object  loMsg = Activator.CreateInstance(lttvMessageBox);
+
+        //    lttvMessageBox.InvokeMember("Show", BindingFlags.InvokeMethod, null, loMsg
+        //                                , new object[]{aoWindow, asMessage, System.Windows.Forms.Application.ProductName, tvMessageBoxButtons.OK, tvMessageBoxIcons.Information});
         //}
 
         //internal static void ErrorMessage(Window aoWindow, Exception aoEx)
@@ -216,7 +219,11 @@ namespace tvToolbox
 
         internal static void ErrorMessage(Window aoWindow, string asMessage)
         {
-            tvMessageBox.ShowError(aoWindow, asMessage, System.Windows.Forms.Application.ProductName);
+            Type    lttvMessageBox = Type.GetType("tvMessageBox");
+            object  loErrMsg = Activator.CreateInstance(lttvMessageBox);
+
+            lttvMessageBox.InvokeMember("ShowError", BindingFlags.InvokeMethod, null, loErrMsg
+                                        , new object[]{aoWindow, asMessage, System.Windows.Forms.Application.ProductName});
         }
 
         internal static void NetworkSecurityStartupErrorMessage()
