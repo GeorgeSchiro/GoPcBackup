@@ -1789,6 +1789,21 @@ namespace tvToolbox
         /// <param name="asKey">
         /// The key string used to find the corresponding value in the profile.
         /// </param>
+        /// <returns>
+        /// The tvProfile object value found or a default empty
+        /// tvProfile object will be added to the profile, see <see cref="GetAdd"/>).
+        /// </returns>
+        public tvProfile oProfile(String asKey)
+        {
+            return (tvProfile)this.GetAdd(asKey, new tvProfile());
+        }
+
+        /// <summary>
+        /// The "<see cref="GetAdd"/> Object" value found for asKey.
+        /// </summary>
+        /// <param name="asKey">
+        /// The key string used to find the corresponding value in the profile.
+        /// </param>
         /// <param name="aoDefault">
         /// The object value returned if asKey is not found.
         /// </param>
