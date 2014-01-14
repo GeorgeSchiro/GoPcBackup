@@ -459,8 +459,8 @@ A brief description of each feature follows.
 
     This is the output path\file that will contain the backup / cleanup process
     log. The profile file name will be prepended to the default and the current
-    date (see -LogFileDateFormat) will be inserted between the filename and the
-    extension (see -LogFileDateFormat above).
+    date (see -LogFileDateFormat above) will be inserted between the filename 
+    and the extension.
 
 -MainLoopMinutes=1440
 
@@ -579,9 +579,18 @@ A brief description of each feature follows.
     without changing the existing command line. A typical example would be
     to supply a password on the command line to ""{EXE}"" itself.
 
--ZipToolFileListPathFile=ZipFileList.txt
+-ZipToolFileListFileDateFormat=-yyyy-MM-dd
+
+    This format string is used to form the variable part of each file list
+    output filename (see -ZipToolFileListPathFile below). It is inserted
+    between the filename and the extension.
+
+-ZipToolFileListPathFile=FileLists\ZipFileList.txt
 
     This is the file used to store the list of filenames to be compressed.
+    The profile file name will be prepended to the default and the current
+    date (see -ZipToolFileListFileDateFormat above) will be inserted (with
+    a GUID) between the filename and the extension.
 
 -ZipToolLastRunCmdPathFile=Run Last Backup.cmd
 
@@ -598,6 +607,7 @@ Notes:
     To see the options related to any particular behavior, you must run that
     part of the software first. Configuration options are added ""on the fly""
     (in order of execution) to ""{INI}"" as the software runs.
+
 "
                             .Replace("{EXE}", Path.GetFileName(Application.ResourceAssembly.Location))
                             .Replace("{INI}", Path.GetFileName(loProfile.sActualPathFile))
@@ -2590,10 +2600,13 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
     -FilesToDelete={2}*{3}
     -FilesToDelete={4}*{5}
     -FilesToDelete={6}*{7}
+    -FilesToDelete={8}*{9}
 
 "
                             , Path.Combine(Path.GetDirectoryName(this.sZipToolFileListPathFileBase)
                                     , Path.GetFileNameWithoutExtension(this.sZipToolFileListPathFileBase))
+                            , Path.GetExtension(this.sZipToolFileListPathFileBase)
+                            , Path.Combine(Path.GetDirectoryName(this.sZipToolFileListPathFileBase), "ZipFileList")
                             , Path.GetExtension(this.sZipToolFileListPathFileBase)
                             , Path.Combine(Path.GetDirectoryName(this.sLogPathFileBase)
                                     , Path.GetFileNameWithoutExtension(this.sLogPathFileBase))
