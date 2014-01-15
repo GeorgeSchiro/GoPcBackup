@@ -1761,7 +1761,12 @@ namespace tvToolbox
         /// </returns>
         public tvProfile oProfile(String asKey, tvProfile aoDefaultProfile)
         {
-            return (tvProfile)this.GetAdd(asKey, aoDefaultProfile);
+            object  loProfile = this.GetAdd(asKey, aoDefaultProfile);
+            object  loProfileCast = loProfile as tvProfile;
+                    if ( null == loProfileCast )
+                        loProfileCast = new tvProfile(loProfile.ToString());
+
+            return (tvProfile)loProfileCast;
         }
 
         /// <summary>
@@ -1778,9 +1783,14 @@ namespace tvToolbox
         /// The tvProfile object value found or asDefaultProfile 
         /// (converted to a tvProfile object, see <see cref="GetAdd"/>).
         /// </returns>
-        public tvProfile oProfile(String asKey, string asDefaultProfile)
+        public tvProfile oProfile(String asKey, String asDefaultProfile)
         {
-            return (tvProfile)this.GetAdd(asKey, new tvProfile(asDefaultProfile));
+            object  loProfile = this.GetAdd(asKey, asDefaultProfile);
+            object  loProfileCast = loProfile as tvProfile;
+                    if ( null == loProfileCast )
+                        loProfileCast = new tvProfile(loProfile.ToString());
+
+            return (tvProfile)loProfileCast;
         }
 
         /// <summary>
@@ -1795,7 +1805,12 @@ namespace tvToolbox
         /// </returns>
         public tvProfile oProfile(String asKey)
         {
-            return (tvProfile)this.GetAdd(asKey, new tvProfile());
+            object  loProfile = this.GetAdd(asKey, new tvProfile());
+            object  loProfileCast = loProfile as tvProfile;
+                    if ( null == loProfileCast )
+                        loProfileCast = new tvProfile(loProfile.ToString());
+
+            return (tvProfile)loProfileCast;
         }
 
         /// <summary>
