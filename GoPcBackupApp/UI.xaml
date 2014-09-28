@@ -321,9 +321,8 @@
 </TextBlock>
 <Border Style="{StaticResource ConfigWizardTextBorder}">
         <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
-    Your first backup will run immediately.
-    This is necessary to gauge the initial size of the backup.
-    This will also give you a chance to verify the backup
+    Your first backup will run now.
+    This will give you a chance to verify the backup
     works before it runs automatically later. <LineBreak/><LineBreak/>
 
     If you would prefer to finish this setup another time,

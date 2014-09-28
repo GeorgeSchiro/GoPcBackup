@@ -256,6 +256,32 @@ Options and Features
     If you delete the file, it will be recreated from the content found in 
     -BackupDoneScriptHelp (see above).
 
+-BackupFailedScriptEnabled=True
+
+    Set this switch False to skip running the "backup failed" script.
+
+-BackupFailedScriptHelp= SEE PROFILE FOR DEFAULT VALUE
+
+    This is the default content of the DOS script that is initially written to
+    -BackupFailedScriptPathFile and run after each failed backup. It contains
+    a description of the command-line arguments passed to the script at runtime.
+
+-BackupFailedScriptInit=False
+
+    Set this switch True and the "backup failed" script will be automatically
+    overwritten from the content of -BackupFailedScriptHelp. Once used this switch
+    will be reset to False.
+
+    Note: the content of -BackupFailedScriptHelp will also be overwritten from the
+    default value embedded in the executable file.
+
+-BackupFailedScriptPathFile=BackupFailed.cmd
+
+    This DOS shell script is run after a backup fails to complete. You can
+    edit the contents of the file or point this parameter to another file.
+    If you delete the file, it will be recreated from the content found in 
+    -BackupFailedScriptHelp (see above).
+
 -BackupDriveToken=(This is my GoPC backup drive.)
 
     This is the filename looked for in the root of every storage device attached

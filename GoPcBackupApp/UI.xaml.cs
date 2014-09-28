@@ -1281,7 +1281,21 @@ namespace GoPcBackup
             }
 
             if ( null != lsMessage )
+            {
                 tvMessageBox.ShowWarning(this, lsMessage, lsCaption);
+            }
+            else
+            {
+                // Adjust "-BackupDoneArgs" for a proper potential rerun of the "backup done" script.
+                // The only one that can reasonably be changed without potentially impacting several
+                // other values is the "-VirtualMachineHostArchivePath".
+                tvProfile loBackupDoneArgs = new tvProfile(moProfile.sValue("-BackupDoneArgs", ""));
+
+                loBackupDoneArgs["-VirtualMachineHostArchivePath"] = moProfile.sValue("-VirtualMachineHostArchivePath", "");
+
+                moProfile["-BackupDoneArgs"] = loBackupDoneArgs.sCommandBlock();
+                moProfile.Save();
+            }
 
             return null == lsMessage;
         }
@@ -1514,7 +1528,7 @@ You can continue this later wherever you left off. "
             {
                 string lsMessageCaption = "Missing Devices";
 
-                tvProfile loSelectedBackupDevices = moProfile.oNestedProfile("-SelectedBackupDevices");
+                tvProfile loSelectedBackupDevices = moProfile.oProfile("-SelectedBackupDevices");
 
                 string lsMessage = String.Format("Change setup? Selected backup device{0}:\r\n\r\n"
                                                     , 1 == loSelectedBackupDevices.Count ? "" : "s");
@@ -1804,33 +1818,61 @@ You can continue this later wherever you left off. "
 
         private void RerunBackupDoneScript()
         {
-            this.ShowMe();
-            this.bBackupRunning = true;
+            this.GetSetConfigurationDefaults();
 
-            // Append a blank line to the error output before proceeding.
-            moDoGoPcBackup.LogIt("");
-
-            // Run the "backup done" script and return the failed file count with bit field.
-            // The exit code is defined in the script as a combination of two integers-
-            // a bit field of found backup devices and a count of copy failures (99 max).
-            // The integer part of the composite number is the bit field.
-            double ldCompositeResult = moDoGoPcBackup.iBackupDoneScriptCopyFailuresWithBitField(true) / 100.0;
-
-            // The fractional part (x 100) is the actual number of copy failures.
-            int liCopyFailures = (int)Math.Round(100 * (ldCompositeResult - (int)ldCompositeResult));
-
-            if ( 0 != liCopyFailures )
+            // Only do the rerun if the current configuration is valid.
+            bool lbDoRerun = this.bValidateConfiguration();
+            if ( lbDoRerun )
             {
-                moProfile["-PreviousBackupOk"] = false;
-                moProfile.Save();
+                // Verify that critical last run values match the current configuration.
+                bool lbLastRunArgsUnstable = false;
+                    try
+                    {
+                        tvProfile loBackupDoneArgs = new tvProfile(moProfile.sValue("-BackupDoneArgs", ""));
+                        if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = loBackupDoneArgs["-LocalArchivePath"].ToString() != moDoGoPcBackup.sArchivePath();
+                        if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = Path.GetDirectoryName(loBackupDoneArgs["-LogPathFile"].ToString()) != Path.GetDirectoryName(moProfile.sRelativeToProfilePathFile(moDoGoPcBackup.sLogPathFile));
+                    }
+                    catch {}
 
-                moDoGoPcBackup.ShowError(
-                          string.Format("The \"backup done\" script failed with {0} copy failure{1}. Check the log for errors."
-                                + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
-                        , "Backup Failed");
+                if ( lbLastRunArgsUnstable )
+                    lbDoRerun = tvMessageBoxResults.OK == tvMessageBox.Show(
+                                      this
+                                    , "Changes have been made to your backup configuration which may cause a rerun to fail.\r\n\r\nAre you sure you want to rerun the last \"backup done\" script?"
+                                    , "Backup Configuration Changed"
+                                    , tvMessageBoxButtons.OKCancel
+                                    , tvMessageBoxIcons.Question
+                                    );
             }
+            if ( lbDoRerun )
+            {
+                this.ShowMe();
+                this.bBackupRunning = true;
 
-            this.bBackupRunning = false;
+                // Append a blank line to the error output before proceeding.
+                moDoGoPcBackup.LogIt("");
+
+                // Run the "backup done" script and return the failed file count with bit field.
+                // The exit code is defined in the script as a combination of two integers-
+                // a bit field of found backup devices and a count of copy failures (99 max).
+                // The integer part of the composite number is the bit field.
+                double ldCompositeResult = moDoGoPcBackup.iBackupDoneScriptCopyFailuresWithBitField(true) / 100.0;
+
+                // The fractional part (x 100) is the actual number of copy failures.
+                int liCopyFailures = (int)Math.Round(100 * (ldCompositeResult - (int)ldCompositeResult));
+
+                if ( 0 != liCopyFailures )
+                {
+                    moProfile["-PreviousBackupOk"] = false;
+                    moProfile.Save();
+
+                    moDoGoPcBackup.ShowError(
+                              string.Format("The \"backup done\" script failed with {0} copy failure{1}. Check the log for errors."
+                                    + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
+                            , "Backup Failed");
+                }
+
+                this.bBackupRunning = false;
+            }
         }
 
         private void DoBackup()

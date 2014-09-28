@@ -1800,15 +1800,35 @@ namespace tvToolbox
         /// The key string used to find the corresponding value in the profile.
         /// </param>
         /// <returns>
-        /// The tvProfile object value found or a default empty
-        /// tvProfile object will be added to the profile, see <see cref="GetAdd"/>).
+        /// The tvProfile object value found or an empty tvProfile
+        /// (nothing is added to the parent profile if nothing is found).
         /// </returns>
         public tvProfile oProfile(String asKey)
         {
-            object  loProfile = this.GetAdd(asKey, new tvProfile());
+            object  loProfile = this[asKey];
             object  loProfileCast = loProfile as tvProfile;
                     if ( null == loProfileCast )
-                        loProfileCast = new tvProfile(loProfile.ToString());
+                        loProfileCast = new tvProfile(null == loProfile ? "" : loProfile.ToString());
+
+            return (tvProfile)loProfileCast;
+        }
+
+        /// <summary>
+        /// The value found for aiIndex.
+        /// </summary>
+        /// <param name="aiIndex">
+        /// The integer index used to find the corresponding value in the profile.
+        /// </param>
+        /// <returns>
+        /// The tvProfile object value found or an empty tvProfile
+        /// (nothing is added to the parent profile if nothing is found).
+        /// </returns>
+        public tvProfile oProfile(int aiIndex)
+        {
+            object  loProfile = this[aiIndex];
+            object  loProfileCast = loProfile as tvProfile;
+                    if ( null == loProfileCast )
+                        loProfileCast = new tvProfile(null == loProfile ? "" : loProfile.ToString());
 
             return (tvProfile)loProfileCast;
         }
@@ -2152,33 +2172,6 @@ namespace tvToolbox
             lsbFileAsStream.Replace("encoding=\"utf-16\"", "encoding=\"UTF-8\"");
 
             return lsbFileAsStream.ToString();
-        }
-
-        /// <summary>
-        /// Returns a subset of the profile as a new profile using the given
-        /// asKey.
-        /// 
-        /// The first item found with the given asKey is assumed itself to be
-        /// a profile.
-        /// </summary>
-        /// <param name="asKey">
-        /// The key string used to find the nested profile in the current
-        /// profile.
-        /// </param>
-        /// <returns>
-        /// A new object containing the nested profile found.
-        /// </returns>
-        public tvProfile oNestedProfile(String asKey)
-        {
-            tvProfile loNestedProfile = null;
-            tvProfile loOneKeyProfile = this.oOneKeyProfile(asKey);
-
-            if ( 0 == loOneKeyProfile.Count )
-                loNestedProfile = new tvProfile();
-            else
-                loNestedProfile = new tvProfile(loOneKeyProfile[0].ToString());
-
-            return loNestedProfile;
         }
 
         /// <summary>
