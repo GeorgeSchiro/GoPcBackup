@@ -1497,11 +1497,11 @@ You can continue this later wherever you left off. "
                     gridBackupDevices.Children.Clear();
 
                 if ( lbDeviceReattached
-                        && tvMessageBoxResults.OK == tvMessageBox.Show(
+                        && tvMessageBoxResults.Yes == tvMessageBox.Show(
                                   this
                                 , "Reattached devices should be updated.\r\n\r\nShall we rerun the last \"backup done\" script?"
                                 , "Device Reattached"
-                                , tvMessageBoxButtons.OKCancel
+                                , tvMessageBoxButtons.YesNo
                                 , tvMessageBoxIcons.Question
                                 , tvMessageBoxCheckBoxTypes.DontAsk
                                 , moProfile
@@ -1526,7 +1526,7 @@ You can continue this later wherever you left off. "
 
             if ( 0 != loMissingBackupDevices.Count )
             {
-                string lsMessageCaption = "Missing Devices";
+                string lsMessageCaption = String.Format("Missing Device{0}", 1 == loMissingBackupDevices.Count ? "" : "s");
 
                 tvProfile loSelectedBackupDevices = moProfile.oProfile("-SelectedBackupDevices");
 
@@ -1621,10 +1621,12 @@ You can continue this later wherever you left off. "
             moStartStopButtonState.Content = this.btnDoBackupNow.Content;
             moStartStopButtonState.ToolTip = this.btnDoBackupNow.ToolTip;
             moStartStopButtonState.Background = this.btnDoBackupNow.Background;
+            moStartStopButtonState.FontSize = this.btnDoBackupNow.FontSize;
 
-            this.btnDoBackupNow.Content = "Stop";
+            this.btnDoBackupNow.Content = "STOP";
             this.btnDoBackupNow.ToolTip = "Stop the Process Now";
             this.btnDoBackupNow.Background = Brushes.Red;
+            this.btnDoBackupNow.FontSize = 22;
 
             this.btnSetup.IsEnabled = false;
             this.btnConfigureDetails.IsEnabled = false;
@@ -1869,6 +1871,29 @@ You can continue this later wherever you left off. "
                               string.Format("The \"backup done\" script failed with {0} copy failure{1}. Check the log for errors."
                                     + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
                             , "Backup Failed");
+                }
+                else
+                {
+                    bool lbPreviousBackupOk = moProfile.ContainsKey("-PreviousBackupOk") && moProfile.bValue("-PreviousBackupOk", false);
+
+                    if ( !lbPreviousBackupOk && tvMessageBoxResults.Yes == tvMessageBox.Show(
+                                      this
+                                    , "The backup status is \"Backup Failed\".\r\n\r\nShall we change it to \"Backup OK?\""
+                                    , "Adjust Backup Status"
+                                    , tvMessageBoxButtons.YesNo
+                                    , tvMessageBoxIcons.Question
+                                    , tvMessageBoxCheckBoxTypes.DontAsk
+                                    , moProfile
+                                    , "-BackupStatusChanged"
+                                    )
+                                )
+                    {
+                        moProfile["-PreviousBackupOk"] = true;
+                        moProfile["-PreviousBackupTime"] = DateTime.Now;
+                        moProfile.Save();
+
+                        this.GetSetConfigurationDefaults();
+                    }
                 }
 
                 this.bBackupRunning = false;

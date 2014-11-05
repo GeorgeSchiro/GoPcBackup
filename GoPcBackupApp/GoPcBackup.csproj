@@ -75,6 +75,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Resources\ImageButtonStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Resources\LogoSliderStyle.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -153,6 +157,13 @@
   <ItemGroup>
     <Resource Include="Resources\images\GoPC.png" />
     <Resource Include="Resources\images\Background.jpg" />
+    <Resource Include="Resources\images\Exit.png" />
+    <Resource Include="Resources\images\Help.png" />
+    <Resource Include="Resources\images\SetupDetails.png" />
+    <Resource Include="Resources\images\SetupWizard.png" />
+    <Resource Include="Resources\images\ShowArchive.png" />
+    <Resource Include="Resources\images\ShowLogs.png" />
+    <Resource Include="Resources\images\ShowTimer.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\images\GoPC.ico" />

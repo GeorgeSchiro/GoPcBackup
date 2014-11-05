@@ -45,44 +45,36 @@
 
             <DockPanel LastChildFill="True">
                 <Canvas>
-                    <Button Name="btnShowHelp" Click="btnShowHelp_Click" Content="Help"
+                        <Button Name="btnShowHelp" Click="btnShowHelp_Click"
                                 ToolTip="Show Detailed Help"
-                                Style="{StaticResource MainCanvasButton}"
+                                Style="{StaticResource MainCanvasImageButton}"
                                 HorizontalAlignment="Left"
-                                />
-                </Canvas>
+                                >
+                            <Image Source="Resources\images\Help.png" />
+                        </Button>
+                    </Canvas>
                 <Grid Name="TopPanel" DockPanel.Dock="Top" Height="100" Width="200" Margin="10">
                     <Image Name="LogoImage" Source="Resources\images\GoPC.png" HorizontalAlignment="Center" Height="0" Width="0" />
                 </Grid>
                 <Grid Name="BottomPanel" DockPanel.Dock="Bottom">
                     <StackPanel Name="MainButtonPanel" Orientation="Horizontal" IsEnabled="False">
-                        <Button Name="btnDoBackupNow" Click="btnDoBackupNow_Click" ToolTip="Start the Process Now" Margin="10,10,5,10" Style="{StaticResource MainCanvasButton}">
-                            Run Now
+                        <Button Name="btnDoBackupNow" Click="btnDoBackupNow_Click" ToolTip="Start the Process Now" Margin="10,10,5,10" FontSize="36"  Style="{StaticResource MainCanvasButton}">
+                            GO
                         </Button>
-                        <Button Name="btnSetup" Click="btnSetup_Click" ToolTip="Toggle Setup Wizard" Margin="5,10,5,10" Style="{StaticResource MainCanvasButton}">
-                            <TextBlock Style="{StaticResource MainCanvasButtonMultiLineText}">
-                                Setup<LineBreak/>Wizard
-                            </TextBlock>
+                        <Button Name="btnSetup" Click="btnSetup_Click" ToolTip="Toggle Setup Wizard" Margin="5,10,5,10" Style="{StaticResource MainCanvasImageButton}">
+                             <Image Source="Resources\images\SetupWizard.png" />
                         </Button>
-                        <Button Name="btnConfigureDetails" Click="btnConfigureDetails_Click" ToolTip="Toggle Detailed Configuration" Margin="5,10,5,10" Style="{StaticResource MainCanvasButton}">
-                            <TextBlock Style="{StaticResource MainCanvasButtonMultiLineText}">
-                                Setup<LineBreak/>Details
-                            </TextBlock>
+                        <Button Name="btnConfigureDetails" Click="btnConfigureDetails_Click" ToolTip="Toggle Setup Details" Margin="5,10,5,10" Style="{StaticResource MainCanvasImageButton}">
+                             <Image Source="Resources\images\SetupDetails.png" />
                         </Button>
-                        <Button Name="btnShowTimer" Click="btnShowTimer_Click" ToolTip="Toggle Backup Timer" Margin="5,10,5,10" Style="{StaticResource MainCanvasButton}">
-                            <TextBlock Style="{StaticResource MainCanvasButtonMultiLineText}">
-                                Show<LineBreak/>Timer
-                            </TextBlock>
+                        <Button Name="btnShowTimer" Click="btnShowTimer_Click" ToolTip="Toggle Backup Timer" Margin="5,10,5,10" Style="{StaticResource MainCanvasImageButton}">
+                             <Image Source="Resources\images\ShowTimer.png" />
                         </Button>
-                        <Button Name="btnShowBackupLogs" Click="btnShowBackupLogs_Click" ToolTip="Show Backup / Cleanup Logs" Margin="5,10,5,10" Style="{StaticResource MainCanvasButton}">
-                            <TextBlock Style="{StaticResource MainCanvasButtonMultiLineText}">
-                                Show<LineBreak/>Logs
-                            </TextBlock>
+                        <Button Name="btnShowBackupLogs" Click="btnShowBackupLogs_Click" ToolTip="Show Logs" Margin="5,10,5,10" Style="{StaticResource MainCanvasImageButton}">
+                             <Image Source="Resources\images\ShowLogs.png" />
                         </Button>
-                        <Button Name="btnShowArchive" Click="btnShowArchive_Click" ToolTip="Show Previous Backups" Margin="5,10,5,10" Style="{StaticResource MainCanvasButton}">
-                            <TextBlock Style="{StaticResource MainCanvasButtonMultiLineText}">
-                                Show<LineBreak/>Archive
-                            </TextBlock>
+                        <Button Name="btnShowArchive" Click="btnShowArchive_Click" ToolTip="Show Backup Archive" Margin="5,10,5,10" Style="{StaticResource MainCanvasImageButton}">
+                             <Image Source="Resources\images\ShowArchive.png" />
                         </Button>
                     </StackPanel>
                     <StackPanel Name="CloseButtonPanel" Orientation="Horizontal" HorizontalAlignment="Right">
@@ -90,8 +82,10 @@
                             <CheckBox Name="chkUseTimer" Content="Use Timer" ToolTip="Start Timer after Reopen" Click="chkUseTimer_Click" Style="{StaticResource MainCanvasCheckBox}" />
                             <CheckBox Name="chkCloseAndExit" Content="Full Exit" ToolTip="Exit GoPC after Close" Style="{StaticResource MainCanvasCheckBox}" />
                         </StackPanel>
-                        <Button Name="btnClose" Click="mnuExit_Click" Content="Close" ToolTip="Close to System Tray" HorizontalAlignment="Right" Style="{StaticResource MainCanvasButton}" />
-                    </StackPanel>
+                            <Button Name="btnClose" Click="mnuExit_Click" ToolTip="Exit to System Tray" HorizontalAlignment="Right" Style="{StaticResource MainCanvasImageButton}">
+                                <Image Source="Resources\images\Exit.png" />
+                            </Button>
+                        </StackPanel>
                 </Grid>
                 <Grid Name="MiddlePanelConfigWizard" Visibility="Hidden"> <!-- This 'Visibility="Hidden"' kludge is necessary to have the panel sized correctly. -->
                     <Border Style="{StaticResource ConfigWizardBorder}">

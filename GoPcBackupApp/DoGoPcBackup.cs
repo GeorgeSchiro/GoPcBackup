@@ -1648,6 +1648,8 @@ No file cleanup will be done until you update the configuration.
                     }
                     catch (Exception ex)
                     {
+                        lbBackupFiles = false;
+                        this.oUI.bBackupRunning = false;
                         this.ShowError(string.Format("File Write Failure: \"{0}\"\r\n"
                                 , lsZipToolFileListPathFile) + ex.Message
                                 , "Failed Writing File"
@@ -1677,6 +1679,8 @@ No file cleanup will be done until you update the configuration.
                                 }
                                 catch (Exception ex)
                                 {
+                                    lbBackupFiles = false;
+                                    this.oUI.bBackupRunning = false;
                                     this.ShowError(
                                               string.Format("Folder: \"{0}\"\r\n", lsArchivePath) + ex.Message
                                             , "Error Creating Archive Folder"
@@ -1715,6 +1719,8 @@ No file cleanup will be done until you update the configuration.
                     }
                     catch (Exception ex)
                     {
+                        lbBackupFiles = false;
+                        this.oUI.bBackupRunning = false;
                         this.ShowError(string.Format("File Write Failure: \"{0}\"\r\n"
                                 , lsLastRunFile) + ex.Message
                                 , "Failed Writing File"
@@ -1810,8 +1816,9 @@ No file cleanup will be done until you update the configuration.
             }
             catch (Exception ex)
             {
-                this.ShowError(ex.Message, "Backup Failed");
                 lbBackupFiles = false;
+                this.oUI.bBackupRunning = false;
+                this.ShowError(ex.Message, "Backup Failed");
             }
 
             if ( lbBackupFiles && !this.bMainLoopStopped )
@@ -1839,10 +1846,10 @@ No file cleanup will be done until you update the configuration.
                 {
                     moProfile["-PreviousBackupOk"] = false;
 
+                    lbBackupFiles = false;
+                    this.oUI.bBackupRunning = false;
                     this.ShowError("The backup failed. Check the log for errors." + lsSysTrayMsg
                             , "Backup Failed");
-
-                    lbBackupFiles = false;
                 }
                 else
                 {

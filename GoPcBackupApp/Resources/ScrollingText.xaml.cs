@@ -197,6 +197,7 @@ namespace GoPcBackup
             if (       !lsControlClass.Contains("Bullet")
                     && !lsControlClass.Contains("Button")
                     && !lsControlClass.Contains("ClassicBorderDecorator")
+                    && !lsControlClass.Contains("Rectangle")
                     && !lsControlClass.Contains("Run")
                     && !lsControlClass.Contains("Scroll")
                     )
