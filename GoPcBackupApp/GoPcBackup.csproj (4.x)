@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -40,6 +40,10 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="Resources\GlassButtonStyle.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Resources\ImageButtonStyle.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -121,6 +125,13 @@
   <ItemGroup>
     <Resource Include="Resources\images\GoPC.png" />
     <Resource Include="Resources\images\Background.jpg" />
+    <Resource Include="Resources\images\Exit.png" />
+    <Resource Include="Resources\images\Help.png" />
+    <Resource Include="Resources\images\SetupDetails.png" />
+    <Resource Include="Resources\images\SetupWizard.png" />
+    <Resource Include="Resources\images\ShowArchive.png" />
+    <Resource Include="Resources\images\ShowLogs.png" />
+    <Resource Include="Resources\images\ShowTimer.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\images\GoPC.ico" />

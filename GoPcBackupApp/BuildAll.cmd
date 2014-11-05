@@ -3,7 +3,8 @@
 set   AppName=GoPcBackup
 set    AppExe=%AppName%.exe
 set AppFolder=%AppName%App
-set ExeFolder="\\main\GoPcBackup\DotNet EXEs"
+set DevServer=main
+set ExeFolder="\\%DevServer%\GoPcBackup\DotNet EXEs"
 
 echo.
 echo *** Rebuild All %AppName% Versions ***
@@ -19,6 +20,13 @@ echo Be sure the .Net 3.5 SDK (full) and the .Net 4.0 SDK have been installed.
 echo.
 echo The SDKs can be installed from ISO images. They
 echo are required only for their reference assemblies.
+echo.
+echo ********************************************************************************
+echo *** Note: Any new files added to the base project (eg. images, styles, etc.) ***
+echo ***       MUST also be added to "GoPcBackup.csproj (4.x)".                   ***
+echo ***                                                                          ***
+echo *** IF you FAIL to do this, the 4.x version will also fail to run!!!         ***
+echo ********************************************************************************
 pause
 
 
@@ -28,7 +36,7 @@ if exist %ExeFolder%\*.* rmdir /s/q %ExeFolder%
 if exist bin\*.* rmdir /s/q bin\
 if exist obj\*.* rmdir /s/q obj\
 
-xcopy /s \\main\%AppName%\%AppFolder% %AppFolder%\
+xcopy /s \\%DevServer%\%AppName%\%AppFolder% %AppFolder%\
 cd %AppFolder%
 
 
