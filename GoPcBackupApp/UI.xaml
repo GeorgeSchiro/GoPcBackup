@@ -276,7 +276,7 @@
     Slide the "GoPC" logo below to select the daily backup time.<LineBreak/><LineBreak/>
 
     Selecting a daily backup time implies that your PC will be running at that time.
-    If not, you can always run the backup manually by hitting the "Run Now" button anytime.
+    If not, you can always run the backup manually by hitting the "GO" button anytime.
 </TextBlock></Border>
 <StackPanel Margin="20">
     <Label HorizontalAlignment="Center">Backup Time</Label>
