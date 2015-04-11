@@ -1637,6 +1637,7 @@ You can continue this later wherever you left off. "
             this.btnDoBackupNow.Content = moStartStopButtonState.Content;
             this.btnDoBackupNow.ToolTip = moStartStopButtonState.ToolTip;
             this.btnDoBackupNow.Background = moStartStopButtonState.Background;
+            this.btnDoBackupNow.FontSize = moStartStopButtonState.FontSize;
 
             this.MainButtonPanel.IsEnabled = true;
             this.btnDoBackupNow.IsEnabled = true;

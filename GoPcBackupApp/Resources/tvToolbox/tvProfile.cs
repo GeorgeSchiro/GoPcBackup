@@ -3031,14 +3031,21 @@ Copy and proceed from there?
             {
                 StringBuilder lsbFileAsStream = new StringBuilder(Path.GetFileName(this.sExePathFile) + Environment.NewLine + Environment.NewLine);
 
+                // We use "lbSaveSansCmdLine" below instead of "mbSaveSansCmdLine" for the
+                // needed side effects. Also, we don't want "-SaveSansCmdLine" added here.
+                var lbRemoveSaveSansCmdLineKey = !this.ContainsKey("-SaveSansCmdLine");
+                var lbSaveSansCmdLine = this.bSaveSansCmdLine;
+                    if ( lbRemoveSaveSansCmdLineKey )
+                        this.Remove("-SaveSansCmdLine");
+
                 foreach ( DictionaryEntry loEntry in this )
                 {
                     String lsKey = loEntry.Key.ToString();
                     String lsValue = loEntry.Value.ToString();
 
-                    // "mbSaveSansCmdLine" is referenced here directly to gain a little speed.
-                    if ( !mbSaveSansCmdLine || null == moInputCommandLineProfile
-                            || (mbSaveSansCmdLine && !moInputCommandLineProfile.ContainsKey(lsKey)) )
+                    // "lbSaveSansCmdLine" is referenced here (in lieu of "this.bSaveSansCmdLine") to gain a little speed.
+                    if ( !lbSaveSansCmdLine || null == moInputCommandLineProfile
+                            || (lbSaveSansCmdLine && !moInputCommandLineProfile.ContainsKey(lsKey)) )
                     {
                         if ( -1 == lsValue.IndexOf(Environment.NewLine) )
                         {
