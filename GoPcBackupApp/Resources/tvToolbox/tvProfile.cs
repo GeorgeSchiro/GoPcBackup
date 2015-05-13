@@ -2638,9 +2638,8 @@ Copy and proceed from there?
                                 liDoOver = 0;
 
                                 // The default file format is line delimited "command line" format.
-                                // The use of all known line delimiters allows for passing profiles between environments.
-                                this.LoadFromCommandLineArray(lsFileAsStream.Replace("\r\n", mccSplitMark.ToString())
-                                        .Replace("\n", mccSplitMark.ToString()).Split(mccSplitMark), aeLoadAction);
+                                this.LoadFromCommandLineArray(lsFileAsStream.Replace(Environment.NewLine, mccSplitMark.ToString())
+                                        .Split(mccSplitMark), aeLoadAction);
 
                                 if ( this.bUseXmlFiles )
                                 {
@@ -2699,9 +2698,8 @@ Copy and proceed from there?
             if ( -1 != asCommandLine.IndexOf('\n') )
             {
                 // If the command line is actually already line delimited, then we're practically done.
-                // The use of all known line delimiters allows for passing profiles between environments.
-                this.LoadFromCommandLineArray(asCommandLine.Replace("\r\n", mccSplitMark.ToString())
-                        .Replace("\n", mccSplitMark.ToString()).Split(mccSplitMark), aeLoadAction);
+                this.LoadFromCommandLineArray(asCommandLine.Replace(Environment.NewLine, mccSplitMark.ToString())
+                        .Split(mccSplitMark), aeLoadAction);
             }
             else
             {

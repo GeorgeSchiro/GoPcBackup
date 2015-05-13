@@ -1908,6 +1908,7 @@ No file cleanup will be done until you update the configuration.
                 bool    lbUseConnectMainhost    = moProfile.bValue("-UseConnectVirtualMachineHost", false);
                 string  lsBackupBeginScript     = (moProfile.sValue("-BackupBeginScriptHelp", @"
 @echo off
+::
 :: *** ""Backup Begin"" script goes here. ***
 ::
 :: This script is executed before each backup starts. If you prompt for 
@@ -1972,7 +1973,7 @@ echo.                                      > ""{BackupBeginScriptOutputPathFile}
 ::     if ERRORLEVEL 1 set /A Errors += 1
 
 echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
-echo Connect to Mainhost:                                                   >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo Connect to the Mainhost archive:                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
 echo net use %1  [password not shown]  /user:[username not shown]           >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
      net use %1  %3  /user:%2                                               >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
@@ -2122,6 +2123,7 @@ exit  %Errors%
             if ( lsBackupDoneScriptPathFile == moProfile.sRelativeToProfilePathFile(msBackupDoneScriptPathFileDefault) )
             {
                 bool    lbUseMainhostArchive    = moProfile.bValue("-UseVirtualMachineHostArchive", false);
+                bool    lbUseConnectMainhost    = moProfile.bValue("-UseConnectVirtualMachineHost", false);
                 string  lsBackupDoneScript      = (moProfile.sValue("-BackupDoneScriptHelp", @"
 @echo off
 if %1=="""" goto :EOF
@@ -2283,7 +2285,20 @@ for %%d in (D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:
 :: The factor of 100 means that there can be a maximum of 99 copy failures.
 
 set /A CompositeResult = 100 * (8388608 + %BackupDeviceDecimalBitField%) + %CopyFailures%
+"
++
+(!lbUseMainhostArchive || !lbUseConnectMainhost ? "" :
+@"
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo This disconnects from the Mainhost archive (%5):                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo net use %5 /delete                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     net use %5 /delete                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
+     if ERRORLEVEL 1 set /A Errors += 1
+"
+)
++
+@"
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo   CompositeResult=%CompositeResult%                                    >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 exit  %CompositeResult%

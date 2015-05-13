@@ -751,7 +751,7 @@ namespace GoPcBackup
                 return;
             }
 
-            if ( mbStartupDone && !this.bShowInitBeginScriptWarning() )
+            if ( mbStartupDone && !this.bShowInitScriptsWarning() )
             {
                 mbIgnoreCheck = true;
                 (e.OriginalSource as CheckBox).IsChecked = false;
@@ -769,7 +769,7 @@ namespace GoPcBackup
                 return;
             }
 
-            if ( mbStartupDone && !this.bShowInitBeginScriptWarning() )
+            if ( mbStartupDone && !this.bShowInitScriptsWarning() )
             {
                 mbIgnoreCheck = true;
                 (e.OriginalSource as CheckBox).IsChecked = true;
