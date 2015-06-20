@@ -1489,8 +1489,11 @@ You can continue this later wherever you left off. "
                 }
 
                 // "None" (the default from "this.eShowMissingBackupDevices()")
-                // means a device was reattached or no devices were missing.
-                lbDeviceReattached = lbDeviceReattached && tvMessageBoxResults.None == leShowMissingBackupDevices;
+                // means a device was just reattached or no devices were missing.
+                // In other words, a device was just reattached or it must have
+                // been reattached previously (since no device is missing now).
+                lbDeviceReattached = tvMessageBoxResults.None == leShowMissingBackupDevices
+                                        && (lbDeviceReattached || moProfile.bValue("-PreviousBackupDevicesMissing", false));
 
                 // Reset setup of backup device checkboxes.
                 if ( tvMessageBoxResults.Yes == leShowMissingBackupDevices )
@@ -1499,7 +1502,8 @@ You can continue this later wherever you left off. "
                 if ( lbDeviceReattached
                         && tvMessageBoxResults.Yes == tvMessageBox.Show(
                                   this
-                                , "Reattached devices should be updated.\r\n\r\nShall we rerun the last \"backup done\" script?"
+                                , "A backup device has been reattached. Reattached backup devices should be updated."
+                                    + " The \"backup done\" script updates attached devices.\r\n\r\nShall we rerun the \"backup done\" script?"
                                 , "Device Reattached"
                                 , tvMessageBoxButtons.YesNo
                                 , tvMessageBoxIcons.Question
@@ -1866,6 +1870,7 @@ You can continue this later wherever you left off. "
                 if ( 0 != liCopyFailures )
                 {
                     moProfile["-PreviousBackupOk"] = false;
+                    moProfile["-PreviousBackupTime"] = DateTime.Now;
                     moProfile.Save();
 
                     moDoGoPcBackup.ShowError(
@@ -1875,11 +1880,15 @@ You can continue this later wherever you left off. "
                 }
                 else
                 {
+                    moProfile["-PreviousBackupTime"] = DateTime.Now;
+                    moProfile.Save();
+
                     bool lbPreviousBackupOk = moProfile.ContainsKey("-PreviousBackupOk") && moProfile.bValue("-PreviousBackupOk", false);
 
                     if ( !lbPreviousBackupOk && tvMessageBoxResults.Yes == tvMessageBox.Show(
                                       this
-                                    , "The backup status is \"Backup Failed\".\r\n\r\nShall we change it to \"Backup OK?\""
+                                    , "The \"backup done\" script finished successfully after the previous failed backup. Yet the"
+                                        + " backup status is still \"Backup Failed\".\r\n\r\nShall we change it to \"Backup OK?\""
                                     , "Adjust Backup Status"
                                     , tvMessageBoxButtons.YesNo
                                     , tvMessageBoxIcons.Question
@@ -1889,8 +1898,8 @@ You can continue this later wherever you left off. "
                                     )
                                 )
                     {
+                        moProfile["-PreviousBackupDevicesMissing"] = false;
                         moProfile["-PreviousBackupOk"] = true;
-                        moProfile["-PreviousBackupTime"] = DateTime.Now;
                         moProfile.Save();
 
                         this.GetSetConfigurationDefaults();

@@ -500,6 +500,11 @@ A brief description of each feature follows.
     overall UI and a responsive process timer UI. You can increase this value
     if you are concerned that the timer UI is using too much CPU while waiting.
 
+-PreviousBackupDevicesMissing=False
+
+    This is the True or False ""Devices Missing"" status of the previous backup 
+    run. If True, at least one external device was missing when the backup ran.
+
 -PreviousBackupOk= NO DEFAULT VALUE
 
     This is the True or False ""Ok"" status of the previous backup / cleanup run.
@@ -1616,14 +1621,14 @@ No file cleanup will be done until you update the configuration.
                     // Get the list of folders to backup within the current backup set.
                     tvProfile       loFolderToBackupProfile = moCurrentBackupSet.oOneKeyProfile(
                                             "-FolderToBackup");
-                    StreamWriter    loStreamWriter = null;
+                    StreamWriter    loBackupFileListStreamWriter = null;
 
                     liFileCount = 0;
 
                     try
                     {
-                        // Create the ZIP file list file in the same folder as the main profile.
-                        loStreamWriter = new StreamWriter(moProfile.sRelativeToProfilePathFile(
+                        // Create the file list file in the same folder as the main profile.
+                        loBackupFileListStreamWriter = new StreamWriter(moProfile.sRelativeToProfilePathFile(
                                 lsZipToolFileListPathFile), false);
 
                         // Write the list of files to compress.
@@ -1640,7 +1645,7 @@ No file cleanup will be done until you update the configuration.
                                     else
                                         lsBackupPathFiles = Path.Combine(lsFolderToBackup, this.sBackupFileSpec());
 
-                            loStreamWriter.WriteLine(lsBackupPathFiles);
+                            loBackupFileListStreamWriter.WriteLine(lsBackupPathFiles);
 
                             if ( 1 == ++liFileCount )
                                 lsBackupPathFiles1 = lsBackupPathFiles;
@@ -1657,8 +1662,8 @@ No file cleanup will be done until you update the configuration.
                     }
                     finally
                     {
-                        if ( null != loStreamWriter )
-                            loStreamWriter.Close();
+                        if ( null != loBackupFileListStreamWriter )
+                            loBackupFileListStreamWriter.Close();
                     }
 
                     // The backup output path file will be dated and unique.
@@ -1709,13 +1714,14 @@ No file cleanup will be done until you update the configuration.
                     moProfile.Remove("-PreviousBackupOk");
                     moProfile.Save();
 
-                    // This lets the user see what was run or rerun it.
-                    string lsLastRunFile = moProfile.sValue("-ZipToolLastRunCmdPathFile", "Run Last Backup.cmd");
+                    // This lets the user see what was run (or rerun it).
+                    string          lsLastRunFile = moProfile.sValue("-ZipToolLastRunCmdPathFile", "Run Last Backup.cmd");
+                    StreamWriter    loLastRunFileStreamWriter = null;
 
                     try
                     {
-                        loStreamWriter = new StreamWriter(moProfile.sRelativeToProfilePathFile(lsLastRunFile), false);
-                        loStreamWriter.Write(lsFileAsStream);
+                        loLastRunFileStreamWriter = new StreamWriter(moProfile.sRelativeToProfilePathFile(lsLastRunFile), false);
+                        loLastRunFileStreamWriter.Write(lsFileAsStream);
                     }
                     catch (Exception ex)
                     {
@@ -1728,8 +1734,8 @@ No file cleanup will be done until you update the configuration.
                     }
                     finally
                     {
-                        if ( null != loStreamWriter )
-                            loStreamWriter.Close();
+                        if ( null != loLastRunFileStreamWriter )
+                            loLastRunFileStreamWriter.Close();
                     }
 
                     string  lsFilesSuffix = liFileCount <= 1 ? ""
@@ -1844,7 +1850,13 @@ No file cleanup will be done until you update the configuration.
                         ||  0 != loMissingBackupDevices.Count
                         )
                 {
+                    if ( 0 != loMissingBackupDevices.Count )
+                        moProfile["-PreviousBackupDevicesMissing"] = true;
+                    else
+                        moProfile["-PreviousBackupDevicesMissing"] = false;
+
                     moProfile["-PreviousBackupOk"] = false;
+                    moProfile["-PreviousBackupTime"] = DateTime.Now;
 
                     lbBackupFiles = false;
                     this.oUI.bBackupRunning = false;
@@ -1853,7 +1865,9 @@ No file cleanup will be done until you update the configuration.
                 }
                 else
                 {
+                    moProfile["-PreviousBackupDevicesMissing"] = false;
                     moProfile["-PreviousBackupOk"] = true;
+                    moProfile["-PreviousBackupTime"] = DateTime.Now;
 
                     this.Show("Backup finished successfully." + lsSysTrayMsg
                             , "Backup Finished"
@@ -1863,7 +1877,6 @@ No file cleanup will be done until you update the configuration.
                             );
                 }
 
-                moProfile["-PreviousBackupTime"] = DateTime.Now;
                 moProfile.Save();
             }
 

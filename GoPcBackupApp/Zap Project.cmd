@@ -11,6 +11,8 @@ del "%ALLUSERSPROFILE%\Start Menu\Programs\Startup\%Project%.lnk"
 rd /s/q "C:\Program Files"\%Project%
 
 :Continue
+del *.user
+del /ah *.suo
 del bin\*.cmd         /s/q
 del bin\*.config      /s/q
 del bin\*.application /s/q
