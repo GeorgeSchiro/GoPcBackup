@@ -2903,22 +2903,18 @@ echo del %FileSpec%                                                             
     -FilesToDelete={0}*{1}
     -FilesToDelete={2}*{3}
     -FilesToDelete={4}*{5}
-    -FilesToDelete={6}*{7}
-    -FilesToDelete={8}*{9}
 
 "
                             , Path.Combine(Path.GetDirectoryName(this.sZipToolFileListPathFileBase)
                                     , Path.GetFileNameWithoutExtension(this.sZipToolFileListPathFileBase))
                             , Path.GetExtension(this.sZipToolFileListPathFileBase)
-                            , Path.Combine(Path.GetDirectoryName(this.sZipToolFileListPathFileBase), "ZipFileList")
-                            , Path.GetExtension(this.sZipToolFileListPathFileBase)
-                            , Path.Combine(Path.GetDirectoryName(this.sLogPathFileBase)
-                                    , Path.GetFileNameWithoutExtension(this.sLogPathFileBase))
-                            , Path.GetExtension(this.sLogPathFileBase)
+
                             , Path.Combine(Path.GetDirectoryName(this.sDeletedFileListOutputPathFileBase)
                                     , Path.GetFileNameWithoutExtension(this.sDeletedFileListOutputPathFileBase))
                             , Path.GetExtension(this.sDeletedFileListOutputPathFileBase)
-                            , Path.Combine(Path.GetDirectoryName(this.sLogPathFileBase), "Log")
+
+                            , Path.Combine(Path.GetDirectoryName(this.sLogPathFileBase)
+                                    , Path.GetFileNameWithoutExtension(this.sLogPathFileBase))
                             , Path.GetExtension(this.sLogPathFileBase)
                             ));
                 }
