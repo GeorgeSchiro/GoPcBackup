@@ -1885,7 +1885,7 @@ You can continue this later wherever you left off. "
 
                     bool lbPreviousBackupOk = moProfile.ContainsKey("-PreviousBackupOk") && moProfile.bValue("-PreviousBackupOk", false);
 
-                    if ( !lbPreviousBackupOk && tvMessageBoxResults.Yes == tvMessageBox.Show(
+                    if ( !this.bMainLoopStopped && !lbPreviousBackupOk && tvMessageBoxResults.Yes == tvMessageBox.Show(
                                       this
                                     , "The \"backup done\" script finished successfully after the previous failed backup. Yet the"
                                         + " backup status is still \"Backup Failed\".\r\n\r\nShall we change it to \"Backup OK?\""
