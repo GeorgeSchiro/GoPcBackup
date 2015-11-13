@@ -193,52 +193,6 @@ Options and Features
     The main options for this utility are listed below with their default values.
     A brief description of each feature follows.
 
- Introduction
-
-
-This utility performs file backups and file cleanups in the background.
-
-It also acts as its own scheduler. First, it checks for files to be removed on a given schedule. Then it runs a backup of your files automatically.
-
-There is no need to use a job scheduler unless this software is running on a server computer that has no regular user activity (see -RunOnce below).
-
-You provide various file specifications (ie. locations of the files to backup and to cleanup) as well as file age limits for the files to cleanup. The rest is automatic.
-
-This utility will run in the background unless its timer is turned off. Its simple user interface (UI) is usually minimized to the system tray.
-
-
-Command-Line Usage
-
-
-Open this utility's profile file to see additional options available. It is usually located in the same folder as "GoPcBackup.exe" and has the same name with ".txt" added (see "GoPcBackup.exe.txt").
-
-Profile file options can be overridden with command-line arguments. The keys for any "-key=value" pairs passed on the command-line must match those that appear in the profile (with the exception of the "-ini" key).
-
-For example, the following invokes the use of an alternative profile file:
-
-GoPcBackup.exe -ini=NewProfile.txt
-
-This tells the software to run in automatic mode:
-
-GoPcBackup.exe -AutoStart
-
-   or
-
-GoPcBackup.exe -Auto*
-
-
-Author:  George Schiro (GeoCode@Schiro.name)
-
-Date:    7/3/2013
-
-
-
-
-Options and Features
-
-
-The main options for this utility are listed below with their default values. A brief description of each feature follows.
-
 -AddTasks= NO DEFAULT VALUE
 
     Each added task has its own profile:
