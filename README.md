@@ -193,6 +193,94 @@ Options and Features
     The main options for this utility are listed below with their default values.
     A brief description of each feature follows.
 
+ Introduction
+
+
+This utility performs file backups and file cleanups in the background.
+
+It also acts as its own scheduler. First, it checks for files to be removed on a given schedule. Then it runs a backup of your files automatically.
+
+There is no need to use a job scheduler unless this software is running on a server computer that has no regular user activity (see -RunOnce below).
+
+You provide various file specifications (ie. locations of the files to backup and to cleanup) as well as file age limits for the files to cleanup. The rest is automatic.
+
+This utility will run in the background unless its timer is turned off. Its simple user interface (UI) is usually minimized to the system tray.
+
+
+Command-Line Usage
+
+
+Open this utility's profile file to see additional options available. It is usually located in the same folder as "GoPcBackup.exe" and has the same name with ".txt" added (see "GoPcBackup.exe.txt").
+
+Profile file options can be overridden with command-line arguments. The keys for any "-key=value" pairs passed on the command-line must match those that appear in the profile (with the exception of the "-ini" key).
+
+For example, the following invokes the use of an alternative profile file:
+
+GoPcBackup.exe -ini=NewProfile.txt
+
+This tells the software to run in automatic mode:
+
+GoPcBackup.exe -AutoStart
+
+   or
+
+GoPcBackup.exe -Auto*
+
+
+Author:  George Schiro (GeoCode@Schiro.name)
+
+Date:    7/3/2013
+
+
+
+
+Options and Features
+
+
+The main options for this utility are listed below with their default values. A brief description of each feature follows.
+
+-AddTasks= NO DEFAULT VALUE
+
+    Each added task has its own profile:
+
+    -Task= NO DEFAULT VALUE
+
+        -CommandEXE= NO DEFAULT VALUE
+
+            This is the path\file specification of the task executable to be run.
+
+        -CommandArgs=""
+
+            This is the list of arguments passed to the task executable.
+
+        -CreateNoWindow=True
+
+            Set this switch False and nothing will be displayed when the task runs.
+
+        -StartTime= NO DEFAULT VALUE
+
+            Set this to the time of day to run the task (eg. 3:00am, 9:30pm, etc).
+
+        -StartDay=""
+
+            Set this to the day of the week to run the task (eg. Monday, Friday, etc).
+            Leave this blank and the task will run every day at -StartTime.
+
+        -UnloadOnExit=False
+
+            Set this switch True and the task executable will be removed from memory
+            (if it's still running) when "GoPcBackup.exe" exits.
+
+
+        Here's an example:
+
+        -AddTasks=[
+
+            -Task= -StartTime=6:00am  -CommandEXE=shutdown.exe  -CommandArgs=/r /t 60
+            -Task= -StartTime=7:00am  -CommandEXE="C:\Program Files\Calibre2\calibre.exe"  -Note=Fetch NY Times after 6:30am
+
+        -AddTasks=]
+
 -ArchivePath=C:\Archive
 
     This is the destination folder of the backup output files unless
@@ -538,6 +626,11 @@ Options and Features
     overall UI and a responsive process timer UI. You can increase this value
     if you are concerned that the timer UI is using too much CPU while waiting.
 
+-PreviousBackupDevicesMissing=False
+
+    This is the True or False "Devices Missing" status of the previous backup 
+    run. If True, at least one external device was missing when the backup ran.
+
 -PreviousBackupOk= NO DEFAULT VALUE
 
     This is the True or False "Ok" status of the previous backup / cleanup run.
@@ -578,6 +671,12 @@ Options and Features
 
     Set this switch False to suppress the pop-up display of "backup done" script
     errors (see -BackupDoneScriptPathFile above).
+
+-ShowBackupStatusModeless=False
+
+    Set this switch True to allow background processing to continue unabated
+    after a backup completes. This may be necessary for additional timed tasks
+    to complete after the backup status dialog is displayed (see -AddTasks).
 
 -ShowDeletedFileList=False
 
