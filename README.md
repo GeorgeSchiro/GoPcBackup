@@ -42,6 +42,7 @@ Features
 -   Backs up any number of folders (local or LAN)
 -   Cleans up any number of files (local or LAN)
 -   Runs automatically in the background on a daily timer
+-   Includes a simple general-purpose built-in task scheduler
 -   Automatically copies backups to the virtual machine host
 -   Automatically copies backups to any number of attached devices
 -   Comprehensive dated log files are produced with every backup
@@ -49,7 +50,7 @@ Features
 -   Log files are automatically cleaned up on schedule
 -   Backup files can be automatically cleaned up on schedule also
 -   "Backup Begin" and "Backup Done" scripts are user modifiable
--   Can be command-line driven from a batch job scheduler
+-   Can be command-line driven from a server batch job scheduler
 -   Software is highly configurable
 -   Software is totally self-contained (EXE is its own setup)
 
@@ -597,7 +598,7 @@ Options and Features
 
     Set this switch True to run this utility in one loop only (with no UI) and 
     then shutdown automatically thereafter. This switch is useful if the utility
-    is run in a batch process or if it is run by a job scheduler.
+    is run in a batch process or if it is run by a server job scheduler.
 
 -SaveProfile=True
 

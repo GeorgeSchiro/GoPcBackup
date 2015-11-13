@@ -562,7 +562,7 @@ A brief description of each feature follows.
 
     Set this switch True to run this utility in one loop only (with no UI) and 
     then shutdown automatically thereafter. This switch is useful if the utility
-    is run in a batch process or if it is run by a job scheduler.
+    is run in a batch process or if it is run by a server job scheduler.
 
 -SaveProfile=True
 
