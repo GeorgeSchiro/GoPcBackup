@@ -46,19 +46,22 @@ namespace GoPcBackup
     /// </summary>
     public class DoGoPcBackup : Application
     {
-        private const string    msBackupBeginScriptPathFileDefault  = "BackupBegin.cmd";
-        private const string    msBackupDoneScriptPathFileDefault   = "BackupDone.cmd";
-        private const string    msBackupFailedScriptPathFileDefault = "BackupFailed.cmd";
-        private const string    mcsZipToolDllFilename               = "7z.dll";
-        private const string    mcsZipToolExeFilename               = "7z.exe";
+        private const string        msBackupBeginScriptPathFileDefault  = "BackupBegin.cmd";
+        private const string        msBackupDoneScriptPathFileDefault   = "BackupDone.cmd";
+        private const string        msBackupFailedScriptPathFileDefault = "BackupFailed.cmd";
+        private const string        mcsZipToolDllFilename               = "7z.dll";
+        private const string        mcsZipToolExeFilename               = "7z.exe";
 
-        private bool            mbHasNoDeletionGroups;
-        private int             miBackupSets;
-        private int             miBackupSetsGood;
-        private int             miBackupSetsRun;
-        private string          msCurrentBackupOutputPathFile;
+        private bool                mbHasNoDeletionGroups;
+        private DateTime            mdtPreviousAddTasksStarted = DateTime.MinValue;
+        private int                 miBackupSets;
+        private int                 miBackupSetsGood;
+        private int                 miBackupSetsRun;
+        private string              msCurrentBackupOutputPathFile;
 
-        private tvProfile       moCurrentBackupSet;
+        private tvProfile           moCurrentBackupSet;
+        private tvProfile           moAddTasksProfile;
+        private Process[]           moAddTasksProcessArray;
 
 
         private DoGoPcBackup()
@@ -154,6 +157,48 @@ Options and Features
 
 The main options for this utility are listed below with their default values.
 A brief description of each feature follows.
+
+-AddTasks= NO DEFAULT VALUE
+
+    Each added task has its own profile:
+
+    -Task= NO DEFAULT VALUE
+
+        -CommandEXE= NO DEFAULT VALUE
+
+            This is the path\file specification of the task executable to be run.
+
+        -CommandArgs=""""
+
+            This is the list of arguments passed to the task executable.
+
+        -CreateNoWindow=True
+
+            Set this switch False and nothing will be displayed when the task runs.
+
+        -StartTime= NO DEFAULT VALUE
+
+            Set this to the time of day to run the task (eg. 3:00am, 9:30pm, etc).
+
+        -StartDay=""""
+
+            Set this to the day of the week to run the task (eg. Monday, Friday, etc).
+            Leave this blank and the task will run every day at -StartTime.
+
+        -UnloadOnExit=False
+
+            Set this switch True and the task executable will be removed from memory
+            (if it's still running) when ""{EXE}"" exits.
+
+
+        Here's an example:
+
+        -AddTasks=[
+
+            -Task= -StartTime=6:00am  -CommandEXE=shutdown.exe  -CommandArgs=/r /t 60
+            -Task= -StartTime=7:00am  -CommandEXE=""C:\Program Files\Calibre2\calibre.exe""  -Note=Fetch NY Times after 6:30am
+
+        -AddTasks=]
 
 -ArchivePath=C:\Archive
 
@@ -546,6 +591,12 @@ A brief description of each feature follows.
     Set this switch False to suppress the pop-up display of ""backup done"" script
     errors (see -BackupDoneScriptPathFile above).
 
+-ShowBackupStatusModeless=False
+
+    Set this switch True to allow background processing to continue unabated
+    after a backup completes. This may be necessary for additional timed tasks
+    to complete after the backup status dialog is displayed (see -AddTasks).
+
 -ShowDeletedFileList=False
 
     Set this switch True and the list of deleted files will be displayed in a 
@@ -792,8 +843,18 @@ Notes:
         /// </summary>
         public bool bMainLoopStopped
         {
-            get;set;
+            get
+            {
+                return mbMainLoopStopped;
+            }
+            set
+            {
+                mbMainLoopStopped = value;
+
+                this.KillAddedTasks();
+            }
         }
+        private bool mbMainLoopStopped;
 
         /// <summary>
         /// Returns the first possible backup device drive letter.
@@ -1829,6 +1890,13 @@ No file cleanup will be done until you update the configuration.
 
             if ( lbBackupFiles && !this.bMainLoopStopped )
             {
+                bool lbShowBackupStatusModeless = moProfile.bValue("-ShowBackupStatusModeless", false);
+                    if ( !lbShowBackupStatusModeless && 0 != moProfile.oProfile("-AddTasks").oOneKeyProfile("-Task").Count )
+                    {
+                        // Don't let the backup status dialog hold up added tasks.
+                        lbShowBackupStatusModeless = true;
+                    }
+
                 this.LogIt("");
 
                 // Don't bother with the system tray message 
@@ -1860,8 +1928,13 @@ No file cleanup will be done until you update the configuration.
 
                     lbBackupFiles = false;
                     this.oUI.bBackupRunning = false;
-                    this.ShowError("The backup failed. Check the log for errors." + lsSysTrayMsg
-                            , "Backup Failed");
+
+                    if ( lbShowBackupStatusModeless )
+                        this.ShowModelessError("The backup failed. Check the log for errors." + lsSysTrayMsg
+                                , "Backup Failed", "-CurrentBackupFailed");
+                    else
+                        this.ShowError("The backup failed. Check the log for errors." + lsSysTrayMsg
+                                , "Backup Failed");
                 }
                 else
                 {
@@ -1869,12 +1942,20 @@ No file cleanup will be done until you update the configuration.
                     moProfile["-PreviousBackupOk"] = true;
                     moProfile["-PreviousBackupTime"] = DateTime.Now;
 
-                    this.Show("Backup finished successfully." + lsSysTrayMsg
-                            , "Backup Finished"
-                            , tvMessageBoxButtons.OK
-                            , tvMessageBoxIcons.Done
-                            , "-CurrentBackupFinished"
-                            );
+                    if ( lbShowBackupStatusModeless )
+                        this.ShowModeless("Backup finished successfully." + lsSysTrayMsg
+                                , "Backup Finished"
+                                , tvMessageBoxButtons.OK
+                                , tvMessageBoxIcons.Done
+                                , "-CurrentBackupFinished"
+                                );
+                    else
+                        this.Show("Backup finished successfully." + lsSysTrayMsg
+                                , "Backup Finished"
+                                , tvMessageBoxButtons.OK
+                                , tvMessageBoxIcons.Done
+                                , "-CurrentBackupFinished"
+                                );
                 }
 
                 moProfile.Save();
@@ -1892,6 +1973,78 @@ No file cleanup will be done until you update the configuration.
 
             return lbBackupFiles;
         }
+
+
+        /// <summary>
+        /// Do additional tasks (typically launched from the main loop - see UI).
+        /// </summary>
+        public void DoAddTasks()
+        {
+            // Do this at most once per minute to avoid running the same task twice in rapid succession.
+            if ( !moProfile.ContainsKey("-AddTasks") || DateTime.Now < mdtPreviousAddTasksStarted.AddMinutes(1) )
+                return;
+
+            mdtPreviousAddTasksStarted = DateTime.Now;
+
+            try
+            {
+                if ( null == moAddTasksProfile )
+                {
+                    moAddTasksProfile = moProfile.oProfile("-AddTasks").oOneKeyProfile("-Task");
+                    moAddTasksProcessArray = new Process[moAddTasksProfile.Count];
+                }
+                
+                foreach (DictionaryEntry loEntry in moAddTasksProfile)
+                {
+                    System.Windows.Forms.Application.DoEvents();
+                    if ( this.bMainLoopStopped )
+                        break;
+
+                    // Convert the current task from a command-line string to a profile oject.
+                    tvProfile loAddTask = new tvProfile(loEntry.Value.ToString());
+
+                    string lsTaskDayOfWeek = loAddTask.sValue("-StartDay", "").ToLower();
+
+                    // If -StartTime is within the current minute, start the task.
+                    if ( (int)mdtPreviousAddTasksStarted.TimeOfDay.TotalMinutes == (int)loAddTask.dtValue("-StartTime", DateTime.MinValue).TimeOfDay.TotalMinutes
+                            && ("" == lsTaskDayOfWeek || lsTaskDayOfWeek == mdtPreviousAddTasksStarted.DayOfWeek.ToString("dddd").ToLower())
+                        )
+                    {
+                        Process loProcess = new Process();
+                                loProcess.StartInfo.FileName = loAddTask.sValue("-CommandEXE", "add task -CommandEXE missing");
+                                loProcess.StartInfo.Arguments = loAddTask.sValue("-CommandArgs", "");
+                                loAddTask.bValue("-UnloadOnExit", false);
+                                loProcess.StartInfo.CreateNoWindow = loAddTask.bValue("-CreateNoWindow", false);
+                                loProcess.StartInfo.UseShellExecute = loAddTask.bValue("-UseShellExecute", false);
+                                loProcess.StartInfo.RedirectStandardError = loAddTask.bValue("-RedirectStandardError", false);
+                                loProcess.StartInfo.RedirectStandardInput = loAddTask.bValue("-RedirectStandardInput", false);
+                                loProcess.StartInfo.RedirectStandardOutput = loAddTask.bValue("-RedirectStandardOutput", false);
+
+                        moAddTasksProcessArray[moAddTasksProfile.IndexOfKey(loEntry.Key.ToString())] = loProcess;
+                        loProcess.Start();
+
+                        this.LogIt(string.Format("Task Started: {0}", loAddTask.sCommandLine()));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                this.ShowError(ex.Message, "Add Tasks Failed");
+            }
+        }
+
+        private void KillAddedTasks()
+        {
+            if ( null != moAddTasksProfile )
+                for (int i=0; i < moAddTasksProfile.Count; ++i)
+                {
+                    tvProfile loAddedTask = new tvProfile(moAddTasksProfile[i].ToString());
+
+                    if ( loAddedTask.bValue("-UnloadOnExit", false) )
+                        this.bKillProcess(moAddTasksProcessArray[i]);
+                }
+        }
+
 
         private int iBackupBeginScriptErrors()
         {

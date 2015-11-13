@@ -2769,7 +2769,7 @@ Copy and proceed from there?
             if ( null != asCommandLineArray )
             {
                 String lsBlockKey = null;
-                String lsBlockValue = null;
+                String lsBlockValue = "";
                 Hashtable loMergeKeysMap = new Hashtable();
 
                 foreach ( String lsItem in asCommandLineArray )
@@ -2832,7 +2832,7 @@ Copy and proceed from there?
                         else if ( mcsBeginBlockMark == lsValue )
                         {
                             lsBlockKey = lsKey;
-                            lsBlockValue = null;
+                            lsBlockValue = "";
                         }
 
                         if ( null == lsBlockKey )

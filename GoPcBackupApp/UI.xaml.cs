@@ -1751,6 +1751,12 @@ You can continue this later wherever you left off. "
         private bool ShowPreviousBackupStatus()
         {
             bool lbPreviousBackupError = false;
+            bool lbShowBackupStatusModeless = moProfile.bValue("-ShowBackupStatusModeless", false);
+                if ( !lbShowBackupStatusModeless && 0 != moProfile.oProfile("-AddTasks").oOneKeyProfile("-Task").Count )
+                {
+                    // Don't let the previous backup status dialog hold up added tasks.
+                    lbShowBackupStatusModeless = true;
+                }
 
             // "ContainsKey" is used here to prevent "DateTime.MinValue"
             // being written as the default value for -PreviousBackupTime.
@@ -1764,8 +1770,12 @@ You can continue this later wherever you left off. "
                     lbPreviousBackupError = true;
                     mbShowBackupOutputAfterSysTray = true;
 
-                    tvMessageBox.ShowError(this, "The previous backup did not complete. Check the log."
-                            + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
+                    if ( lbShowBackupStatusModeless )
+                        tvMessageBox.ShowModelessError(this, "The previous backup did not complete. Check the log."
+                                + moDoGoPcBackup.sSysTrayMsg, "Backup Failed", moProfile);
+                    else
+                        tvMessageBox.ShowError(this, "The previous backup did not complete. Check the log."
+                                + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
                 }
                 else
                 {
@@ -1774,27 +1784,46 @@ You can continue this later wherever you left off. "
                         lbPreviousBackupError = true;
                         mbShowBackupOutputAfterSysTray = true;
 
-                        tvMessageBox.ShowError(this, "The previous backup failed. Check the log for errors."
-                                + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
+                        if ( lbShowBackupStatusModeless )
+                            tvMessageBox.ShowModelessError(this, "The previous backup failed. Check the log for errors."
+                                    + moDoGoPcBackup.sSysTrayMsg, "Backup Failed", moProfile);
+                        else
+                            tvMessageBox.ShowError(this, "The previous backup failed. Check the log for errors."
+                                    + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
                     }
                     else
                     {
                         int liPreviousBackupDays = (DateTime.Now - moProfile.dtValue("-PreviousBackupTime"
                                                         , DateTime.MinValue)).Days;
 
-                        tvMessageBox.Show(this, string.Format(
-                                "The previous backup finished successfully ({0} {1} day{2} ago)."
-                                        , liPreviousBackupDays < 1 ? "less than" : "about"
-                                        , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
-                                        , liPreviousBackupDays <= 1 ? "" : "s"
-                                        )
-                                + moDoGoPcBackup.sSysTrayMsg
-                                , "Backup Finished"
-                                , tvMessageBoxButtons.OK, tvMessageBoxIcons.Done
-                                , tvMessageBoxCheckBoxTypes.SkipThis
-                                , moProfile
-                                , "-PreviousBackupFinished"
-                                );
+                        if ( lbShowBackupStatusModeless )
+                            tvMessageBox.ShowModeless(this, string.Format(
+                                    "The previous backup finished successfully ({0} {1} day{2} ago)."
+                                            , liPreviousBackupDays < 1 ? "less than" : "about"
+                                            , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
+                                            , liPreviousBackupDays <= 1 ? "" : "s"
+                                            )
+                                    + moDoGoPcBackup.sSysTrayMsg
+                                    , "Backup Finished"
+                                    , tvMessageBoxButtons.OK, tvMessageBoxIcons.Done
+                                    , tvMessageBoxCheckBoxTypes.SkipThis
+                                    , moProfile
+                                    , "-PreviousBackupFinished"
+                                    );
+                        else
+                            tvMessageBox.Show(this, string.Format(
+                                    "The previous backup finished successfully ({0} {1} day{2} ago)."
+                                            , liPreviousBackupDays < 1 ? "less than" : "about"
+                                            , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
+                                            , liPreviousBackupDays <= 1 ? "" : "s"
+                                            )
+                                    + moDoGoPcBackup.sSysTrayMsg
+                                    , "Backup Finished"
+                                    , tvMessageBoxButtons.OK, tvMessageBoxIcons.Done
+                                    , tvMessageBoxCheckBoxTypes.SkipThis
+                                    , moProfile
+                                    , "-PreviousBackupFinished"
+                                    );
                     }
                 }
             }
@@ -2054,6 +2083,11 @@ You can continue this later wherever you left off. "
                     lblNextBackupTime.Content = (DateTime.Today.Date == mdtNextStart.Date
                             ? ""
                             : mdtNextStart.DayOfWeek.ToString()) + " " + mdtNextStart.ToShortTimeString();
+
+                    // This is the "add tasks" subsystem. Arbitrary command
+                    // lines can be run this way as part of the main loop.
+                    if ( moProfile.ContainsKey("-AddTasks") )
+                        moDoGoPcBackup.DoAddTasks();
                 }
                 else
                 {
