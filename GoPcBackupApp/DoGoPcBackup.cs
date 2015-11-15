@@ -1706,10 +1706,14 @@ No file cleanup will be done until you update the configuration.
                                     else
                                         lsBackupPathFiles = Path.Combine(lsFolderToBackup, this.sBackupFileSpec());
 
-                            loBackupFileListStreamWriter.WriteLine(lsBackupPathFiles);
-
                             if ( 1 == ++liFileCount )
+                            {
+                                // Make the backup profile file first in the backup set.
+                                loBackupFileListStreamWriter.WriteLine(moProfile.sBackupPathFile);
                                 lsBackupPathFiles1 = lsBackupPathFiles;
+                            }
+
+                            loBackupFileListStreamWriter.WriteLine(lsBackupPathFiles);
                         }
                     }
                     catch (Exception ex)
@@ -2010,20 +2014,30 @@ No file cleanup will be done until you update the configuration.
                             && ("" == lsTaskDayOfWeek || lsTaskDayOfWeek == mdtPreviousAddTasksStarted.DayOfWeek.ToString("dddd").ToLower())
                         )
                     {
+                        string  lsCommandEXE = loAddTask.sValue("-CommandEXE", "add task -CommandEXE missing");
+
                         Process loProcess = new Process();
-                                loProcess.StartInfo.FileName = loAddTask.sValue("-CommandEXE", "add task -CommandEXE missing");
+                                loProcess.StartInfo.FileName = lsCommandEXE;
                                 loProcess.StartInfo.Arguments = loAddTask.sValue("-CommandArgs", "");
                                 loAddTask.bValue("-UnloadOnExit", false);
                                 loProcess.StartInfo.CreateNoWindow = loAddTask.bValue("-CreateNoWindow", false);
-                                loProcess.StartInfo.UseShellExecute = loAddTask.bValue("-UseShellExecute", false);
+                                loProcess.StartInfo.UseShellExecute = loAddTask.bValue("-UseShellExecute", true);
                                 loProcess.StartInfo.RedirectStandardError = loAddTask.bValue("-RedirectStandardError", false);
                                 loProcess.StartInfo.RedirectStandardInput = loAddTask.bValue("-RedirectStandardInput", false);
                                 loProcess.StartInfo.RedirectStandardOutput = loAddTask.bValue("-RedirectStandardOutput", false);
 
-                        moAddTasksProcessArray[moAddTasksProfile.IndexOfKey(loEntry.Key.ToString())] = loProcess;
-                        loProcess.Start();
+                                moAddTasksProcessArray[moAddTasksProfile.IndexOfKey(loEntry.Key.ToString())] = loProcess;
 
-                        this.LogIt(string.Format("Task Started: {0}", loAddTask.sCommandLine()));
+                        this.LogIt(String.Format("Starting Task: {0}", loAddTask.sCommandLine()));
+
+                        try
+                        {
+                            loProcess.Start();
+                        }
+                        catch (Exception ex)
+                        {
+                            this.ShowError(ex.Message, String.Format("Failed starting task: {0}", lsCommandEXE));
+                        }
                     }
                 }
             }
@@ -2329,24 +2343,7 @@ if %1=="""" goto :EOF
 ::
 ::      This is the virtual machine host archive share name.
 ::
-:: %6 = ""AppName""
-::
-::      This is the backup software filename with no extension.
-::
-:: %7 = ""BackupExePathFile""
-::
-::      This is the full path\file specification of the backup software.
-::
-:: %8 = ""BackupProfilePathFile""
-::
-::      This is the full path\file specification of the backup software's
-::      profile file (ie. its configuration file).
-::
-:: %9 = ""BackupProfileFilename""
-::
-::      This is the filename only of the profile file (with extension).
-::
-:: %10= ""LogPathFile""
+:: %6 = ""LogPathFile""
 ::
 ::      This is the full path\file specification of the backup log file.
 ::
@@ -2375,42 +2372,6 @@ set CopyFailures=0
 
 :: Initialize the ""backup done"" script log file. It's for this run only.
 echo.                    > ""{BackupDoneScriptOutputPathFile}"" 2>&1
-
-
-:: This references the backup software destination copy:
-set FileSpec=%4\%6\%6.exe
-
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo This removes the previous version of the backup software (if any):     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo del %FileSpec%                                                         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     del %FileSpec%                                                         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if exist %FileSpec% echo   Error: %FileSpec% is still there.           >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-
-     if exist %FileSpec% set /A CopyFailures += 1
-
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo This backs up the backup software:                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo xcopy /y %7 %4\%6\                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     xcopy /y %7 %4\%6\                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %FileSpec% echo   Error: %FileSpec% is not there.         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-
-     if not exist %FileSpec% set /A CopyFailures += 1
-
-
-:: This references the backup software profile file destination copy:
-set FileSpec=%4\%6\%3\%9.%2.txt
-
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo This copies the backup software's current profile file                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo to a subfolder with the backup output file base name:                  >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo echo F : xcopy  /y  %8 %FileSpec%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     echo F | xcopy  /y  %8 %FileSpec%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %FileSpec% echo   Error: %FileSpec% is not there.         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-
-     if not exist %FileSpec% set /A CopyFailures += 1
 "
 +
 (!lbUseMainhostArchive ? "" :
@@ -2436,8 +2397,6 @@ echo device with the file ""{BackupDriveToken}"" at its root.               >> "
 
 set BackupOutputPathFile=%1
 set BackupBaseOutputFilename=%3
-set BackupToolPath=%4\%6
-set BackupToolName=%6
 
 set BackupDeviceDecimalBitField=0
 set BackupDevicePositionExponent=23
@@ -2503,32 +2462,6 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
      if not exist %FileSpec% echo   Error: %FileSpec% is not there.         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if not exist %FileSpec% set /A CopyFailures += 1
-
-
-:: Exit if the following variables are both empty.
-if %BackupToolName%%BackupBaseOutputFilename%=="""""""" goto :EOF
-
-
-:: This references the backup software destination copy on the current backup device (%1):
-set FileSpec=%1\%BackupToolName%\%BackupBaseOutputFilename%
-
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo This removes the previous backup software profile files:               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo rd  /s/q  %FileSpec%                                                   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     rd  /s/q  %FileSpec%                                                   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if exist %FileSpec%\*.* echo   Error: %FileSpec%\*.* is still there.   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-
-     if exist %FileSpec%\*.* set /A CopyFailures += 1
-
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo This copies the backup software to %1\%BackupToolName%:                >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     if not exist %FileSpec%\*.* echo   Error: %FileSpec%\*.* is not there. >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-
-     if not exist %FileSpec%\*.* set /A CopyFailures += 1
 "
 )
                         .Replace("{ProfileFile}", Path.GetFileName(moProfile.sLoadedPathFile))
@@ -2585,10 +2518,6 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
                                 loArgs.Add("-BackupBaseOutputFilename"      , Path.GetFileName(this.sBackupOutputPathFileBase())                     );
                                 loArgs.Add("-LocalArchivePath"              , this.sArchivePath()                                                    );
                                 loArgs.Add("-VirtualMachineHostArchivePath" , moProfile.sValue("-VirtualMachineHostArchivePath", "")                 );
-                                loArgs.Add("-AppName"                       , Path.GetFileNameWithoutExtension(Application.ResourceAssembly.Location));
-                                loArgs.Add("-BackupExePathFile"             , Application.ResourceAssembly.Location                                  );
-                                loArgs.Add("-BackupProfilePathFile"         , moProfile.sBackupPathFile                                              );
-                                loArgs.Add("-BackupProfileFilename"         , Path.GetFileName(moProfile.sLoadedPathFile)                            );
                                 loArgs.Add("-LogPathFile"                   , moProfile.sRelativeToProfilePathFile(this.sLogPathFile)                );
 
                                 moProfile["-BackupDoneArgs"] = loArgs.sCommandBlock();
@@ -2605,11 +2534,11 @@ echo xcopy  /s/y  %BackupToolPath% %1\%BackupToolName%\                     >> "
                                 , loArgs.sValue("-BackupBaseOutputFilename"     , "")
                                 , loArgs.sValue("-LocalArchivePath"             , "")
                                 , loArgs.sValue("-VirtualMachineHostArchivePath", "")
-                                , loArgs.sValue("-AppName"                      , "")
-                                , loArgs.sValue("-BackupExePathFile"            , "")
-                                , loArgs.sValue("-BackupProfilePathFile"        , "")
-                                , loArgs.sValue("-BackupProfileFilename"        , "")
                                 , loArgs.sValue("-LogPathFile"                  , "")
+                                , ""
+                                , ""
+                                , ""
+                                , ""
                                 );
                         loProcess.StartInfo.UseShellExecute = true;
                         loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
