@@ -3038,22 +3038,15 @@ echo del %FileSpec%                                                             
                     // Set the cleanup of file lists and backup / cleanup log files to 30 days.
                     moProfile.Add("-CleanupSet", string.Format(@"
     -AgeDays=30
-    -FilesToDelete={0}*{1}
-    -FilesToDelete={2}*{3}
-    -FilesToDelete={4}*{5}
+    -FilesToDelete={0}
+    -FilesToDelete={1}
 
 "
                             , Path.Combine(Path.GetDirectoryName(this.sZipToolFileListPathFileBase)
-                                    , Path.GetFileNameWithoutExtension(this.sZipToolFileListPathFileBase))
-                            , Path.GetExtension(this.sZipToolFileListPathFileBase)
-
-                            , Path.Combine(Path.GetDirectoryName(this.sDeletedFileListOutputPathFileBase)
-                                    , Path.GetFileNameWithoutExtension(this.sDeletedFileListOutputPathFileBase))
-                            , Path.GetExtension(this.sDeletedFileListOutputPathFileBase)
+                                    , "*" + Path.GetExtension(this.sZipToolFileListPathFileBase))
 
                             , Path.Combine(Path.GetDirectoryName(this.sLogPathFileBase)
-                                    , Path.GetFileNameWithoutExtension(this.sLogPathFileBase))
-                            , Path.GetExtension(this.sLogPathFileBase)
+                                    , "*" + Path.GetExtension(this.sLogPathFileBase))
                             ));
                 }
 

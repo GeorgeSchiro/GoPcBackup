@@ -112,8 +112,7 @@ Here's some of what you might see in a profile file:
     -CleanupSet=[
 
         -AgeDays=30
-        -FilesToDelete=Logs\GoPcBackup.exeLog*.txt
-        -FilesToDelete=Logs\GoPcBackup.exeDeletedFileList*.txt
+        -FilesToDelete=Logs\*.txt
 
     -CleanupSet=]
 
