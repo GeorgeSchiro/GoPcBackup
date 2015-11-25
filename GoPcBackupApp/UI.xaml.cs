@@ -278,6 +278,9 @@ namespace GoPcBackup
 
             // Turns off the "loading" message.
             moProfile.bAppFullyLoaded = true;
+
+            // Run any startup related tasks.
+            moDoGoPcBackup.DoAddTasks(true);
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -288,8 +291,6 @@ namespace GoPcBackup
             // Do a full exit if shutting down.
             if ( ShutdownMode.OnExplicitShutdown == Application.Current.ShutdownMode )
             {
-                this.bMainLoopStopped = true;
-
                 // Always turn the timer back on during shutdowns. That
                 // way backups should automatically retart after reboot.
                 this.chkUseTimer_SetChecked(true);
@@ -307,6 +308,8 @@ namespace GoPcBackup
                     e.Cancel = true;
                 }
                 else
+                {
+                    // If the timer is off, ask about it before exiting.
                     if ( !(bool)this.chkUseTimer.IsChecked
                             && tvMessageBoxResults.No == tvMessageBox.Show(
                                       this
@@ -321,7 +324,7 @@ namespace GoPcBackup
                                     )
                                 )
                         e.Cancel = true;
-                // If the timer is off, ask about it before exiting.
+                }
             }
         }
 
@@ -1750,6 +1753,7 @@ You can continue this later wherever you left off. "
 
         private bool ShowPreviousBackupStatus()
         {
+            bool lbShowPreviousBackupStatus = true;
             bool lbPreviousBackupError = false;
             bool lbShowBackupStatusModeless = moProfile.bValue("-ShowBackupStatusModeless", false);
                 if ( !lbShowBackupStatusModeless && 0 != moProfile.oProfile("-AddTasks").oOneKeyProfile("-Task").Count )
@@ -1758,12 +1762,16 @@ You can continue this later wherever you left off. "
                     lbShowBackupStatusModeless = true;
                 }
 
+            lbShowPreviousBackupStatus = moProfile.bValue("-BackupFiles", true);
+
             // "ContainsKey" is used here to prevent "DateTime.MinValue"
             // being written as the default value for -PreviousBackupTime.
-
             // If the backup just finished (ie. less than 1 minute ago), don't bother.
-            if ( !moProfile.ContainsKey("-PreviousBackupTime") || (DateTime.Now - moProfile.dtValue(
-                    "-PreviousBackupTime", DateTime.MinValue)).Minutes > 1 )
+            if ( lbShowPreviousBackupStatus )
+                lbShowPreviousBackupStatus = !moProfile.ContainsKey("-PreviousBackupTime") || (DateTime.Now - moProfile.dtValue(
+                        "-PreviousBackupTime", DateTime.MinValue)).Minutes > 1;
+
+            if ( lbShowPreviousBackupStatus )
             {
                 if ( !moProfile.ContainsKey("-PreviousBackupOk") )
                 {

@@ -172,9 +172,14 @@ A brief description of each feature follows.
 
             This is the list of arguments passed to the task executable.
 
-        -CreateNoWindow=True
+        -CreateNoWindow=False
 
-            Set this switch False and nothing will be displayed when the task runs.
+            Set this switch True and nothing will be displayed when the task runs.
+
+        -OnStartup=False
+
+            Set this switch True and the task will start each time ""{EXE}""
+            starts. If the task EXE is already running, it will not be started again.
 
         -StartTime= NO DEFAULT VALUE
 
@@ -195,8 +200,9 @@ A brief description of each feature follows.
 
         -AddTasks=[
 
-            -Task= -StartTime=6:00am  -CommandEXE=shutdown.exe  -CommandArgs=/r /t 60
-            -Task= -StartTime=7:00am  -CommandEXE=""C:\Program Files\Calibre2\calibre.exe""  -Note=Fetch NY Times after 6:30am
+            -Task= -OnStartup -CommandEXE=http://xkcd.com
+            -Task= -StartTime=6:00am -CommandEXE=shutdown.exe -CommandArgs=/r /t 60
+            -Task= -StartTime=7:00am -CommandEXE=""C:\Program Files\Calibre2\calibre.exe""  -Note=Fetch NY Times after 6:30am
 
         -AddTasks=]
 
@@ -804,14 +810,34 @@ Notes:
             }
             else
             {
-                aoProfile.bAppFullyLoaded = true;   // Turns off the "loading" message.
+                tvProfile loProfile = null;
 
-                // If arguments were passed, then start a new "-RunOnce" instance.
+                if ( null != aoProfile.sLoadedPathFile )
+                {
+                    loProfile = aoProfile;
+                }
+                else
+                {
+                    aoProfile.bAppFullyLoaded = true;   // Turns off the "loading" message.
 
-                tvProfile   loProfile = new tvProfile("-RunOnce -BackupBeginScriptEnabled=false -BackupDoneScriptEnabled=false");
-                            loProfile.LoadFromCommandLineArray(args, tvProfileLoadActions.Merge);
+                    // The default profile was likely attempted but failed to load
+                    // (due to contention). Try loading the backup profile instead.
+
+                    string  lsPath = Path.GetDirectoryName(aoProfile.sDefaultPathFile);
+                    string  lsFilename = Path.GetFileName(aoProfile.sDefaultPathFile);
+                    string  lsExt = Path.GetExtension(aoProfile.sDefaultPathFile);
+                    string  lsBackupPathFile = Path.Combine(lsPath, lsFilename) + ".backup" + lsExt;
+
+                    loProfile = new tvProfile(lsBackupPathFile, tvProfileFileCreateActions.NoFileCreate);
+                    loProfile.LoadFromCommandLineArray(args, tvProfileLoadActions.Merge);
+                }
+
+                // Arguments were passed, so start a new "-RunOnce" instance.
+                loProfile.LoadFromCommandLine("-RunOnce", tvProfileLoadActions.Merge);
+                loProfile.bAppFullyLoaded = true;   // Turns off the "loading" message.
 
                 DoGoPcBackup    loDoDa = new DoGoPcBackup(loProfile);
+                                loDoDa.CleanupFiles();
                                 loDoDa.BackupFiles();
             }
         }
@@ -851,7 +877,8 @@ Notes:
             {
                 mbMainLoopStopped = value;
 
-                this.KillAddedTasks();
+                if ( mbMainLoopStopped )
+                    this.KillAddedTasks();
             }
         }
         private bool mbMainLoopStopped;
@@ -1343,7 +1370,7 @@ Notes:
 
             // Update the error text cache.
             if ( null != this.oUI )
-                this.oUI.GetSetOutputTextPanelErrorCache();
+            this.oUI.GetSetOutputTextPanelErrorCache();
 
             if ( null != this.oUI )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
@@ -1359,7 +1386,7 @@ Notes:
 
             // Update the error text cache.
             if ( null != this.oUI )
-                this.oUI.GetSetOutputTextPanelErrorCache();
+            this.oUI.GetSetOutputTextPanelErrorCache();
 
             if ( null != this.oUI )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
@@ -1375,7 +1402,7 @@ Notes:
 
             // Update the error text cache.
             if ( null != this.oUI )
-                this.oUI.GetSetOutputTextPanelErrorCache();
+            this.oUI.GetSetOutputTextPanelErrorCache();
 
             if ( null != this.oUI )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
@@ -1437,8 +1464,13 @@ Notes:
             try
             {
                 lsProcessName = aoProcess.ProcessName;
-                aoProcess.Kill();
+                aoProcess.CloseMainWindow();
                 aoProcess.WaitForExit(moProfile.iValue("-KillProcessWaitMS", 1000));
+                if ( !aoProcess.HasExited )
+                {
+                    aoProcess.Kill();
+                    aoProcess.WaitForExit(moProfile.iValue("-KillProcessWaitMS", 1000));
+                }
             }
             catch {}
 
@@ -1497,7 +1529,7 @@ Notes:
                             loErrors.Show();
 
                             if ( null != this.oUI )
-                                this.oUI.oOtherWindows.Add(loErrors);
+                            this.oUI.oOtherWindows.Add(loErrors);
         }
 
         /// <summary>
@@ -1519,7 +1551,7 @@ Notes:
                                         loFileList.Show();
 
                                         if ( null != this.oUI )
-                                            this.oUI.oOtherWindows.Add(loFileList);
+                                        this.oUI.oOtherWindows.Add(loFileList);
                     }
                 }
                 else
@@ -1719,6 +1751,7 @@ No file cleanup will be done until you update the configuration.
                     catch (Exception ex)
                     {
                         lbBackupFiles = false;
+                        if ( null != this.oUI )
                         this.oUI.bBackupRunning = false;
                         this.ShowError(string.Format("File Write Failure: \"{0}\"\r\n"
                                 , lsZipToolFileListPathFile) + ex.Message
@@ -1750,6 +1783,7 @@ No file cleanup will be done until you update the configuration.
                                 catch (Exception ex)
                                 {
                                     lbBackupFiles = false;
+                                    if ( null != this.oUI )
                                     this.oUI.bBackupRunning = false;
                                     this.ShowError(
                                               string.Format("Folder: \"{0}\"\r\n", lsArchivePath) + ex.Message
@@ -1791,6 +1825,7 @@ No file cleanup will be done until you update the configuration.
                     catch (Exception ex)
                     {
                         lbBackupFiles = false;
+                        if ( null != this.oUI )
                         this.oUI.bBackupRunning = false;
                         this.ShowError(string.Format("File Write Failure: \"{0}\"\r\n"
                                 , lsLastRunFile) + ex.Message
@@ -1888,6 +1923,7 @@ No file cleanup will be done until you update the configuration.
             catch (Exception ex)
             {
                 lbBackupFiles = false;
+                if ( null != this.oUI )
                 this.oUI.bBackupRunning = false;
                 this.ShowError(ex.Message, "Backup Failed");
             }
@@ -1931,6 +1967,7 @@ No file cleanup will be done until you update the configuration.
                     moProfile["-PreviousBackupTime"] = DateTime.Now;
 
                     lbBackupFiles = false;
+                    if ( null != this.oUI )
                     this.oUI.bBackupRunning = false;
 
                     if ( lbShowBackupStatusModeless )
@@ -1984,8 +2021,12 @@ No file cleanup will be done until you update the configuration.
         /// </summary>
         public void DoAddTasks()
         {
+            this.DoAddTasks(false);
+        }
+        public void DoAddTasks(bool abStartup)
+        {
             // Do this at most once per minute to avoid running the same task twice in rapid succession.
-            if ( !moProfile.ContainsKey("-AddTasks") || DateTime.Now < mdtPreviousAddTasksStarted.AddMinutes(1) )
+            if ( !abStartup && (!moProfile.ContainsKey("-AddTasks") || DateTime.Now < mdtPreviousAddTasksStarted.AddMinutes(1)) )
                 return;
 
             mdtPreviousAddTasksStarted = DateTime.Now;
@@ -2001,18 +2042,28 @@ No file cleanup will be done until you update the configuration.
                 foreach (DictionaryEntry loEntry in moAddTasksProfile)
                 {
                     System.Windows.Forms.Application.DoEvents();
-                    if ( this.bMainLoopStopped )
-                        break;
 
                     // Convert the current task from a command-line string to a profile oject.
                     tvProfile loAddTask = new tvProfile(loEntry.Value.ToString());
 
-                    string lsTaskDayOfWeek = loAddTask.sValue("-StartDay", "").ToLower();
+                    bool lbDoTask = false;
 
-                    // If -StartTime is within the current minute, start the task.
-                    if ( (int)mdtPreviousAddTasksStarted.TimeOfDay.TotalMinutes == (int)loAddTask.dtValue("-StartTime", DateTime.MinValue).TimeOfDay.TotalMinutes
-                            && ("" == lsTaskDayOfWeek || lsTaskDayOfWeek == mdtPreviousAddTasksStarted.DayOfWeek.ToString("dddd").ToLower())
-                        )
+                    if ( abStartup )
+                    {
+                        lbDoTask = loAddTask.bValue("-OnStartup", false);
+                    }
+                    else
+                    {
+                        DateTime    ldtTaskStartTime = loAddTask.dtValue("-StartTime", DateTime.MinValue);
+                        string      lsTaskDayOfWeek = loAddTask.sValue("-StartDay", "").ToLower();
+
+                        // If -StartTime is within the current minute, start the task.
+                        // If -StartDay is specified, run the task on that day only.
+                        lbDoTask = DateTime.MinValue != ldtTaskStartTime && (int)mdtPreviousAddTasksStarted.TimeOfDay.TotalMinutes == (int)ldtTaskStartTime.TimeOfDay.TotalMinutes
+                                && ("" == lsTaskDayOfWeek || lsTaskDayOfWeek == mdtPreviousAddTasksStarted.DayOfWeek.ToString("dddd").ToLower());
+                    }
+
+                    if ( lbDoTask )
                     {
                         string  lsCommandEXE = loAddTask.sValue("-CommandEXE", "add task -CommandEXE missing");
 
@@ -2028,11 +2079,28 @@ No file cleanup will be done until you update the configuration.
 
                                 moAddTasksProcessArray[moAddTasksProfile.IndexOfKey(loEntry.Key.ToString())] = loProcess;
 
-                        this.LogIt(String.Format("Starting Task: {0}", loAddTask.sCommandLine()));
-
                         try
                         {
-                            loProcess.Start();
+                            if ( !loAddTask.bValue("-OnStartup", false) )
+                            {
+                                this.LogIt(String.Format("Starting Task: {0}", loAddTask.sCommandLine()));
+                                loProcess.Start();
+                            }
+                            else
+                            {
+                                Process[] loProcessesArray = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(loProcess.StartInfo.FileName));
+
+                                // Don't start -OnStartup processes that are already started.
+                                if ( 0 != loProcessesArray.Length )
+                                {
+                                    this.LogIt(String.Format("Already running, task not started: {0}", loAddTask.sCommandLine()));
+                                }
+                                else
+                                {
+                                    this.LogIt(String.Format("Starting Task: {0}", loAddTask.sCommandLine()));
+                                    loProcess.Start();
+                                }
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -2055,7 +2123,10 @@ No file cleanup will be done until you update the configuration.
                     tvProfile loAddedTask = new tvProfile(moAddTasksProfile[i].ToString());
 
                     if ( loAddedTask.bValue("-UnloadOnExit", false) )
+                    {
+                        this.LogIt(String.Format("Stopping Task: {0}", loAddedTask.sCommandLine()));
                         this.bKillProcess(moAddTasksProcessArray[i]);
+                    }
                 }
         }
 
@@ -2952,21 +3023,6 @@ echo del %FileSpec%                                                             
 "
                             , Path.Combine(lsBackupOutputPath, lsBackupOutputFilenameNoExt)
                             , Path.GetExtension(lsBackupOutputPathFileBase)
-                            ));
-
-                    // Set the cleanup of backup software profile files to 30 days.
-                    // The -Recurse switch is used here so that profile files for
-                    // backups from various backup sets can be cleaned up in one sweep.
-                    moProfile.Add("-CleanupSet", string.Format(@"
-    -AgeDays=30
-    -FilesToDelete={0}*
-    -Recurse
-    -ApplyDeletionLimit
-
-"
-                            , Path.Combine(Path.Combine(lsBackupOutputPath
-                                    , Path.GetFileNameWithoutExtension(Application.ResourceAssembly.Location))
-                                    , Path.GetFileName(moProfile.sLoadedPathFile))
                             ));
 
                     // Set the cleanup of temporary backup files to 0 days.

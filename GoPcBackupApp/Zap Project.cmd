@@ -1,8 +1,8 @@
 for /f "tokens=1-9 delims=\" %%a in ("%cd%") do set a=%%a %%b %%c %%d %%e %%f %%g %%h %%i
 for %%i in (%a%) do set Project=%%i
 
-del  ..\..\%Project%.lnk
-del "..\..\%Project% - Move to Startup.cmd"
+del     ..\..\%Project%.lnk
+del    "..\..\%Project% - Move to Startup.cmd"
 rd /s/q ..\..\%Project%
 
 if exist "C:\Program Files\%Project%\[Don't zap this.]" goto Continue

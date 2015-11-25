@@ -1139,6 +1139,7 @@ namespace tvToolbox
 
                 if ( mbExit )
                 {
+                    this.bAppFullyLoaded = true;
                     this.bSaveEnabled = false;
                 }
             }
@@ -1274,6 +1275,7 @@ namespace tvToolbox
                 {
                     moInputCommandLineProfile = new tvProfile();
                     moInputCommandLineProfile.LoadFromCommandLineArray(this.msInputCommandLineArray, tvProfileLoadActions.Append);
+                    moInputCommandLineProfile.bAppFullyLoaded = true;
                 }
 
                 return mbSaveSansCmdLine;
@@ -3193,6 +3195,7 @@ Copy and proceed from there?
                             loNewProfile.bUseXmlFiles = this.bUseXmlFiles;
                             loNewProfile.bAddStandardDefaults = this.bAddStandardDefaults;
                             loNewProfile.Load(lsProfilePathFile, tvProfileLoadActions.Overwrite);
+                            loNewProfile.bAppFullyLoaded = true;
 
                             this.sActualPathFile = loNewProfile.sActualPathFile;
                             this.sLoadedPathFile = loNewProfile.sLoadedPathFile;
@@ -3211,7 +3214,7 @@ Copy and proceed from there?
                                     loCommandLine.Remove(lsIniKeys[liIniKeyIndex]);
                                 if ( lbFirstArgIsFile )
                                     loCommandLine.Add("-File", lsFirstArg);
-
+                                loCommandLine.bAppFullyLoaded = true;
 
                     // Now merge in the original command line (with the above
                     // adjustments). Command line items take precedence over file items.
