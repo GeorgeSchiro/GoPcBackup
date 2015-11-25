@@ -208,9 +208,14 @@ Options and Features
 
             This is the list of arguments passed to the task executable.
 
-        -CreateNoWindow=True
+        -CreateNoWindow=False
 
-            Set this switch False and nothing will be displayed when the task runs.
+            Set this switch True and nothing will be displayed when the task runs.
+
+        -OnStartup=False
+
+            Set this switch True and the task will start each time "GoPcBackup.exe"
+            starts. If the task EXE is already running, it will not be started again.
 
         -StartTime= NO DEFAULT VALUE
 
@@ -231,8 +236,9 @@ Options and Features
 
         -AddTasks=[
 
-            -Task= -StartTime=6:00am  -CommandEXE=shutdown.exe  -CommandArgs=/r /t 60
-            -Task= -StartTime=7:00am  -CommandEXE="C:\Program Files\Calibre2\calibre.exe"  -Note=Fetch NY Times after 6:30am
+            -Task= -OnStartup -CommandEXE=http://xkcd.com
+            -Task= -StartTime=6:00am -CommandEXE=shutdown.exe -CommandArgs=/r /t 60
+            -Task= -StartTime=7:00am -CommandEXE="C:\Program Files\Calibre2\calibre.exe"  -Note=Fetch NY Times after 6:30am
 
         -AddTasks=]
 
