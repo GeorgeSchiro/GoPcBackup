@@ -107,7 +107,7 @@ namespace GoPcBackup
                     while ( Visibility.Visible != this.Visibility )
                     {
                         System.Windows.Forms.Application.DoEvents();
-                        System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 200));
+                        System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                     }
 
                     moNotifyWaitMessage.Close();
@@ -161,7 +161,7 @@ namespace GoPcBackup
                 }
             }
         }
-        private bool mbMainLoopStopped = true;
+        private bool mbMainLoopStopped = false;
 
         /// <summary>
         /// This will restart the main timer loop
@@ -208,7 +208,7 @@ namespace GoPcBackup
                 }
                 else
                 {
-                    moDoGoPcBackup.bMainLoopStopped = false;
+                    this.bMainLoopStopped = false;
                     mbShowBackupOutputAfterSysTray = true;
 
                     this.DisableButtons();
@@ -278,9 +278,6 @@ namespace GoPcBackup
 
             // Turns off the "loading" message.
             moProfile.bAppFullyLoaded = true;
-
-            // Run any startup related tasks.
-            moDoGoPcBackup.DoAddTasks(true);
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -338,6 +335,8 @@ namespace GoPcBackup
             if ( 0 != moOtherWindows.Count )
                 foreach (ScrollingText loWindow in moOtherWindows)
                     loWindow.Close();
+
+            moDoGoPcBackup.KillAddedTasks();
         }
 
         private void Window_StateChanged(object sender, EventArgs e)
@@ -636,7 +635,7 @@ namespace GoPcBackup
         public void AppendOutputTextLine(string asTextLine)
         {
             this.BackupProcessOutput.Inlines.Add(asTextLine + Environment.NewLine);
-            if ( this.BackupProcessOutput.Inlines.Count > 50 )
+            if ( this.BackupProcessOutput.Inlines.Count > moProfile.iValue("-ConsoleTextLineLength", 100) )
                 this.BackupProcessOutput.Inlines.Remove(this.BackupProcessOutput.Inlines.FirstInline);
             this.scrBackupProcessOutput.ScrollToEnd();
 
@@ -855,6 +854,10 @@ namespace GoPcBackup
 
         private void ShowMe()
         {
+            this.ShowMe(true);
+        }
+        private void ShowMe(bool abShowMissingBackupDevices)
+        {
             bool lTopmost = this.Topmost;
 
             this.AdjustWindowSize();
@@ -868,7 +871,8 @@ namespace GoPcBackup
             this.Topmost = lTopmost;
             System.Windows.Forms.Application.DoEvents();
 
-            this.ShowMissingBackupDevices();
+            if ( abShowMissingBackupDevices )
+                this.ShowMissingBackupDevices();
         }
 
         private bool bShowInitBeginScriptWarning()
@@ -1506,7 +1510,7 @@ You can continue this later wherever you left off. "
                         && tvMessageBoxResults.Yes == tvMessageBox.Show(
                                   this
                                 , "A backup device has been reattached. Reattached backup devices should be updated."
-                                    + " The \"backup done\" script updates attached devices.\r\n\r\nShall we rerun the \"backup done\" script?"
+                                    + " The \"backup done\" script updates attached backup devices.\r\n\r\nShall we rerun the \"backup done\" script?"
                                 , "Device Reattached"
                                 , tvMessageBoxButtons.YesNo
                                 , tvMessageBoxIcons.Question
@@ -1567,7 +1571,8 @@ You can continue this later wherever you left off. "
                         , 1 == loMissingBackupDevices.Count ? "" : "s"
                         );
 
-                leTvMessageBoxResults = tvMessageBox.Show(this, lsMessage, lsMessageCaption, tvMessageBoxButtons.YesNoCancel, tvMessageBoxIcons.Alert);
+                leTvMessageBoxResults = tvMessageBox.Show(
+                        this, lsMessage, lsMessageCaption, tvMessageBoxButtons.YesNoCancel, tvMessageBoxIcons.Alert);
             }
 
             return leTvMessageBoxResults;
@@ -1690,7 +1695,7 @@ You can continue this later wherever you left off. "
             lblNextBackupTimeLeft.Content = asCommonValue;
 
             if ( moProfile.ContainsKey("-PreviousBackupTime") )
-                lblPrevBackupTime.Content = moProfile["-PreviousBackupTime"];
+                lblPrevBackupTime.Content = moProfile.dtValue("-PreviousBackupTime", DateTime.MinValue);
             else
                 lblPrevBackupTime.Content = mcsNoPreviousText;
 
@@ -1755,12 +1760,6 @@ You can continue this later wherever you left off. "
         {
             bool lbShowPreviousBackupStatus = true;
             bool lbPreviousBackupError = false;
-            bool lbShowBackupStatusModeless = moProfile.bValue("-ShowBackupStatusModeless", false);
-                if ( !lbShowBackupStatusModeless && 0 != moProfile.oProfile("-AddTasks").oOneKeyProfile("-Task").Count )
-                {
-                    // Don't let the previous backup status dialog hold up added tasks.
-                    lbShowBackupStatusModeless = true;
-                }
 
             lbShowPreviousBackupStatus = moProfile.bValue("-BackupFiles", true);
 
@@ -1778,12 +1777,8 @@ You can continue this later wherever you left off. "
                     lbPreviousBackupError = true;
                     mbShowBackupOutputAfterSysTray = true;
 
-                    if ( lbShowBackupStatusModeless )
-                        tvMessageBox.ShowModelessError(this, "The previous backup did not complete. Check the log."
-                                + moDoGoPcBackup.sSysTrayMsg, "Backup Failed", moProfile);
-                    else
-                        tvMessageBox.ShowError(this, "The previous backup did not complete. Check the log."
-                                + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
+                    tvMessageBox.ShowError(this, "The previous backup did not complete. Check the log."
+                            + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
                 }
                 else
                 {
@@ -1792,46 +1787,27 @@ You can continue this later wherever you left off. "
                         lbPreviousBackupError = true;
                         mbShowBackupOutputAfterSysTray = true;
 
-                        if ( lbShowBackupStatusModeless )
-                            tvMessageBox.ShowModelessError(this, "The previous backup failed. Check the log for errors."
-                                    + moDoGoPcBackup.sSysTrayMsg, "Backup Failed", moProfile);
-                        else
-                            tvMessageBox.ShowError(this, "The previous backup failed. Check the log for errors."
-                                    + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
+                        tvMessageBox.ShowError(this, "The previous backup failed. Check the log for errors."
+                                + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
                     }
                     else
                     {
                         int liPreviousBackupDays = (DateTime.Now - moProfile.dtValue("-PreviousBackupTime"
                                                         , DateTime.MinValue)).Days;
 
-                        if ( lbShowBackupStatusModeless )
-                            tvMessageBox.ShowModeless(this, string.Format(
-                                    "The previous backup finished successfully ({0} {1} day{2} ago)."
-                                            , liPreviousBackupDays < 1 ? "less than" : "about"
-                                            , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
-                                            , liPreviousBackupDays <= 1 ? "" : "s"
-                                            )
-                                    + moDoGoPcBackup.sSysTrayMsg
-                                    , "Backup Finished"
-                                    , tvMessageBoxButtons.OK, tvMessageBoxIcons.Done
-                                    , tvMessageBoxCheckBoxTypes.SkipThis
-                                    , moProfile
-                                    , "-PreviousBackupFinished"
-                                    );
-                        else
-                            tvMessageBox.Show(this, string.Format(
-                                    "The previous backup finished successfully ({0} {1} day{2} ago)."
-                                            , liPreviousBackupDays < 1 ? "less than" : "about"
-                                            , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
-                                            , liPreviousBackupDays <= 1 ? "" : "s"
-                                            )
-                                    + moDoGoPcBackup.sSysTrayMsg
-                                    , "Backup Finished"
-                                    , tvMessageBoxButtons.OK, tvMessageBoxIcons.Done
-                                    , tvMessageBoxCheckBoxTypes.SkipThis
-                                    , moProfile
-                                    , "-PreviousBackupFinished"
-                                    );
+                        tvMessageBox.Show(this, string.Format(
+                                "The previous backup finished successfully ({0} {1} day{2} ago)."
+                                        , liPreviousBackupDays < 1 ? "less than" : "about"
+                                        , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
+                                        , liPreviousBackupDays <= 1 ? "" : "s"
+                                        )
+                                + moDoGoPcBackup.sSysTrayMsg
+                                , "Backup Finished"
+                                , tvMessageBoxButtons.OK, tvMessageBoxIcons.Done
+                                , tvMessageBoxCheckBoxTypes.SkipThis
+                                , moProfile
+                                , "-PreviousBackupFinished"
+                                );
                     }
                 }
             }
@@ -1889,7 +1865,7 @@ You can continue this later wherever you left off. "
             }
             if ( lbDoRerun )
             {
-                this.ShowMe();
+                this.ShowMe(false);
                 this.bBackupRunning = true;
 
                 // Append a blank line to the error output before proceeding.
@@ -1917,29 +1893,38 @@ You can continue this later wherever you left off. "
                 }
                 else
                 {
-                    moProfile["-PreviousBackupTime"] = DateTime.Now;
-                    moProfile.Save();
-
-                    bool lbPreviousBackupOk = moProfile.ContainsKey("-PreviousBackupOk") && moProfile.bValue("-PreviousBackupOk", false);
-
-                    if ( !lbPreviousBackupOk && tvMessageBoxResults.Yes == tvMessageBox.Show(
-                                      this
-                                    , "The \"backup done\" script finished successfully after the previous failed backup. Yet the"
-                                        + " backup status is still \"Backup Failed\".\r\n\r\nShall we change it to \"Backup OK?\""
-                                    , "Adjust Backup Status"
-                                    , tvMessageBoxButtons.YesNo
-                                    , tvMessageBoxIcons.Question
-                                    , tvMessageBoxCheckBoxTypes.DontAsk
-                                    , moProfile
-                                    , "-BackupStatusChanged"
-                                    )
-                                )
+                    // Referencing "moDoGoPcBackup.bMainLoopStopped" rather
+                    // than "this.bMainLoopStopped" keeps the timer running.
+                    if ( moDoGoPcBackup.bMainLoopStopped )
                     {
-                        moProfile["-PreviousBackupDevicesMissing"] = false;
-                        moProfile["-PreviousBackupOk"] = true;
+                        moDoGoPcBackup.LogIt("Backup process stopped.");
+                    }
+                    else
+                    {
+                        moProfile["-PreviousBackupTime"] = DateTime.Now;
                         moProfile.Save();
 
-                        this.GetSetConfigurationDefaults();
+                        bool lbPreviousBackupOk = moProfile.ContainsKey("-PreviousBackupOk") && moProfile.bValue("-PreviousBackupOk", false);
+
+                        if (!lbPreviousBackupOk && tvMessageBoxResults.Yes == tvMessageBox.Show(
+                                          this
+                                        , "The \"backup done\" script finished successfully (after the previous failed backup). Yet the"
+                                            + " backup status is still \"Backup Failed\".\r\n\r\nShall we change it to \"Backup OK?\""
+                                        , "Adjust Backup Status"
+                                        , tvMessageBoxButtons.YesNo
+                                        , tvMessageBoxIcons.Question
+                                        , tvMessageBoxCheckBoxTypes.DontAsk
+                                        , moProfile
+                                        , "-BackupStatusChanged"
+                                        )
+                                    )
+                        {
+                            moProfile["-PreviousBackupDevicesMissing"] = false;
+                            moProfile["-PreviousBackupOk"] = true;
+                            moProfile.Save();
+
+                            this.GetSetConfigurationDefaults();
+                        }
                     }
                 }
 
@@ -2034,9 +2019,9 @@ You can continue this later wherever you left off. "
 
         private void MainLoop()
         {
-            if ( !this.bMainLoopStopped
-                    || !(bool)this.chkUseTimer.IsChecked
+            if (       this.bMainLoopStopped
                     || this.bBackupRunning
+                    || !(bool)this.chkUseTimer.IsChecked
                     )
                 return;
 
@@ -2044,7 +2029,7 @@ You can continue this later wherever you left off. "
             {
                 moMainLoopTimer = new DispatcherTimer();
                 moMainLoopTimer.Tick += new EventHandler(moMainLoopTimer_Tick);
-                moMainLoopTimer.Interval = new TimeSpan(0, 0, 0, 0, moProfile.iValue("-MainLoopSleepMS", 200));
+                moMainLoopTimer.Interval = new TimeSpan(0, 0, 0, 0, moProfile.iValue("-MainLoopSleepMS", 100));
             }
 
             this.bMainLoopStopped = false;
@@ -2079,7 +2064,7 @@ You can continue this later wherever you left off. "
                 // "ContainsKey" is used here to avoid storing "mcsNoPreviousText" as the 
                 // default -PreviousBackupTime. Doing so would throw an error next time.
                 if (moProfile.ContainsKey("-PreviousBackupTime"))
-                    lblPrevBackupTime.Content = moProfile["-PreviousBackupTime"];
+                    lblPrevBackupTime.Content = moProfile.dtValue("-PreviousBackupTime", DateTime.MinValue);
                 else
                     lblPrevBackupTime.Content = mcsNoPreviousText;
 
@@ -2091,11 +2076,6 @@ You can continue this later wherever you left off. "
                     lblNextBackupTime.Content = (DateTime.Today.Date == mdtNextStart.Date
                             ? ""
                             : mdtNextStart.DayOfWeek.ToString()) + " " + mdtNextStart.ToShortTimeString();
-
-                    // This is the "add tasks" subsystem. Arbitrary command
-                    // lines can be run this way as part of the main loop.
-                    if ( moProfile.ContainsKey("-AddTasks") )
-                        moDoGoPcBackup.DoAddTasks();
                 }
                 else
                 {

@@ -170,15 +170,11 @@ Command-Line Usage
 
     For example, the following invokes the use of an alternative profile file:
 
-    GoPcBackup.exe -ini=NewProfile.txt
+        GoPcBackup.exe -ini=NewProfile.txt
 
     This tells the software to run in automatic mode:
 
-    GoPcBackup.exe -AutoStart
-
-    or
-
-    GoPcBackup.exe -Auto*
+        GoPcBackup.exe -AutoStart
 
 
     Author:  George Schiro (GeoCode@Schiro.name)
@@ -207,6 +203,12 @@ Options and Features
 
             This is the list of arguments passed to the task executable.
 
+        -CommandWindowTitle=""
+
+            This is the main window title for this instance of the task executable.
+            This will be used to determine, during startup, if the task is already
+            running (when multiple instances of the same executable are found).
+
         -CreateNoWindow=False
 
             Set this switch True and nothing will be displayed when the task runs.
@@ -220,10 +222,17 @@ Options and Features
 
             Set this to the time of day to run the task (eg. 3:00am, 9:30pm, etc).
 
-        -StartDay=""
+        -StartDays=""
 
-            Set this to the day of the week to run the task (eg. Monday, Friday, etc).
-            Leave this blank and the task will run every day at -StartTime.
+            Set this to days of the week to run the task (eg. Monday, Friday, etc).
+            This value may include a comma separated list of days as well as ranges
+            of days. Leave this blank and the task will run every day at -StartTime.
+
+        -TimeoutMinutes=0
+
+            Set this to a number greater than zero to have the task run to completion
+            and have all output properly logged before proceeding to the next task
+            (ie. -CreateNoWindow will be set and IO redirection will be handled).
 
         -UnloadOnExit=False
 
@@ -237,7 +246,8 @@ Options and Features
 
             -Task= -OnStartup -CommandEXE=http://xkcd.com
             -Task= -StartTime=6:00am -CommandEXE=shutdown.exe -CommandArgs=/r /t 60
-            -Task= -StartTime=7:00am -CommandEXE="C:\Program Files\Calibre2\calibre.exe"  -Note=Fetch NY Times after 6:30am
+            -Task= -StartTime=7:00am -StartDays="Mon-Wed,Friday,Saturday" -CommandEXE="C:\Program Files\Calibre2\calibre.exe"  -Note=Fetch NY Times after 6:30am
+            -Task= -StartTime=8:00am -StartDays="Sunday" -CommandEXE="C:\Program Files\Calibre2\calibre.exe"  -Note=Fetch NY Times after 7:30am Sundays
 
         -AddTasks=]
 
@@ -548,14 +558,14 @@ Options and Features
 
     This help text.
 
--KillProcessRetries=10
+-KillProcessOrderlyWaitSecs=30
 
-    This is the number of retries to kill a process that has been requested
-    to stop.
+    This is the maximum number of seconds given to a process after a "close"
+    command is given before the process is forcibly terminated.
 
--KillProcessWaitMS=1000
+-KillProcessForcedWaitMS=1000
 
-    This is the number of milliseconds between process kill retry attempts.
+    This is the maximum milliseconds to wait while force killing a process.
 
 -LogEntryDateTimeFormatPrefix"yyyy-MM-dd hh:mm:ss:fff tt  "
 
@@ -579,10 +589,10 @@ Options and Features
 
     This is the number of minutes until the next run. One day is the default.
 
--MainLoopSleepMS=200
+-MainLoopSleepMS=100
 
     This is the number of milliseconds of process thread sleep wait time between
-    loops. The default of 200 ms should be a happy medium between a responsive
+    loops. The default of 100 ms should be a happy medium between a responsive
     overall UI and a responsive process timer UI. You can increase this value
     if you are concerned that the timer UI is using too much CPU while waiting.
 

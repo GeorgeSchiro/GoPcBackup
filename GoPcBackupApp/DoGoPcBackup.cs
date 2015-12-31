@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Media;
@@ -20,7 +21,7 @@ namespace GoPcBackup
     ///
     /// Run this program. It will prompt you to create a default profile file:
     ///
-    /// GoPcBackup.exe.txt
+    ///     GoPcBackup.exe.txt
     ///
     /// The profile will contain help (see -Help) as well as default options.
     ///
@@ -59,6 +60,8 @@ namespace GoPcBackup
         private int                 miBackupSetsRun;
         private string              msCurrentBackupOutputPathFile;
 
+        private Thread              moBackgroundThread;
+        private Timer               moBackgroundLoopTimer;
         private tvProfile           moCurrentBackupSet;
         private tvProfile           moAddTasksProfile;
         private Process[]           moAddTasksProcessArray;
@@ -80,6 +83,9 @@ namespace GoPcBackup
         public DoGoPcBackup(tvProfile aoProfile)
         {
             moProfile = aoProfile;
+
+            moBackgroundThread = new Thread(new ThreadStart(moBackgroundThread_Start));
+            moBackgroundThread.Start();
         }
 
         /// <summary>
@@ -134,15 +140,11 @@ those that appear in the profile (with the exception of the ""-ini"" key).
 
 For example, the following invokes the use of an alternative profile file:
 
-{EXE} -ini=NewProfile.txt
+    {EXE} -ini=NewProfile.txt
 
 This tells the software to run in automatic mode:
 
-{EXE} -AutoStart
-
-   or
-
-{EXE} -Auto*
+    {EXE} -AutoStart
 
 
 Author:  George Schiro (GeoCode@Schiro.name)
@@ -172,6 +174,12 @@ A brief description of each feature follows.
 
             This is the list of arguments passed to the task executable.
 
+        -CommandWindowTitle=""""
+
+            This is the main window title for this instance of the task executable.
+            This will be used to determine, during startup, if the task is already
+            running (when multiple instances of the same executable are found).
+
         -CreateNoWindow=False
 
             Set this switch True and nothing will be displayed when the task runs.
@@ -185,10 +193,17 @@ A brief description of each feature follows.
 
             Set this to the time of day to run the task (eg. 3:00am, 9:30pm, etc).
 
-        -StartDay=""""
+        -StartDays=""""
 
-            Set this to the day of the week to run the task (eg. Monday, Friday, etc).
-            Leave this blank and the task will run every day at -StartTime.
+            Set this to days of the week to run the task (eg. Monday, Friday, etc).
+            This value may include a comma separated list of days as well as ranges
+            of days. Leave this blank and the task will run every day at -StartTime.
+
+        -TimeoutMinutes=0
+
+            Set this to a number greater than zero to have the task run to completion
+            and have all output properly logged before proceeding to the next task
+            (ie. -CreateNoWindow will be set and IO redirection will be handled).
 
         -UnloadOnExit=False
 
@@ -202,7 +217,8 @@ A brief description of each feature follows.
 
             -Task= -OnStartup -CommandEXE=http://xkcd.com
             -Task= -StartTime=6:00am -CommandEXE=shutdown.exe -CommandArgs=/r /t 60
-            -Task= -StartTime=7:00am -CommandEXE=""C:\Program Files\Calibre2\calibre.exe""  -Note=Fetch NY Times after 6:30am
+            -Task= -StartTime=7:00am -StartDays=""Mon-Wed,Friday,Saturday"" -CommandEXE=""C:\Program Files\Calibre2\calibre.exe""  -Note=Fetch NY Times after 6:30am
+            -Task= -StartTime=8:00am -StartDays=""Sunday"" -CommandEXE=""C:\Program Files\Calibre2\calibre.exe""  -Note=Fetch NY Times after 7:30am Sundays
 
         -AddTasks=]
 
@@ -513,14 +529,14 @@ A brief description of each feature follows.
 
     This help text.
 
--KillProcessRetries=10
+-KillProcessOrderlyWaitSecs=30
 
-    This is the number of retries to kill a process that has been requested
-    to stop.
+    This is the maximum number of seconds given to a process after a ""close""
+    command is given before the process is forcibly terminated.
 
--KillProcessWaitMS=1000
+-KillProcessForcedWaitMS=1000
 
-    This is the number of milliseconds between process kill retry attempts.
+    This is the maximum milliseconds to wait while force killing a process.
 
 -LogEntryDateTimeFormatPrefix""yyyy-MM-dd hh:mm:ss:fff tt  ""
 
@@ -544,10 +560,10 @@ A brief description of each feature follows.
 
     This is the number of minutes until the next run. One day is the default.
 
--MainLoopSleepMS=200
+-MainLoopSleepMS=100
 
     This is the number of milliseconds of process thread sleep wait time between
-    loops. The default of 200 ms should be a happy medium between a responsive
+    loops. The default of 100 ms should be a happy medium between a responsive
     overall UI and a responsive process timer UI. You can increase this value
     if you are concerned that the timer UI is using too much CPU while waiting.
 
@@ -596,12 +612,6 @@ A brief description of each feature follows.
 
     Set this switch False to suppress the pop-up display of ""backup done"" script
     errors (see -BackupDoneScriptPathFile above).
-
--ShowBackupStatusModeless=False
-
-    Set this switch True to allow background processing to continue unabated
-    after a backup completes. This may be necessary for additional timed tasks
-    to complete after the backup status dialog is displayed (see -AddTasks).
 
 -ShowDeletedFileList=False
 
@@ -878,7 +888,10 @@ Notes:
                 mbMainLoopStopped = value;
 
                 if ( mbMainLoopStopped )
-                    this.KillAddedTasks();
+                {
+                    // Stop the background task timer.
+                    moBackgroundLoopTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                }
             }
         }
         private bool mbMainLoopStopped;
@@ -1452,55 +1465,58 @@ Notes:
             }
         }
 
-        // This kludge is necessary since "Process.Kill()" doesn't work reliably.
+        // This kludge is necessary since neither "Process.CloseMainWindow()" nor "Process.Kill()" work reliably.
         private bool bKillProcess(Process aoProcess)
         {
-            bool lbKillProcess = false;
+            bool    lbKillProcess = true;
+            int     liProcessId = aoProcess.Id;
 
-            string lsProcessName = null;
+            // First try ending the process in the usual way (ie. an orderly shutdown).
 
-            // First try killing the process the usual way.
+            Process loKillProcess = new Process();
 
             try
             {
-                lsProcessName = aoProcess.ProcessName;
-                aoProcess.CloseMainWindow();
-                aoProcess.WaitForExit(moProfile.iValue("-KillProcessWaitMS", 1000));
-                if ( !aoProcess.HasExited )
+                liProcessId = aoProcess.Id;
+
+                loKillProcess = new Process();
+                loKillProcess.StartInfo.FileName = "taskkill";
+                loKillProcess.StartInfo.Arguments = "/pid " + liProcessId;
+                loKillProcess.StartInfo.UseShellExecute = false;
+                loKillProcess.StartInfo.CreateNoWindow = true;
+                loKillProcess.Start();
+
+                aoProcess.WaitForExit(1000 * moProfile.iValue("-KillProcessOrderlyWaitSecs", 30));
+            }
+            catch (Exception ex)
+            {
+                lbKillProcess = false;
+                this.LogIt(String.Format("Orderly bKillProcess() Failed on PID={0} (\"{1}\")", liProcessId, ex.Message));
+            }
+
+            if ( lbKillProcess && !aoProcess.HasExited )
+            {
+                // Then try terminating the process forcefully (ie. slam it down).
+
+                try
                 {
-                    aoProcess.Kill();
-                    aoProcess.WaitForExit(moProfile.iValue("-KillProcessWaitMS", 1000));
+                    loKillProcess = new Process();
+                    loKillProcess.StartInfo.FileName = "taskkill";
+                    loKillProcess.StartInfo.Arguments = "/f /t /pid " + liProcessId;
+                    loKillProcess.StartInfo.UseShellExecute = false;
+                    loKillProcess.StartInfo.CreateNoWindow = true;
+                    loKillProcess.Start();
+
+                    aoProcess.WaitForExit(moProfile.iValue("-KillProcessForcedWaitMS", 1000));
+
+                    lbKillProcess = aoProcess.HasExited;
+                }
+                catch (Exception ex)
+                {
+                    lbKillProcess = false;
+                    this.LogIt(String.Format("Forced bKillProcess() Failed on PID={0} (\"{1}\")", liProcessId, ex.Message));
                 }
             }
-            catch {}
-
-            // If the process name could be read (see above)
-            // and the process is still out there, keep trying.
-            // This approach will be a problem if there are multiple
-            // processes with the same name. This will likely only
-            // happen with DOS shell consoles (similar to the "backup
-            // done" script). We can address this later as needed.
-            if ( null != lsProcessName && 0 != Process.GetProcessesByName(lsProcessName).Length )
-                for (int i=0; i < moProfile.iValue("-KillProcessRetries", 10); i++)
-                    foreach (Process loProcess in Process.GetProcessesByName(lsProcessName))
-                    {
-                        System.Windows.Forms.Application.DoEvents();
-                        System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 200));
-
-                        try
-                        {
-                            loProcess.Kill();
-                            loProcess.WaitForExit(moProfile.iValue("-KillProcessWaitMS", 1000));
-                        }
-                        catch
-                        {
-                            // Ignore all exceptions since we are retrying
-                            // with a final test for process existence anyway.
-                        }
-                    }
-
-            if ( 0 == Process.GetProcessesByName(lsProcessName).Length )
-                lbKillProcess = true;
 
             return lbKillProcess;
         }
@@ -1852,19 +1868,29 @@ No file cleanup will be done until you update the configuration.
                     System.Windows.Forms.Application.DoEvents();
 
                     loProcess.Start();
-                    loProcess.BeginErrorReadLine();
-                    loProcess.BeginOutputReadLine();
+
+                    // Start output to console also.
+                    if ( loProcess.StartInfo.RedirectStandardError )
+                        loProcess.BeginErrorReadLine();
+                    if ( loProcess.StartInfo.RedirectStandardOutput )
+                        loProcess.BeginOutputReadLine();
 
                     // Wait for the backup process to finish.
                     while ( !this.bMainLoopStopped && !loProcess.HasExited )
                     {
                         System.Windows.Forms.Application.DoEvents();
-                        System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 200));
+                        System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                     }
 
-                    // Shutdown output to console.
-                    loProcess.CancelErrorRead();
-                    loProcess.CancelOutputRead();
+                    // Do final wait then call "WaitForExit()" to flush the output steams.
+                    if ( !this.bMainLoopStopped && loProcess.WaitForExit(1000 * moProfile.iValue("-KillProcessOrderlyWaitSecs", 30)) )
+                        loProcess.WaitForExit();
+
+                    // Stop output to console.
+                    if ( loProcess.StartInfo.RedirectStandardError )
+                        loProcess.CancelErrorRead();
+                    if ( loProcess.StartInfo.RedirectStandardOutput )
+                        loProcess.CancelOutputRead();
 
                     // If a stop request came through, kill the backup process.
                     if ( this.bMainLoopStopped && !this.bKillProcess(loProcess) )
@@ -1918,6 +1944,8 @@ No file cleanup will be done until you update the configuration.
                                 miBackupSetsGood++;
                         }
                     }
+
+                    loProcess.Close();
                 }
             }
             catch (Exception ex)
@@ -1930,13 +1958,6 @@ No file cleanup will be done until you update the configuration.
 
             if ( lbBackupFiles && !this.bMainLoopStopped )
             {
-                bool lbShowBackupStatusModeless = moProfile.bValue("-ShowBackupStatusModeless", false);
-                    if ( !lbShowBackupStatusModeless && 0 != moProfile.oProfile("-AddTasks").oOneKeyProfile("-Task").Count )
-                    {
-                        // Don't let the backup status dialog hold up added tasks.
-                        lbShowBackupStatusModeless = true;
-                    }
-
                 this.LogIt("");
 
                 // Don't bother with the system tray message 
@@ -1970,12 +1991,8 @@ No file cleanup will be done until you update the configuration.
                     if ( null != this.oUI )
                     this.oUI.bBackupRunning = false;
 
-                    if ( lbShowBackupStatusModeless )
-                        this.ShowModelessError("The backup failed. Check the log for errors." + lsSysTrayMsg
-                                , "Backup Failed", "-CurrentBackupFailed");
-                    else
-                        this.ShowError("The backup failed. Check the log for errors." + lsSysTrayMsg
-                                , "Backup Failed");
+                    this.ShowError("The backup failed. Check the log for errors." + lsSysTrayMsg
+                            , "Backup Failed");
                 }
                 else
                 {
@@ -1983,20 +2000,12 @@ No file cleanup will be done until you update the configuration.
                     moProfile["-PreviousBackupOk"] = true;
                     moProfile["-PreviousBackupTime"] = DateTime.Now;
 
-                    if ( lbShowBackupStatusModeless )
-                        this.ShowModeless("Backup finished successfully." + lsSysTrayMsg
-                                , "Backup Finished"
-                                , tvMessageBoxButtons.OK
-                                , tvMessageBoxIcons.Done
-                                , "-CurrentBackupFinished"
-                                );
-                    else
-                        this.Show("Backup finished successfully." + lsSysTrayMsg
-                                , "Backup Finished"
-                                , tvMessageBoxButtons.OK
-                                , tvMessageBoxIcons.Done
-                                , "-CurrentBackupFinished"
-                                );
+                    this.Show("Backup finished successfully." + lsSysTrayMsg
+                            , "Backup Finished"
+                            , tvMessageBoxButtons.OK
+                            , tvMessageBoxIcons.Done
+                            , "-CurrentBackupFinished"
+                            );
                 }
 
                 moProfile.Save();
@@ -2039,28 +2048,29 @@ No file cleanup will be done until you update the configuration.
                     moAddTasksProcessArray = new Process[moAddTasksProfile.Count];
                 }
                 
-                foreach (DictionaryEntry loEntry in moAddTasksProfile)
+                for (int i=0; i < moAddTasksProfile.Count; ++i)
                 {
-                    System.Windows.Forms.Application.DoEvents();
-
                     // Convert the current task from a command-line string to a profile oject.
-                    tvProfile loAddTask = new tvProfile(loEntry.Value.ToString());
+                    tvProfile loAddTask = new tvProfile(moAddTasksProfile[i].ToString());
 
                     bool lbDoTask = false;
 
                     if ( abStartup )
                     {
                         lbDoTask = loAddTask.bValue("-OnStartup", false);
+
+                        // Reset pause timer to allow other tasks to run without delay after startup.
+                        mdtPreviousAddTasksStarted = DateTime.Now.AddMinutes(-1);
                     }
                     else
                     {
                         DateTime    ldtTaskStartTime = loAddTask.dtValue("-StartTime", DateTime.MinValue);
-                        string      lsTaskDayOfWeek = loAddTask.sValue("-StartDay", "").ToLower();
+                        string      lsTaskDaysOfWeek = loAddTask.sValue("-StartDays", "");
 
                         // If -StartTime is within the current minute, start the task.
-                        // If -StartDay is specified, run the task on that day only.
+                        // If -StartDays is specified, run the task on those days only.
                         lbDoTask = DateTime.MinValue != ldtTaskStartTime && (int)mdtPreviousAddTasksStarted.TimeOfDay.TotalMinutes == (int)ldtTaskStartTime.TimeOfDay.TotalMinutes
-                                && ("" == lsTaskDayOfWeek || lsTaskDayOfWeek == mdtPreviousAddTasksStarted.DayOfWeek.ToString("dddd").ToLower());
+                                && ("" == lsTaskDaysOfWeek || this.bListIncludesDay(lsTaskDaysOfWeek, mdtPreviousAddTasksStarted));
                     }
 
                     if ( lbDoTask )
@@ -2068,37 +2078,109 @@ No file cleanup will be done until you update the configuration.
                         string  lsCommandEXE = loAddTask.sValue("-CommandEXE", "add task -CommandEXE missing");
 
                         Process loProcess = new Process();
+                                loProcess.ErrorDataReceived += new DataReceivedEventHandler(this.BackupProcessOutputHandler);
+                                loProcess.OutputDataReceived += new DataReceivedEventHandler(this.BackupProcessOutputHandler);
                                 loProcess.StartInfo.FileName = lsCommandEXE;
                                 loProcess.StartInfo.Arguments = loAddTask.sValue("-CommandArgs", "");
                                 loAddTask.bValue("-UnloadOnExit", false);
-                                loProcess.StartInfo.CreateNoWindow = loAddTask.bValue("-CreateNoWindow", false);
-                                loProcess.StartInfo.UseShellExecute = loAddTask.bValue("-UseShellExecute", true);
-                                loProcess.StartInfo.RedirectStandardError = loAddTask.bValue("-RedirectStandardError", false);
-                                loProcess.StartInfo.RedirectStandardInput = loAddTask.bValue("-RedirectStandardInput", false);
-                                loProcess.StartInfo.RedirectStandardOutput = loAddTask.bValue("-RedirectStandardOutput", false);
 
-                                moAddTasksProcessArray[moAddTasksProfile.IndexOfKey(loEntry.Key.ToString())] = loProcess;
+                                // The following subset of parameters are overridden when -TimeoutMinutes is set. This is
+                                // necessary to guarantee IO redirection is handled properly (ie. output goes to the log).
+                        bool    lbWaitForExitOverride = (loAddTask.iValue("-TimeoutMinutes", 0) > 0);
+                                loProcess.StartInfo.CreateNoWindow          =  lbWaitForExitOverride | loAddTask.bValue("-CreateNoWindow", false);
+                                loProcess.StartInfo.UseShellExecute         = !lbWaitForExitOverride & loAddTask.bValue("-UseShellExecute", true);
+                                loProcess.StartInfo.RedirectStandardInput   =  lbWaitForExitOverride | loAddTask.bValue("-RedirectStandardInput", false);
+                                loProcess.StartInfo.RedirectStandardError   =  lbWaitForExitOverride | loAddTask.bValue("-RedirectStandardError", false);
+                                loProcess.StartInfo.RedirectStandardOutput  =  lbWaitForExitOverride | loAddTask.bValue("-RedirectStandardOutput", false);
+
+                                moAddTasksProcessArray[i] = loProcess;
 
                         try
                         {
                             if ( !loAddTask.bValue("-OnStartup", false) )
                             {
                                 this.LogIt(String.Format("Starting Task: {0}", loAddTask.sCommandLine()));
+
                                 loProcess.Start();
+
+                                // Start output to console also.
+                                if ( loProcess.StartInfo.RedirectStandardError )
+                                    loProcess.BeginErrorReadLine();
+                                if ( loProcess.StartInfo.RedirectStandardOutput )
+                                    loProcess.BeginOutputReadLine();
+
+                                if ( lbWaitForExitOverride )
+                                {
+                                    // Wait the timeout period, then call "WaitForExit()" to flush the output steams.
+                                    if ( loProcess.WaitForExit(60000 * loAddTask.iValue("-TimeoutMinutes", 0)) )
+                                        loProcess.WaitForExit();
+
+                                    // Stop output to console.
+                                    if ( loProcess.StartInfo.RedirectStandardError )
+                                        loProcess.CancelErrorRead();
+                                    if ( loProcess.StartInfo.RedirectStandardOutput )
+                                        loProcess.CancelOutputRead();
+
+                                    loProcess.Close();
+                                }
                             }
                             else
                             {
-                                Process[] loProcessesArray = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(loProcess.StartInfo.FileName));
+                                bool        lbFound = false;
+                                string      lsWindowTitle = loAddTask.sValue("-CommandWindowTitle", "");
+                                Process[]   loProcessesArray = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(loProcess.StartInfo.FileName));
+                                            // If there's exactly one matching process and no given window title to compare, we're done.
+                                            lbFound = (1 == loProcessesArray.Length && "" == lsWindowTitle );
 
-                                // Don't start -OnStartup processes that are already started.
-                                if ( 0 != loProcessesArray.Length )
+                                            // If no window title has been given to compare, there's nothing else to do.
+                                            if ( !lbFound && "" != lsWindowTitle )
+                                            {
+                                                // If no matching processes have been found so far, get them all to compare.
+                                                if ( 0 == loProcessesArray.Length )
+                                                    loProcessesArray = Process.GetProcesses();
+
+                                                // Since a window title has been provided, it must be compared to the process(es) found.
+                                                foreach (Process loProcessEntry in loProcessesArray)
+                                                    if ( lsWindowTitle == loProcessEntry.MainWindowTitle )
+                                                    {
+                                                        lbFound = true;
+                                                        break;
+                                                    }
+                                            }
+
+                                // Don't start -OnStartup processes that have already been started.
+                                if ( lbFound )
                                 {
+                                    // The process has "already started" if there is only one with the
+                                    // same EXE or multiple EXEs with one having the same window title.
                                     this.LogIt(String.Format("Already running, task not started: {0}", loAddTask.sCommandLine()));
                                 }
                                 else
                                 {
                                     this.LogIt(String.Format("Starting Task: {0}", loAddTask.sCommandLine()));
+
                                     loProcess.Start();
+
+                                    // Start output to console also.
+                                    if ( loProcess.StartInfo.RedirectStandardError )
+                                        loProcess.BeginErrorReadLine();
+                                    if ( loProcess.StartInfo.RedirectStandardOutput )
+                                        loProcess.BeginOutputReadLine();
+
+                                    if ( lbWaitForExitOverride )
+                                    {
+                                        // Wait the timeout period, then call "WaitForExit()" to flush the output steams.
+                                        if ( loProcess.WaitForExit(60000 * loAddTask.iValue("-TimeoutMinutes", 0)) )
+                                            loProcess.WaitForExit();
+
+                                        // Stop output to console.
+                                        if ( loProcess.StartInfo.RedirectStandardError )
+                                            loProcess.CancelErrorRead();
+                                        if ( loProcess.StartInfo.RedirectStandardOutput )
+                                            loProcess.CancelOutputRead();
+
+                                        loProcess.Close();
+                                    }
                                 }
                             }
                         }
@@ -2115,14 +2197,14 @@ No file cleanup will be done until you update the configuration.
             }
         }
 
-        private void KillAddedTasks()
+        public void KillAddedTasks()
         {
             if ( null != moAddTasksProfile )
                 for (int i=0; i < moAddTasksProfile.Count; ++i)
                 {
                     tvProfile loAddedTask = new tvProfile(moAddTasksProfile[i].ToString());
 
-                    if ( loAddedTask.bValue("-UnloadOnExit", false) )
+                    if ( loAddedTask.bValue("-UnloadOnExit", false) && null != moAddTasksProcessArray[i] )
                     {
                         this.LogIt(String.Format("Stopping Task: {0}", loAddedTask.sCommandLine()));
                         this.bKillProcess(moAddTasksProcessArray[i]);
@@ -2130,6 +2212,39 @@ No file cleanup will be done until you update the configuration.
                 }
         }
 
+        private bool bListIncludesDay(string asDaysOfWeekRangeList, DateTime adtDay)
+        {
+                            // Look for hyphen separated alpha names (ie. ranges).
+            Regex           loRangeRegex = new Regex("([a-z]+)\\s*-\\s*([a-z]+)");
+                            // Split the range list into a lowercase array (assuming comma separation).
+            string[]        lsRangeArray  = asDaysOfWeekRangeList.ToLower().Split(',');
+                            // Replace each trimmed range with an expression that will expand to a list of discrete values.
+            string[]        lsRangeRegexArray = new string[lsRangeArray.Length];
+                            for (int i = 0; i < lsRangeArray.Length; ++i)
+                                lsRangeRegexArray[i] = "(^|,)" + loRangeRegex.Replace(lsRangeArray[i].Trim(), "$1.*?$2") + "(,|$)";
+
+                            // Replace each range expansion expression with the corresponding list
+                            // of values (ie. day names). The day names can be full or abbreviated.
+                            for (int i = 0; i < lsRangeArray.Length; ++i)
+                            {
+                                loRangeRegex = new Regex(lsRangeRegexArray[i]);
+                                lsRangeArray[i] = loRangeRegex.Match(   // Double the day name lists to handle range wraparounds.
+                                        "sunday,monday,tuesday,wednesday,thursday,friday,saturday,sunday,monday,tuesday,wednesday,thursday,friday,saturday").Value;
+                                if ( "" == lsRangeArray[i] )
+                                    lsRangeArray[i] = loRangeRegex.Match("sun,mon,tue,wed,thu,fri,sat,sun,mon,tue,wed,thu,fri,sat").Value;
+                            }
+
+                            // Build a single searchable day list from the former day ranges.
+            StringBuilder   lsbDaysOfWeekList = new StringBuilder();
+                            foreach (string lsDayList in lsRangeArray)
+                                lsbDaysOfWeekList.Append(lsDayList);
+            string          lsDaysOfWeekList = lsbDaysOfWeekList.ToString();
+
+            return     lsDaysOfWeekList.Contains(adtDay.ToString("dddd").ToLower())
+                    || lsDaysOfWeekList.Contains(adtDay.ToString("ddd").ToLower());
+
+            // Return true if either the lowercase day or the abbreviated lowercase day is found in the day list.
+        }
 
         private int iBackupBeginScriptErrors()
         {
@@ -2302,7 +2417,7 @@ exit  %Errors%
                 while ( !this.bMainLoopStopped && !loProcess.HasExited )
                 {
                     System.Windows.Forms.Application.DoEvents();
-                    System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 200));
+                    System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
                 // If a stop request came through, kill the backup begin script.
@@ -2335,6 +2450,8 @@ exit  %Errors%
                             this.DisplayFileAsErrors(lsFileAsStream, "Backup Begin Script Errors");
                     }
                 }
+
+                loProcess.Close();
             }
             catch (Exception ex)
             {
@@ -2619,7 +2736,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                 while ( !this.bMainLoopStopped && !loProcess.HasExited )
                 {
                     System.Windows.Forms.Application.DoEvents();
-                    System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 200));
+                    System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
                 // If a stop request came through, kill the backup done script.
@@ -2672,6 +2789,8 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                                     );
                     }
                 }
+
+                loProcess.Close();
             }
             catch (Exception ex)
             {
@@ -2873,7 +2992,7 @@ echo del %FileSpec%                                                             
                 while ( !this.bMainLoopStopped && !loProcess.HasExited )
                 {
                     System.Windows.Forms.Application.DoEvents();
-                    System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 200));
+                    System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
                 // If a stop request came through, kill the backup failed script.
@@ -2897,6 +3016,8 @@ echo del %FileSpec%                                                             
                     this.LogIt("\r\nHere's output from the \"backup failed script\":\r\n\r\n"
                             + this.sFileAsStream(lsBackupFailedScriptOutputPathFile));
                 }
+
+                loProcess.Close();
             }
             catch (Exception ex)
             {
@@ -3473,6 +3594,23 @@ echo del %FileSpec%                                                             
             }
 
             return lbCleanupPathFileSpec;
+        }
+
+        private void moBackgroundThread_Start()
+        {
+            // Run any startup related tasks.
+            this.DoAddTasks(true);
+
+            moBackgroundLoopTimer = new Timer(moBackgroundLoopTimer_Callback, null, 0
+                    , moProfile.iValue("-BackgroundLoopSleepMS", 200));
+        }
+
+        private void moBackgroundLoopTimer_Callback(Object state)
+        {
+            // This is the "add tasks" subsystem. Arbitrary command
+            // lines are run this way (independent of the main loop).
+            if ( moProfile.ContainsKey("-AddTasks") )
+                this.DoAddTasks();
         }
     }
 }

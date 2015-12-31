@@ -198,32 +198,16 @@ namespace tvToolbox
             return lbtArray;
         }
 
-        //internal static void Message(Window aoWindow, string asMessage)
-        //{
-        //    Type    lttvMessageBox = Type.GetType("tvMessageBox");
-        //    object  loMsg = Activator.CreateInstance(lttvMessageBox);
-
-        //    lttvMessageBox.InvokeMember("Show", BindingFlags.InvokeMethod, null, loMsg
-        //                                , new object[]{aoWindow, asMessage, System.Windows.Forms.Application.ProductName, tvMessageBoxButtons.OK, tvMessageBoxIcons.Information});
-        //}
-
-        //internal static void ErrorMessage(Window aoWindow, Exception aoEx)
-        //{
-        //    ErrorMessage(aoWindow, aoEx, true);
-        //}
-
-        //internal static void ErrorMessage(Window aoWindow, Exception aoEx, bool abVerbose)
-        //{
-        //    ErrorMessage(aoWindow, aoEx.Message + (!abVerbose ? "" : Environment.NewLine + Environment.NewLine + aoEx.StackTrace));
-        //}
-
         internal static void ErrorMessage(Window aoWindow, string asMessage)
         {
-            Type    lttvMessageBox = Type.GetType("tvMessageBox");
-            object  loErrMsg = Activator.CreateInstance(lttvMessageBox);
+            Type lttvMessageBox = Type.GetType("tvMessageBox");
+            if ( null != lttvMessageBox )
+            {
+                object  loErrMsg = Activator.CreateInstance(lttvMessageBox);
 
-            lttvMessageBox.InvokeMember("ShowError", BindingFlags.InvokeMethod, null, loErrMsg
-                                        , new object[]{aoWindow, asMessage, System.Windows.Forms.Application.ProductName});
+                lttvMessageBox.InvokeMember("ShowError", BindingFlags.InvokeMethod, null, loErrMsg
+                                            , new object[]{aoWindow, asMessage, System.Windows.Forms.Application.ProductName});
+            }
         }
 
         internal static void NetworkSecurityStartupErrorMessage()

@@ -1194,7 +1194,7 @@ namespace tvToolbox
                 String lsPathOnly = Path.GetDirectoryName(this.sExePathFile);
                 String lsFilnameOnly = Path.GetFileNameWithoutExtension(this.sExePathFile);
 
-                return -1 != lsPathOnly.IndexOf(lsFilnameOnly);
+                return -1 != lsPathOnly.ToLower().IndexOf(lsFilnameOnly.ToLower());
             }
         }
 
