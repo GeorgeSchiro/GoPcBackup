@@ -1509,8 +1509,12 @@ You can continue this later wherever you left off. "
                 if ( lbDeviceReattached
                         && tvMessageBoxResults.Yes == tvMessageBox.Show(
                                   this
-                                , "A backup device has been reattached. Reattached backup devices should be updated."
-                                    + " The \"backup done\" script updates attached backup devices.\r\n\r\nShall we rerun the \"backup done\" script?"
+                                  , "The most recent backup " + (moProfile.bValue("-PreviousBackupOk", false)
+                                    ? "was successful, yet a backup device was attached."
+                                    : "failed and then a backup device was reattached.")
+                                    + " Attached backup devices should be updated."
+                                    + " The \"backup done\" script updates attached backup devices."
+                                    + "\r\n\r\nShall we rerun the \"backup done\" script?"
                                 , "Device Reattached"
                                 , tvMessageBoxButtons.YesNo
                                 , tvMessageBoxIcons.Question
