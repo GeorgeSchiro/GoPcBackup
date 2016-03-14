@@ -100,7 +100,7 @@ namespace GoPcBackup
             {
                 tvProfile   loProfile = new tvProfile(args);
                 bool        lbFirstInstance;
-                            Mutex loMutex = new Mutex(false, "Local\\" + Application.ResourceAssembly.GetName().Name, out lbFirstInstance);
+                            Mutex loMutex = new Mutex(false, "Global\\" + Application.ResourceAssembly.GetName().Name, out lbFirstInstance);
                             if ( !lbFirstInstance )
                                 DoGoPcBackup.ActivateAlreadyRunningInstance(args, loProfile);
 
@@ -1664,8 +1664,8 @@ No file cleanup will be done until you update the configuration.
 
 
         /// <summary>
-        /// Backup files of the given file specifications and run the
-        /// "backup done" script to copy the backup around as needed.
+        /// Backup files of the given file specifications and run
+        /// the backup scripts to copy the backup around as needed.
         /// </summary>
         public bool BackupFiles()
         {
@@ -1756,8 +1756,11 @@ No file cleanup will be done until you update the configuration.
 
                             if ( 1 == ++liFileCount )
                             {
-                                // Make the backup profile file first in the backup set.
+                                // Make the backup profile file (plus the backup scripts) first in the backup set.
                                 loBackupFileListStreamWriter.WriteLine(moProfile.sBackupPathFile);
+                                loBackupFileListStreamWriter.WriteLine(moProfile.sRelativeToProfilePathFile(moProfile.sValue("-BackupBeginScriptPathFile", msBackupBeginScriptPathFileDefault)));
+                                loBackupFileListStreamWriter.WriteLine(moProfile.sRelativeToProfilePathFile(moProfile.sValue("-BackupDoneScriptPathFile", msBackupDoneScriptPathFileDefault)));
+                                loBackupFileListStreamWriter.WriteLine(moProfile.sRelativeToProfilePathFile(moProfile.sValue("-BackupFailedScriptPathFile", msBackupFailedScriptPathFileDefault)));
                                 lsBackupPathFiles1 = lsBackupPathFiles;
                             }
 
@@ -1918,7 +1921,7 @@ No file cleanup will be done until you update the configuration.
                             this.LogIt(string.Format("The backup to \"{0}\" was successful."
                                     , Path.GetFileName(msCurrentBackupOutputPathFile)));
 
-                            double  ldCompositeResult = 0;
+                            double ldCompositeResult = 0;   // Composite result returned by the "backup done" script.
 
                             // Run the "backup done" script and return the failed file count with bit field.
                             // The exit code is defined in the script as a combination of two integers-
@@ -2246,7 +2249,7 @@ No file cleanup will be done until you update the configuration.
             // Return true if either the lowercase day or the abbreviated lowercase day is found in the day list.
         }
 
-        private int iBackupBeginScriptErrors()
+        public int iBackupBeginScriptErrors()
         {
             int liBackupBeginScriptErrors = 0;
 
@@ -2272,7 +2275,7 @@ No file cleanup will be done until you update the configuration.
             {
                 bool    lbUseMainhostArchive    = moProfile.bValue("-UseVirtualMachineHostArchive", false);
                 bool    lbUseConnectMainhost    = moProfile.bValue("-UseConnectVirtualMachineHost", false);
-                string  lsBackupBeginScript     = (moProfile.sValue("-BackupBeginScriptHelp", @"
+                string  lsBackupBeginScript     = moProfile.sValue("-BackupBeginScriptHelp", @"
 @echo off
 ::
 :: *** ""Backup Begin"" script goes here. ***
@@ -2356,7 +2359,7 @@ exit  %Errors%
 )
                         .Replace("{ProfileFile}", Path.GetFileName(moProfile.sLoadedPathFile))
                         .Replace("{BackupBeginScriptOutputPathFile}", Path.GetFileName(lsBackupBeginScriptOutputPathFile))
-                        );
+                        ;
 
                 // Write the default "backup begin" script if it's
                 // not there or if -BackupBeginScriptInit is set.
@@ -2413,14 +2416,14 @@ exit  %Errors%
                         loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         loProcess.Start();
 
-                // Wait for the "backup begin script" to finish.
+                // Wait for the "backup begin" script to finish.
                 while ( !this.bMainLoopStopped && !loProcess.HasExited )
                 {
                     System.Windows.Forms.Application.DoEvents();
                     System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
-                // If a stop request came through, kill the backup begin script.
+                // If a stop request came through, kill the "backup begin" script.
                 if ( this.bMainLoopStopped && !this.bKillProcess(loProcess) )
                     this.ShowError("The \"backup begin\" script could not be stopped."
                             , "Backup Failed");
@@ -2444,7 +2447,7 @@ exit  %Errors%
 
                         string lsFileAsStream = this.sFileAsStream(lsBackupBeginScriptOutputPathFile);
 
-                        this.LogIt("Here's output from the \"backup begin script\":\r\n\r\n" + lsFileAsStream);
+                        this.LogIt("Here's output from the \"backup begin\" script:\r\n\r\n" + lsFileAsStream);
 
                         if ( moProfile.bValue("-ShowBackupBeginScriptErrors", true) )
                             this.DisplayFileAsErrors(lsFileAsStream, "Backup Begin Script Errors");
@@ -2492,7 +2495,7 @@ exit  %Errors%
             {
                 bool    lbUseMainhostArchive    = moProfile.bValue("-UseVirtualMachineHostArchive", false);
                 bool    lbUseConnectMainhost    = moProfile.bValue("-UseConnectVirtualMachineHost", false);
-                string  lsBackupDoneScript      = (moProfile.sValue("-BackupDoneScriptHelp", @"
+                string  lsBackupDoneScript      = moProfile.sValue("-BackupDoneScriptHelp", @"
 @echo off
 if %1=="""" goto :EOF
 ::
@@ -2655,7 +2658,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                         .Replace("{ProfileFile}", Path.GetFileName(moProfile.sLoadedPathFile))
                         .Replace("{BackupDoneScriptOutputPathFile}", Path.GetFileName(lsBackupDoneScriptOutputPathFile))
                         .Replace("{BackupDriveToken}", this.sBackupDriveToken)
-                        );
+                        ;
 
                 // Write the default "backup done" script if it's
                 // not there or if -BackupDoneScriptInit is set.
@@ -2732,14 +2735,14 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                         loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         loProcess.Start();
 
-                // Wait for the "backup done script" to finish.
+                // Wait for the "backup done" script to finish.
                 while ( !this.bMainLoopStopped && !loProcess.HasExited )
                 {
                     System.Windows.Forms.Application.DoEvents();
                     System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
-                // If a stop request came through, kill the backup done script.
+                // If a stop request came through, kill the "backup done" script.
                 if ( this.bMainLoopStopped && !this.bKillProcess(loProcess) )
                     this.ShowError("The \"backup done\" script could not be stopped."
                             , "Backup Failed");
@@ -2776,7 +2779,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
 
                             string lsFileAsStream = this.sFileAsStream(lsBackupDoneScriptOutputPathFile);
 
-                            this.LogIt("Here's output from the \"backup done script\":\r\n\r\n" + lsFileAsStream);
+                            this.LogIt("Here's output from the \"backup done\" script:\r\n\r\n" + lsFileAsStream);
 
                             if ( moProfile.bValue("-ShowBackupDoneScriptErrors", true) )
                                 this.DisplayFileAsErrors(lsFileAsStream, "Backup Done Script Errors");
@@ -2822,7 +2825,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
             // it's not already there.
             if ( lsBackupFailedScriptPathFile == moProfile.sRelativeToProfilePathFile(msBackupFailedScriptPathFileDefault) )
             {
-                string  lsBackupFailedScript    = (moProfile.sValue("-BackupFailedScriptHelp", @"
+                string  lsBackupFailedScript = moProfile.sValue("-BackupFailedScriptHelp", @"
 @echo off
 if %1=="""" goto :EOF
 ::
@@ -2919,7 +2922,7 @@ echo del %FileSpec%                                                             
 )
                         .Replace("{ProfileFile}", Path.GetFileName(moProfile.sLoadedPathFile))
                         .Replace("{BackupFailedScriptOutputPathFile}", Path.GetFileName(lsBackupFailedScriptOutputPathFile))
-                        );
+                        ;
 
                 // Write the default "backup failed" script if it's
                 // not there or if -BackupFailedScriptInit is set.
@@ -2988,14 +2991,14 @@ echo del %FileSpec%                                                             
                         loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         loProcess.Start();
 
-                // Wait for the "backup failed script" to finish.
+                // Wait for the "backup failed" script to finish.
                 while ( !this.bMainLoopStopped && !loProcess.HasExited )
                 {
                     System.Windows.Forms.Application.DoEvents();
                     System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
-                // If a stop request came through, kill the backup failed script.
+                // If a stop request came through, kill the "backup failed" script.
                 if ( this.bMainLoopStopped && !this.bKillProcess(loProcess) )
                     this.ShowError("The \"backup failed\" script could not be stopped."
                             , "Backup Failed");
@@ -3013,7 +3016,7 @@ echo del %FileSpec%                                                             
   
                     // Get the output from the "backup failed" script.
 
-                    this.LogIt("\r\nHere's output from the \"backup failed script\":\r\n\r\n"
+                    this.LogIt("\r\nHere's output from the \"backup failed\" script:\r\n\r\n"
                             + this.sFileAsStream(lsBackupFailedScriptOutputPathFile));
                 }
 

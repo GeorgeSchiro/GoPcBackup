@@ -1238,7 +1238,8 @@ namespace GoPcBackup
                 catch
                 {
                     lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
-                            + "Step 2a. Type a backup filename that is valid for output files.";
+                            + "Step 2a. Type a backup filename that is valid for output files."
+                            ;
                 }
 
                 try
@@ -1252,25 +1253,29 @@ namespace GoPcBackup
                 catch
                 {
                     lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
-                            + "Step 2b. Select or type a valid archive folder name.";
+                            + "Step 2b. Select or type a valid archive folder name."
+                            ;
                 }
 
                 if ( (bool)this.UseVirtualMachineHostArchive.IsChecked && !this.VirtualMachineHostArchivePath.Text.StartsWith("\\\\") )
                 {
                     lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
-                            + "Step 2c. Select or type a valid VM host archive share name.";
+                            + "Step 2c. Select or type a valid VM host archive share name."
+                            ;
                 }
 
                 if ( (bool)this.UseConnectVirtualMachineHost.IsChecked 
                         && ("" == this.VirtualMachineHostUsername.Text || "" == this.VirtualMachineHostPassword.Text ) )
                 {
                     lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
-                            + "Step 2d. Select or type a valid VM host archive share username and password.";
+                            + "Step 2d. Select or type a valid VM host archive share username and password."
+                            ;
                 }
 
                 if ( null != lsMessage )
                     lsMessage += Environment.NewLine + Environment.NewLine
-                                + "Also, make sure you have adminstrator privileges to do all this.";
+                                + "Also, make sure you have adminstrator privileges to do all this."
+                                ;
             }
 
             // Step 4 (backup time)
@@ -1367,7 +1372,7 @@ namespace GoPcBackup
         {
             if ( this.bValidateConfiguration()
                     && tvMessageBoxResults.Yes == tvMessageBox.Show(this, string.Format(@"
-Are you sure you want to run the backup now?
+Are you sure you want to run the backup?
 
 You can continue this later wherever you left off. "
 + @" You can also edit the profile file directly (""{0}"") for"
@@ -1509,12 +1514,12 @@ You can continue this later wherever you left off. "
                 if ( lbDeviceReattached
                         && tvMessageBoxResults.Yes == tvMessageBox.Show(
                                   this
-                                  , "The most recent backup " + (moProfile.bValue("-PreviousBackupOk", false)
+                                    , "The most recent backup " + (moProfile.bValue("-PreviousBackupOk", false)
                                     ? "was successful, yet a backup device was attached."
                                     : "failed and then a backup device was reattached.")
                                     + " Attached backup devices should be updated."
-                                    + " The \"backup done\" script updates attached backup devices."
-                                    + "\r\n\r\nShall we rerun the \"backup done\" script?"
+                                    + " The backup scripts update attached backup devices."
+                                    + "\r\n\r\nShall we rerun the backup scripts?"
                                 , "Device Reattached"
                                 , tvMessageBoxButtons.YesNo
                                 , tvMessageBoxIcons.Question
@@ -1523,7 +1528,7 @@ You can continue this later wherever you left off. "
                                 , "-DeviceReattached"
                                 )
                             )
-                    this.RerunBackupDoneScript();
+                    this.RerunBackupScripts();
             }
 
             mbInShowMissingBackupDevices = false;
@@ -1582,16 +1587,16 @@ You can continue this later wherever you left off. "
             return leTvMessageBoxResults;
         }
 
-        private void btnRerunBackupDoneScript_Click(object sender, RoutedEventArgs e)
+        private void btnRerunBackupScripts_Click(object sender, RoutedEventArgs e)
         {
             if ( tvMessageBoxResults.Yes == tvMessageBox.Show(
                       this
-                    , "Are you sure you want to rerun the last \"backup done\" script?"
-                    , "Rerun Script"
+                    , "Are you sure you want to rerun the backup scripts?"
+                    , "Rerun Scripts"
                     , tvMessageBoxButtons.YesNo
                     , tvMessageBoxIcons.Question
                     ) )
-                this.RerunBackupDoneScript();
+                this.RerunBackupScripts();
         }
 
         private void btnSetupGeneralResetAllPrompts_Click(object sender, RoutedEventArgs e)
@@ -1840,7 +1845,7 @@ You can continue this later wherever you left off. "
             this.CloseCheckboxes.Visibility = Visibility.Visible;
         }
 
-        private void RerunBackupDoneScript()
+        private void RerunBackupScripts()
         {
             this.GetSetConfigurationDefaults();
 
@@ -1861,7 +1866,7 @@ You can continue this later wherever you left off. "
                 if ( lbLastRunArgsUnstable )
                     lbDoRerun = tvMessageBoxResults.OK == tvMessageBox.Show(
                                       this
-                                    , "Changes have been made to your backup configuration which may cause a rerun to fail.\r\n\r\nAre you sure you want to rerun the last \"backup done\" script?"
+                                    , "Changes have been made to your backup configuration which may cause a rerun to fail.\r\n\r\nAre you sure you want to rerun the backup scripts?"
                                     , "Backup Configuration Changed"
                                     , tvMessageBoxButtons.OKCancel
                                     , tvMessageBoxIcons.Question
@@ -1875,6 +1880,14 @@ You can continue this later wherever you left off. "
                 // Append a blank line to the error output before proceeding.
                 moDoGoPcBackup.LogIt("");
 
+                int liBackupBeginScriptErrors = 0;  // The error count returned by the "backup begin" script.
+
+                // Run the "backup begin" script and return any errors.
+                if ( moProfile.bValue("-BackupBeginScriptEnabled", true) )
+                    liBackupBeginScriptErrors = moDoGoPcBackup.iBackupBeginScriptErrors();
+                else
+                    moDoGoPcBackup.LogIt("The \"backup begin\" script is disabled.");
+
                 // Run the "backup done" script and return the failed file count with bit field.
                 // The exit code is defined in the script as a combination of two integers-
                 // a bit field of found backup devices and a count of copy failures (99 max).
@@ -1884,16 +1897,23 @@ You can continue this later wherever you left off. "
                 // The fractional part (x 100) is the actual number of copy failures.
                 int liCopyFailures = (int)Math.Round(100 * (ldCompositeResult - (int)ldCompositeResult));
 
-                if ( 0 != liCopyFailures )
+                if ( 0 != liBackupBeginScriptErrors + liCopyFailures )
                 {
                     moProfile["-PreviousBackupOk"] = false;
                     moProfile["-PreviousBackupTime"] = DateTime.Now;
                     moProfile.Save();
 
-                    moDoGoPcBackup.ShowError(
-                              string.Format("The \"backup done\" script failed with {0} copy failure{1}. Check the log for errors."
-                                    + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
-                            , "Backup Failed");
+                    if ( 0 != liBackupBeginScriptErrors )
+                        moDoGoPcBackup.ShowError(
+                                  string.Format("The \"backup begin\" script failed. Check the log for errors."
+                                        + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
+                                , "Backup Failed");
+
+                    if ( 0 != liCopyFailures )
+                        moDoGoPcBackup.ShowError(
+                                  string.Format("The \"backup done\" script failed with {0} copy failure{1}. Check the log for errors."
+                                        + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
+                                , "Backup Failed");
                 }
                 else
                 {
@@ -1912,7 +1932,7 @@ You can continue this later wherever you left off. "
 
                         if (!lbPreviousBackupOk && tvMessageBoxResults.Yes == tvMessageBox.Show(
                                           this
-                                        , "The \"backup done\" script finished successfully (after the previous failed backup). Yet the"
+                                        , "The backup scripts finished successfully (after the previous failed backup). Yet the"
                                             + " backup status is still \"Backup Failed\".\r\n\r\nShall we change it to \"Backup OK?\""
                                         , "Adjust Backup Status"
                                         , tvMessageBoxButtons.YesNo
