@@ -1924,7 +1924,7 @@ No file cleanup will be done until you update the configuration.
                             double ldCompositeResult = 0;   // Composite result returned by the "backup done" script.
 
                             // Run the "backup done" script and return the failed file count with bit field.
-                            // The exit code is defined in the script as a combination of two integers-
+                            // The exit code is defined in the script as a combination of two integers:
                             // a bit field of found backup devices and a count of copy failures (99 max).
                             if ( moProfile.bValue("-BackupDoneScriptEnabled", true) )
                                 ldCompositeResult = this.iBackupDoneScriptCopyFailuresWithBitField() / 100.0;
@@ -2333,8 +2333,9 @@ echo.                                      > ""{BackupBeginScriptOutputPathFile}
 :: echo net use * /delete /yes                                                 ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
 ::      net use * /delete /yes                                                 ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
 ::
-::     if ERRORLEVEL 1 set /A Errors += 1
-
+::     :: Ignore connection deletion errors.
+::     ::if ERRORLEVEL 1 set /A Errors += 1
+::
 :: echo Connect drive Z:                                                       ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
 :: echo net use Z: \\Mainhost\ArchiveGoPC                                      ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
 ::      net use Z: \\Mainhost\ArchiveGoPC                                      ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
@@ -2749,7 +2750,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
 
                 if ( !this.bMainLoopStopped )
                 {
-                    // The exit code is defined in the script as a combination of two integers-
+                    // The exit code is defined in the script as a combination of two integers:
                     // a bit field of found backup devices and a count of copy failures (99 max).
                     liBackupDoneScriptCopyFailuresWithBitField = loProcess.ExitCode;
 
