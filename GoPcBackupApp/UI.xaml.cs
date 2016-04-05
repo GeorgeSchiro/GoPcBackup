@@ -1899,8 +1899,7 @@ You can continue this later wherever you left off. "
 
                 if ( 0 != liBackupBeginScriptErrors + liCopyFailures )
                 {
-                    moProfile["-PreviousBackupOk"] = false;
-                    moProfile["-PreviousBackupTime"] = DateTime.Now;
+                    moDoGoPcBackup.SetBackupFailed();
                     moProfile.Save();
 
                     if ( 0 != liBackupBeginScriptErrors )

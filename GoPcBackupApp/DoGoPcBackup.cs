@@ -47,9 +47,9 @@ namespace GoPcBackup
     /// </summary>
     public class DoGoPcBackup : Application
     {
-        private const string        msBackupBeginScriptPathFileDefault  = "BackupBegin.cmd";
-        private const string        msBackupDoneScriptPathFileDefault   = "BackupDone.cmd";
-        private const string        msBackupFailedScriptPathFileDefault = "BackupFailed.cmd";
+        private const string        msBackupBeginScriptPathFileDefault  = "GoPcBackupBegin.cmd";
+        private const string        msBackupDoneScriptPathFileDefault   = "GoPcBackupDone.cmd";
+        private const string        msBackupFailedScriptPathFileDefault = "GoPcBackupFailed.cmd";
         private const string        mcsZipToolDllFilename               = "7z.dll";
         private const string        mcsZipToolExeFilename               = "7z.exe";
 
@@ -1736,7 +1736,7 @@ No file cleanup will be done until you update the configuration.
 
                     try
                     {
-                        // Create the file list file in the same folder as the main profile.
+                        // Create the backup file list file.
                         loBackupFileListStreamWriter = new StreamWriter(moProfile.sRelativeToProfilePathFile(
                                 lsZipToolFileListPathFile), false);
 
@@ -1756,8 +1756,9 @@ No file cleanup will be done until you update the configuration.
 
                             if ( 1 == ++liFileCount )
                             {
-                                // Make the backup profile file (plus the backup scripts) first in the backup set.
+                                // Make the backup profile file (plus backup scripts, etc.) first in the backup set.
                                 loBackupFileListStreamWriter.WriteLine(moProfile.sBackupPathFile);
+                                loBackupFileListStreamWriter.WriteLine(moProfile.sRelativeToProfilePathFile(lsZipToolFileListPathFile));
                                 loBackupFileListStreamWriter.WriteLine(moProfile.sRelativeToProfilePathFile(moProfile.sValue("-BackupBeginScriptPathFile", msBackupBeginScriptPathFileDefault)));
                                 loBackupFileListStreamWriter.WriteLine(moProfile.sRelativeToProfilePathFile(moProfile.sValue("-BackupDoneScriptPathFile", msBackupDoneScriptPathFileDefault)));
                                 loBackupFileListStreamWriter.WriteLine(moProfile.sRelativeToProfilePathFile(moProfile.sValue("-BackupFailedScriptPathFile", msBackupFailedScriptPathFileDefault)));
@@ -1987,8 +1988,7 @@ No file cleanup will be done until you update the configuration.
                     else
                         moProfile["-PreviousBackupDevicesMissing"] = false;
 
-                    moProfile["-PreviousBackupOk"] = false;
-                    moProfile["-PreviousBackupTime"] = DateTime.Now;
+                    this.SetBackupFailed();
 
                     lbBackupFiles = false;
                     if ( null != this.oUI )
@@ -2002,6 +2002,7 @@ No file cleanup will be done until you update the configuration.
                     moProfile["-PreviousBackupDevicesMissing"] = false;
                     moProfile["-PreviousBackupOk"] = true;
                     moProfile["-PreviousBackupTime"] = DateTime.Now;
+                    moProfile.Save();
 
                     this.Show("Backup finished successfully." + lsSysTrayMsg
                             , "Backup Finished"
@@ -2010,8 +2011,6 @@ No file cleanup will be done until you update the configuration.
                             , "-CurrentBackupFinished"
                             );
                 }
-
-                moProfile.Save();
             }
 
             if ( this.bMainLoopStopped )
@@ -2459,6 +2458,8 @@ exit  %Errors%
             }
             catch (Exception ex)
             {
+                ++liBackupBeginScriptErrors;
+                this.SetBackupFailed();
                 this.ShowError(ex.Message, "Failed Running \"Backup Begin\" Script");
             }
 
@@ -2798,10 +2799,19 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
             }
             catch (Exception ex)
             {
+                ++liBackupDoneScriptCopyFailuresWithBitField;
+                this.SetBackupFailed();
                 this.ShowError(ex.Message, "Failed Running \"Backup Done\" Script");
             }
 
             return liBackupDoneScriptCopyFailuresWithBitField;
+        }
+
+        public void SetBackupFailed()
+        {
+            moProfile["-PreviousBackupOk"] = false;
+            moProfile["-PreviousBackupTime"] = DateTime.Now;
+            moProfile.Save();
         }
 
         public void BackupFailedScript()
@@ -3025,6 +3035,7 @@ echo del %FileSpec%                                                             
             }
             catch (Exception ex)
             {
+                this.SetBackupFailed();
                 this.ShowError(ex.Message, "Failed Running \"Backup Failed\" Script");
             }
         }
