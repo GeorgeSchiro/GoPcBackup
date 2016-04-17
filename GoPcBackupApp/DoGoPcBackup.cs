@@ -665,7 +665,7 @@ A brief description of each feature follows.
 
     This is the ZIP tool executable that performs the backup compression.
 
--ZipToolEXEargs=a -r -ssw ""{{BackupOutputPathFile}}"" @""{{BackupPathFiles}}"" -w""{{BackupOutputPath}}""
+-ZipToolEXEargs=a -ssw ""{{BackupOutputPathFile}}"" @""{{BackupPathFiles}}"" -w""{{BackupOutputPath}}""
 
     These are the command-line arguments passed to the ZIP compression tool
     (see -ZipToolEXE above). The tokens (in curly brackets) are self-evident
@@ -727,30 +727,30 @@ Notes:
                     // Updates start here.
                     if ( loProfile.bFileJustCreated )
                     {
-                        //loProfile["-UpdatedYYYY-MM-DD"] = true;
-                        //loProfile.Save();
+                        loProfile["-Updated20160416"] = true;
+                        loProfile.Save();
                     }
                     else
                     {
-                    //    if ( !loProfile.bValue("-UpdatedYYYY-MM-DD", false) )
-                    //    {
-                    //        if ( tvMessageBoxResults.Cancel ==  this.Show(null,
-                    //                  "This software has been updated."
-                    //                + " It requires a change to your -???."
-                    //                + "Shall we remove the old -??? now?"
-                    //                , Application.ResourceAssembly.GetName().Name
-                    //                , tvMessageBoxButtons.OKCancel, tvMessageBoxIcons.Question) )
-                    //        {
-                    //            loProfile.bExit = true;
-                    //        }
-                    //        else
-                    //        {
-                    //            loProfile.Remove("-???");
-                    //
-                    //            loProfile["-UpdatedYYYY-MM-DD"] = true;
-                    //            loProfile.Save();
-                    //        }
-                    //    }
+                        if ( !loProfile.bValue("-Updated20160416", false) )
+                        {
+                            //if ( MessageBoxResult.Cancel == MessageBox.Show(
+                            //          "This software has been updated."
+                            //        + " It requires a change to your -ZipToolEXEargs."
+                            //        + "Shall we remove the old -ZipToolEXEargs now?"
+                            //        , Application.ResourceAssembly.GetName().Name
+                            //        , MessageBoxButton.OKCancel, MessageBoxImage.Question) )
+                            //{
+                            //    loProfile.bExit = true;
+                            //}
+                            //else
+                            //{
+                                loProfile.Remove("-ZipToolEXEargs");
+
+                                loProfile["-Updated20160416"] = true;
+                                loProfile.Save();
+                            //}
+                        }
                     }
                     // Updates end here.
 
@@ -1721,6 +1721,8 @@ No file cleanup will be done until you update the configuration.
                     if ( this.bMainLoopStopped )
                         break;
 
+                    string lsProcessPathFile = moProfile.sRelativeToProfilePathFile(moProfile.sValue("-ZipToolEXE", mcsZipToolExeFilename));
+
                     // Increment the backup set counter.
                     miBackupSetsRun++;
 
@@ -1756,16 +1758,17 @@ No file cleanup will be done until you update the configuration.
 
                             if ( 1 == ++liFileCount )
                             {
-                                // Make the backup profile file (plus backup scripts, etc.) first in the backup set.
-                                loBackupFileListStreamWriter.WriteLine(moProfile.sBackupPathFile);
-                                loBackupFileListStreamWriter.WriteLine(moProfile.sRelativeToProfilePathFile(lsZipToolFileListPathFile));
-                                loBackupFileListStreamWriter.WriteLine(moProfile.sRelativeToProfilePathFile(moProfile.sValue("-BackupBeginScriptPathFile", msBackupBeginScriptPathFileDefault)));
-                                loBackupFileListStreamWriter.WriteLine(moProfile.sRelativeToProfilePathFile(moProfile.sValue("-BackupDoneScriptPathFile", msBackupDoneScriptPathFileDefault)));
-                                loBackupFileListStreamWriter.WriteLine(moProfile.sRelativeToProfilePathFile(moProfile.sValue("-BackupFailedScriptPathFile", msBackupFailedScriptPathFileDefault)));
+                                // Backup the backup as well.
+                                loBackupFileListStreamWriter.WriteLine(this.sExeRelativePath(lsProcessPathFile, Path.GetDirectoryName(moProfile.sLoadedPathFile)));
+
+                                // Also make an extra - easily accessible - backup of just the profile file.
+                                lsBackupPathFiles1 = moProfile.sBackupPathFile;     // Discard the pathfile name.
+
+                                // Save the first pathfile specification (ie. folder) for later reference.
                                 lsBackupPathFiles1 = lsBackupPathFiles;
                             }
 
-                            loBackupFileListStreamWriter.WriteLine(lsBackupPathFiles);
+                            loBackupFileListStreamWriter.WriteLine(this.sExeRelativePath(lsProcessPathFile, lsBackupPathFiles));
                         }
                     }
                     catch (Exception ex)
@@ -1787,9 +1790,8 @@ No file cleanup will be done until you update the configuration.
                     // The backup output path file will be dated and unique.
                     msCurrentBackupOutputPathFile = this.sBackupOutputPathFile();
 
-                    string  lsProcessPathFile = moProfile.sRelativeToProfilePathFile(moProfile.sValue("-ZipToolEXE", mcsZipToolExeFilename));
                     string  lsProcessArgs = moProfile.sValue("-ZipToolEXEargs"
-                                    , "a -r -ssw \"{BackupOutputPathFile}\" @\"{BackupPathFiles}\" -w\"{BackupOutputPath}\" ")
+                                    , "a -ssw \"{BackupOutputPathFile}\" @\"{BackupPathFiles}\" -w\"{BackupOutputPath}\" ")
                                     + " " + moProfile.sValue("-ZipToolEXEargsMore", "");
                             lsProcessArgs = lsProcessArgs.Replace("{BackupPathFiles}", lsZipToolFileListPathFile);
                             lsProcessArgs = lsProcessArgs.Replace("{BackupOutputPath}", Path.GetDirectoryName(msCurrentBackupOutputPathFile));
@@ -1816,19 +1818,24 @@ No file cleanup will be done until you update the configuration.
                             loProcess.OutputDataReceived += new DataReceivedEventHandler(this.BackupProcessOutputHandler);
                             loProcess.StartInfo.FileName = lsProcessPathFile;
                             loProcess.StartInfo.Arguments = lsProcessArgs;
+                            loProcess.StartInfo.WorkingDirectory = "\\";
                             loProcess.StartInfo.UseShellExecute = false;
                             loProcess.StartInfo.RedirectStandardError = true;
                             loProcess.StartInfo.RedirectStandardInput = true;
                             loProcess.StartInfo.RedirectStandardOutput = true;
                             loProcess.StartInfo.CreateNoWindow = true;
 
-                    string  lsLastRunCmd = Path.GetFileName(lsProcessPathFile) + " " + lsProcessArgs;
+                    string  lsLastRunCmd = lsProcessPathFile + " " + lsProcessArgs;
                     string  lsFileAsStream = string.Format(@"
+cd\
 @prompt $
 {0}
 @echo.
+cd {1}
 @pause
-"                                           , lsLastRunCmd);
+"                                           , lsLastRunCmd
+                                            , Path.GetDirectoryName(moProfile.sExePathFile)
+                                            );
 
                     moProfile.Remove("-PreviousBackupOk");
                     moProfile.Save();
@@ -2024,6 +2031,12 @@ No file cleanup will be done until you update the configuration.
             moProfile.bEnableFileLock = true;
 
             return lbBackupFiles;
+        }
+
+        // Convert an absolute file path (on the same drive as a given executable) to a relative path.
+        private string sExeRelativePath(string asExePathFile, string asPathFile)
+        {
+            return asPathFile.Replace(Path.GetPathRoot(asExePathFile), "");
         }
 
 
@@ -2325,14 +2338,23 @@ echo.                                      > ""{BackupBeginScriptOutputPathFile}
 +
 (!lbUseMainhostArchive || !lbUseConnectMainhost ? "" :
 @"
-:: Here is some sample network connection script that may be helpful (replace brackets with darts):
+echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo Connect to Mainhost archive:                                           >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo net use %1  [password not shown]  /user:[username not shown]           >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+     net use %1  %3  /user:%2                                               >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
 
-:: echo Initialize all network connections:                                    ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
-:: echo.                                                                       ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
-:: echo net use * /delete /yes                                                 ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
-::      net use * /delete /yes                                                 ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+     :: Ignore Mainhost connection errors.
+     ::if ERRORLEVEL 1 set /A Errors += 1
+
+:: Here is some sample network connection script that may be helpful (replace brackets with darts):
 ::
-::     :: Ignore connection deletion errors.
+:: echo Disconnect drive Z:                                                    ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+:: echo.                                                                       ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+:: echo net use Z: /delete                                                     ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+::      net use Z: /delete                                                     ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+::
+::     :: Ignore disconnection errors.
 ::     ::if ERRORLEVEL 1 set /A Errors += 1
 ::
 :: echo Connect drive Z:                                                       ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
@@ -2340,14 +2362,6 @@ echo.                                      > ""{BackupBeginScriptOutputPathFile}
 ::      net use Z: \\Mainhost\ArchiveGoPC                                      ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
 ::
 ::     if ERRORLEVEL 1 set /A Errors += 1
-
-echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
-echo Connect to the Mainhost archive:                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
-echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
-echo net use %1  [password not shown]  /user:[username not shown]           >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
-     net use %1  %3  /user:%2                                               >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
-
-     if ERRORLEVEL 1 set /A Errors += 1
 "
 )
 +
@@ -2594,7 +2608,7 @@ set BackupBaseOutputFilename=%3
 set BackupDeviceDecimalBitField=0
 set BackupDevicePositionExponent=23
 
-:: There are 23 drive letters (ie. possible backup devices) listed. A 32-bit integer
+:: There are 23 drive letters listed (ie. possible backup devices). A 32-bit integer
 :: can handle no more when a corresponding bit field is combined with copy failures.
 for %%d in (D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:) do call :DoCopy %%d
 
@@ -2603,21 +2617,7 @@ for %%d in (D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:
 :: The factor of 100 means that there can be a maximum of 99 copy failures.
 
 set /A CompositeResult = 100 * (8388608 + %BackupDeviceDecimalBitField%) + %CopyFailures%
-"
-+
-(!lbUseMainhostArchive || !lbUseConnectMainhost ? "" :
-@"
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo This disconnects from the Mainhost archive (%5):                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo net use %5 /delete                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     net use %5 /delete                                                     >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
-     if ERRORLEVEL 1 set /A Errors += 1
-"
-)
-+
-@"
-echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo   CompositeResult=%CompositeResult%                                    >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 exit  %CompositeResult%
 
