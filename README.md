@@ -225,7 +225,7 @@ Options and Features
         -StartDays=""
 
             Set this to days of the week to run the task (eg. Monday, Friday, etc).
-            This value may include a comma separated list of days as well as ranges
+            This value may include a comma-separated list of days as well as ranges
             of days. Leave this blank and the task will run every day at -StartTime.
 
         -TimeoutMinutes=0
@@ -281,7 +281,7 @@ Options and Features
     Note: the content of -BackupBeginScriptHelp will also be overwritten from the
     default value embedded in the executable file.
 
--BackupBeginScriptPathFile=BackupBegin.cmd
+-BackupBeginScriptPathFile=GoPcBackupBegin.cmd
 
     This DOS shell script is run before each backup starts. Edit the contents
     of the file or point this parameter to another file. If you delete the file,
@@ -307,7 +307,7 @@ Options and Features
     Note: the content of -BackupDoneScriptHelp will also be overwritten from the
     default value embedded in the executable file.
 
--BackupDoneScriptPathFile=BackupDone.cmd
+-BackupDoneScriptPathFile=GoPcBackupDone.cmd
 
     This DOS shell script is run after each successful backup completes. You 
     can edit the contents of the file or point this parameter to another file.
@@ -333,7 +333,7 @@ Options and Features
     Note: the content of -BackupFailedScriptHelp will also be overwritten from the
     default value embedded in the executable file.
 
--BackupFailedScriptPathFile=BackupFailed.cmd
+-BackupFailedScriptPathFile=GoPcBackupFailed.cmd
 
     This DOS shell script is run after a backup fails to complete. You can
     edit the contents of the file or point this parameter to another file.
@@ -342,7 +342,7 @@ Options and Features
 
 -BackupDriveToken=(This is my GoPC backup drive.)
 
-    This is the filename looked for in the root of every storage device attached
+    This is the filename looked for at the root of every storage device attached
     to the computer. If found, a copy of the backup will be written there.
 
 -BackupFileSpec=*
@@ -378,6 +378,9 @@ Options and Features
             This wildcard is appended to each folder to backup. If provided,
             it will override the parent -BackupFileSpec (see above).
 
+            Instead of a wildcard like "*" you can use a filename pattern
+            like "MyFile?.*" to backup a subset of files or a single file.
+
         -FolderToBackup="One of many folders to backup goes here."
 
             This is the full path\file specification of a folder to backup.
@@ -397,7 +400,7 @@ Options and Features
 -BackupTimeMinsPerTick=15
 
     This determines how many minutes the backup time changes with each tick
-    of the backup time selection slider.
+    of the backup time selection slider in the UI.
 
 -CleanupFiles=True
 
@@ -607,12 +610,12 @@ Options and Features
 
 -PreviousBackupTime= NO DEFAULT VALUE
 
-    This is the timestamp of the previous backup / cleanup run.
+    This is the completion timestamp of the previous backup / cleanup run.
 
 -RunOnce=False
 
-    Set this switch True to run this utility in one loop only (with no UI) and 
-    then shutdown automatically thereafter. This switch is useful if the utility
+    Set this switch True to run this utility one time only (with no UI) then
+    shutdown automatically thereafter. This switch is useful if the utility
     is run in a batch process or if it is run by a server job scheduler.
 
 -SaveProfile=True
@@ -642,12 +645,6 @@ Options and Features
     Set this switch False to suppress the pop-up display of "backup done" script
     errors (see -BackupDoneScriptPathFile above).
 
--ShowBackupStatusModeless=False
-
-    Set this switch True to allow background processing to continue unabated
-    after a backup completes. This may be necessary for additional timed tasks
-    to complete after the backup status dialog is displayed (see -AddTasks).
-
 -ShowDeletedFileList=False
 
     Set this switch True and the list of deleted files will be displayed in a 
@@ -667,8 +664,9 @@ Options and Features
 -UseVirtualMachineHostArchive=False
 
     Set this switch True and code will be added to the "backup done" script
-    (see -BackupDoneScriptPathFile above) that copies backups to your virtual
-    machine host computer (assuming you have one).
+    (see -BackupDoneScriptPathFile above) to copy backups to your virtual
+    machine host computer (assuming you have one). Alternatively, any network
+    share can be referenced here for a similar purpose.
 
 -VirtualMachineHostArchivePath= NO DEFAULT VALUE
 
@@ -676,8 +674,8 @@ Options and Features
     virtual machine host share (see -UseVirtualMachineHostArchive above).
 
     You may want to reference your VM host by IP address rather than by name.
-    Doing so is often more reliable than using netbios names on your local area
-    network.
+    Doing so is often more reliable than using net bios names on your local
+    area network.
 
 -VirtualMachineHostPassword= NO DEFAULT VALUE
 
@@ -700,18 +698,18 @@ Options and Features
 
     This is the ZIP tool executable that performs the backup compression.
 
--ZipToolEXEargs=a -r -ssw "{BackupOutputPathFile}" @"{BackupPathFiles}" -w"{BackupOutputPath}"
+-ZipToolEXEargs=a -ssw "{BackupOutputPathFile}" @"{BackupPathFiles}" -w"{BackupOutputPath}"
 
-    These are the command-line arguments passed to the ZIP compression tool
-    (see -ZipToolEXE above). The tokens (in curly brackets) are self-evident
-    and they are replaced at runtime.
+    These are command-line arguments passed to the ZIP compression tool (see
+    -ZipToolEXE above). The tokens (in curly brackets) are self-evident. They
+    are replaced at runtime.
 
 -ZipToolEXEargsMore= NO DEFAULT VALUE
 
-    These are additional command line arguments for the ZIP tool. Using this
-    parameter makes it easier to add functionality to the ZIP command line
-    without changing the existing command line. A typical example would be
-    to supply a password on the command line to "GoPcBackup.exe" itself.
+    These are additional command line arguments for the ZIP tool. Using
+    this parameter makes it easier to add functionality without changing
+    the existing command line. A typical example would be to supply an 
+    encryption password on the command line to "GoPcBackup.exe" itself.
 
 -ZipToolFileListFileDateFormat=-yyyy-MM-dd
 
