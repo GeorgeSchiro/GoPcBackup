@@ -378,13 +378,13 @@ Options and Features
             This wildcard is appended to each folder to backup. If provided,
             it will override the parent -BackupFileSpec (see above).
 
-        -FolderToBackup=""One of many folders to backup goes here.""
+        -FolderToBackup="One of many folders to backup goes here."
 
             This is the full path\file specification of a folder to backup.
             This parameter can appear multiple times in each backup set.
 
             Instead of an entire folder you can use a path\file pattern like
-            ""C:\Folder\File?.*"" to backup a subset of files or a single file.
+            "C:\Folder\File?.*" to backup a subset of files or a single file.
 
         -OutputFilename=Files
 
