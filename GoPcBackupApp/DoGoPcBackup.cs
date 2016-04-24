@@ -349,13 +349,13 @@ A brief description of each feature follows.
             This wildcard is appended to each folder to backup. If provided,
             it will override the parent -BackupFileSpec (see above).
 
-            Instead of a wildcard like ""*"" you can use a filename pattern
-            like ""MyFile?.*"" to backup a subset of files or a single file.
-
         -FolderToBackup=""One of many folders to backup goes here.""
 
             This is the full path\file specification of a folder to backup.
             This parameter can appear multiple times in each backup set.
+
+            Instead of an entire folder you can use a path\file pattern like
+            ""C:\Folder\File?.*"" to backup a subset of files or a single file.
 
         -OutputFilename=Files
 
@@ -847,7 +847,7 @@ Notes:
                 }
 
                 // Arguments were passed, so start a new "-RunOnce" instance.
-                loProfile.LoadFromCommandLine("-RunOnce", tvProfileLoadActions.Merge);
+                loProfile.LoadFromCommandLine("-ActivateAlreadyRunningInstance -RunOnce", tvProfileLoadActions.Merge);
                 loProfile.bAppFullyLoaded = true;   // Turns off the "loading" message.
 
                 DoGoPcBackup    loDoDa = new DoGoPcBackup(loProfile);
@@ -1755,18 +1755,27 @@ No file cleanup will be done until you update the configuration.
 
                             string  lsFolderToBackup = loFolderToBackup.Value.ToString().Trim();
                             string  lsBackupPathFiles = null;
-                                    if ( !Directory.Exists(lsFolderToBackup) )
-                                        lsBackupPathFiles = lsFolderToBackup;
-                                    else
+                                    if ( Directory.Exists(lsFolderToBackup) )
                                         lsBackupPathFiles = Path.Combine(lsFolderToBackup, this.sBackupFileSpec());
+                                    else
+                                        lsBackupPathFiles = lsFolderToBackup;
+                                        // If the given "lsFolderToBackup" is not actualy a folder, assume it's a single file (or a file mask).
 
                             if ( 1 == ++liFileCount )
                             {
-                                // Backup the backup as well.
-                                loBackupFileListStreamWriter.WriteLine(this.sExeRelativePath(lsProcessPathFile, Path.GetDirectoryName(moProfile.sLoadedPathFile)));
+                                if ( moProfile.ContainsKey("-ActivateAlreadyRunningInstance") )
+                                {
+                                    // Backup just the backup profile file as well (to avoid file contention problems with the main instance).
+                                    loBackupFileListStreamWriter.WriteLine(this.sExeRelativePath(lsProcessPathFile, moProfile.sLoadedPathFile));
+                                }
+                                else
+                                {
+                                    // Backup the backup as well.
+                                    loBackupFileListStreamWriter.WriteLine(this.sExeRelativePath(lsProcessPathFile, Path.GetDirectoryName(moProfile.sLoadedPathFile)));
 
-                                // Also make an extra - easily accessible - backup of just the profile file.
-                                lsBackupPathFiles1 = moProfile.sBackupPathFile;     // Discard the pathfile name.
+                                    // Also make an extra - easily accessible - backup of just the profile file.
+                                    lsBackupPathFiles1 = moProfile.sBackupPathFile;     // Discard the pathfile name.
+                                }
 
                                 // Save the first pathfile specification (ie. folder) for later reference.
                                 lsBackupPathFiles1 = lsBackupPathFiles;
@@ -2040,7 +2049,15 @@ cd {1}
         // Convert an absolute file path (on the same drive as a given executable) to a relative path.
         private string sExeRelativePath(string asExePathFile, string asPathFile)
         {
-            return asPathFile.Replace(Path.GetPathRoot(asExePathFile), "");
+            string lsPathFile = null;
+
+            // Leave system folder references unchanged to avoid file contention problems.
+            if ( asPathFile.ToLower().StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.System).ToLower()) )
+                lsPathFile = asPathFile;
+            else
+                lsPathFile = asPathFile.Replace(Path.GetPathRoot(asExePathFile), "");
+
+            return lsPathFile;
         }
 
 
