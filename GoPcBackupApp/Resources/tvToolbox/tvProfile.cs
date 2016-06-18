@@ -1968,19 +1968,19 @@ namespace tvToolbox
 
                 if ( lsValue.Contains(Environment.NewLine) )
                 {
-                    lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + "=" + mcsBeginBlockMark + Environment.NewLine);
+                    lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + mcsAsnMark + mcsBeginBlockMark + Environment.NewLine);
                     lsbCommandBlock.Append(lsValue);
-                    lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + "=" + mcsEndBlockMark + Environment.NewLine);
+                    lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + mcsAsnMark + mcsEndBlockMark + Environment.NewLine);
                 }
                 else
                 {
-                    if ( lsValue.Contains(" ") || lsValue.Contains("-") )
+                    if ( lsValue.Contains(mcsSpcMark) || lsValue.Contains(mcsArgMark) )
                     {
-                        lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + "=" + "\"" + lsValue + "\"" + Environment.NewLine);
+                        lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + mcsAsnMark + mcsQteMark + lsValue + mcsQteMark + Environment.NewLine);
                     }
                     else
                     {
-                        lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + "=" + lsValue + Environment.NewLine);
+                        lsbCommandBlock.Append(lcsIndent + loEntry.Key.ToString() + mcsAsnMark + lsValue + Environment.NewLine);
                     }
                 }
             }
@@ -2012,19 +2012,19 @@ namespace tvToolbox
 
                 if ( lsValue.Contains(Environment.NewLine) )
                 {
-                    lsbCommandLine.Append(" " + loEntry.Key.ToString() + "=" + mcsBeginBlockMark + Environment.NewLine);
+                    lsbCommandLine.Append(mcsSpcMark + loEntry.Key.ToString() + mcsAsnMark + mcsBeginBlockMark + Environment.NewLine);
                     lsbCommandLine.Append(lsValue);
-                    lsbCommandLine.Append(" " + loEntry.Key.ToString() + "=" + mcsEndBlockMark + Environment.NewLine);
+                    lsbCommandLine.Append(mcsSpcMark + loEntry.Key.ToString() + mcsAsnMark + mcsEndBlockMark + Environment.NewLine);
                 }
                 else
                 {
-                    if ( lsValue.Contains(" ") || lsValue.Contains("-") )
+                    if ( lsValue.Contains(mcsSpcMark) || lsValue.Contains(mcsArgMark) )
                     {
-                        lsbCommandLine.Append(" " + loEntry.Key.ToString() + "=" + "\"" + lsValue + "\"");
+                        lsbCommandLine.Append(mcsSpcMark + loEntry.Key.ToString() + mcsAsnMark + mcsQteMark + lsValue + mcsQteMark);
                     }
                     else
                     {
-                        lsbCommandLine.Append(" " + loEntry.Key.ToString() + "=" + lsValue);
+                        lsbCommandLine.Append(mcsSpcMark + loEntry.Key.ToString() + mcsAsnMark + lsValue);
                     }
                 }
             }
@@ -2048,7 +2048,7 @@ namespace tvToolbox
             {
                 DictionaryEntry loEntry = (DictionaryEntry) base[i];
 
-                lsCommandLineArray[i] = loEntry.Key.ToString() + "=" + loEntry.Value.ToString();
+                lsCommandLineArray[i] = loEntry.Key.ToString() + mcsAsnMark + loEntry.Value.ToString();
             }
 
             return lsCommandLineArray;
@@ -2087,7 +2087,7 @@ namespace tvToolbox
         /// <returns></returns>
         public String sSwapHyphens(String asSource)
         {
-            return asSource.Replace("-", "_");
+            return asSource.Replace(mcsArgMark, "_");
         }
 
         /// <summary>
@@ -2228,7 +2228,7 @@ namespace tvToolbox
                     {
                         if ( abRemoveKeyPrefix )
                         {
-                            loProfile.Add("-" + lsKey.Replace(lsKeyPrefixToRemove, ""), loEntry.Value);
+                            loProfile.Add(mcsArgMark + lsKey.Replace(lsKeyPrefixToRemove, ""), loEntry.Value);
                         }
                         else
                         {
@@ -2247,7 +2247,7 @@ namespace tvToolbox
                     {
                         if ( abRemoveKeyPrefix )
                         {
-                            loProfile.Add("-" + lsKey.Replace(lsKeyPrefixToRemove, ""), loEntry.Value);
+                            loProfile.Add(mcsArgMark + lsKey.Replace(lsKeyPrefixToRemove, ""), loEntry.Value);
                         }
                         else
                         {
@@ -2694,7 +2694,7 @@ Copy and proceed from there?
                 return;
 
             // Remove any leading spaces or tabs so that mccSplitMark becomes the first char.
-            asCommandLine = asCommandLine.TrimStart(' ');
+            asCommandLine = asCommandLine.TrimStart(mccSpcMark);
             asCommandLine = asCommandLine.TrimStart('\t');
 
             if ( -1 != asCommandLine.IndexOf('\n') )
@@ -2715,14 +2715,14 @@ Copy and proceed from there?
                     char    lcPrevious;
                             lcPrevious = lcCurrent;
                             lcCurrent = asCommandLine[i];
-                            if ( '\"' == lcCurrent )
+                            if ( mccQteMark == lcCurrent )
                             {
                                 lbQuoteOn = ! lbQuoteOn;
                             }
 
-                    if ( lbQuoteOn || '-' != lcCurrent || '=' == lcPrevious )
+                    if ( lbQuoteOn || mccArgMark != lcCurrent || mccAsnMark == lcPrevious )
                     {
-                        // The "|| '=' == lcPrevious" allows for negative numbers.
+                        // The "|| mccAsnMark == lcPrevious" allows for negative numbers.
                         lsbNewCommandLine.Append(lcCurrent);
                     }
                     else if ( '\\' == lcPrevious )
@@ -2732,16 +2732,15 @@ Copy and proceed from there?
                     }
                     else
                     {
-                        lsbNewCommandLine = new StringBuilder(lsbNewCommandLine.ToString().Trim() + mccSplitMark + "-");
+                        lsbNewCommandLine = new StringBuilder(lsbNewCommandLine.ToString().Trim() + mccSplitMark + mcsArgMark);
                     }
                 }
 
                 //Cleanup any remaining tabs.
-                lsbNewCommandLine.Replace('\t', ' ');
+                lsbNewCommandLine.Replace('\t', mccSpcMark);
 
                 //The first occurrence of the separator must be removed.
-                this.LoadFromCommandLineArray(lsbNewCommandLine.ToString()
-                        .TrimStart(mccSplitMark).Split(mccSplitMark), aeLoadAction);
+                this.LoadFromCommandLineArray(lsbNewCommandLine.ToString().TrimStart(mccSplitMark).Split(mccSplitMark), aeLoadAction);
             }
         }
 
@@ -2776,14 +2775,14 @@ Copy and proceed from there?
 
                 foreach ( String lsItem in asCommandLineArray )
                 {
-                    if ( !lsItem.TrimStart().StartsWith("-") )
+                    if ( !lsItem.TrimStart().StartsWith(mcsArgMark) )
                     {
                         if ( null != lsBlockKey )
                         {
                             lsBlockValue += lsItem + Environment.NewLine;
                         }
 
-                        // If an item does not start with a "-"
+                        // If an item does not start with a mcsArgMark
                         // and is not within a block, ignore it.
                     }
                     else
@@ -2791,7 +2790,7 @@ Copy and proceed from there?
                         String lsKey;
                         String lsValue;
                         Object loValue;
-                        int liPos = lsItem.IndexOf("=");
+                        int liPos = lsItem.IndexOf(mcsAsnMark);
 
                         if ( -1 == liPos )
                         {
@@ -2803,7 +2802,7 @@ Copy and proceed from there?
                             lsKey = lsItem.Substring(0, liPos).Trim();
                             lsValue = lsItem.Substring(liPos + 1).Trim();
 
-                            if ( lsValue.StartsWith("\"") && lsValue.EndsWith("\"") )
+                            if ( lsValue.StartsWith(mcsQteMark) && lsValue.EndsWith(mcsQteMark) )
                             {
                                 if ( lsValue.Length < 2 )
                                     loValue = "";
@@ -3049,16 +3048,16 @@ Copy and proceed from there?
                     {
                         if ( -1 == lsValue.IndexOf(Environment.NewLine) )
                         {
-                            if ( -1 == lsValue.IndexOf(" ") )
-                                lsbFileAsStream.Append(lsKey + "=" + lsValue + Environment.NewLine);
+                            if ( -1 == lsValue.IndexOf(mcsSpcMark) )
+                                lsbFileAsStream.Append(lsKey + mcsAsnMark + lsValue + Environment.NewLine);
                             else
-                                lsbFileAsStream.Append(lsKey + "=" + "\"" + lsValue + "\"" + Environment.NewLine);
+                                lsbFileAsStream.Append(lsKey + mcsAsnMark + mcsQteMark + lsValue + mcsQteMark + Environment.NewLine);
                         }
                         else
                         {
-                            lsbFileAsStream.Append(lsKey + "=" + mcsBeginBlockMark + Environment.NewLine);
+                            lsbFileAsStream.Append(lsKey + mcsAsnMark + mcsBeginBlockMark + Environment.NewLine);
                             lsbFileAsStream.Append(lsValue + ((lsValue.EndsWith(Environment.NewLine)) ? "" : Environment.NewLine).ToString());
-                            lsbFileAsStream.Append(lsKey + "=" + mcsEndBlockMark + Environment.NewLine);
+                            lsbFileAsStream.Append(lsKey + mcsAsnMark + mcsEndBlockMark + Environment.NewLine);
                         }
                     }
                 }
@@ -3332,6 +3331,14 @@ Copy and proceed from there?
         private const String mcsLoadSaveDefaultExtension = ".txt";
         private const String mcsBeginBlockMark = "[";
         private const String mcsEndBlockMark = "]";
+        private const String mcsArgMark = "-";
+        private const char   mccArgMark = '-';
+        private const String mcsAsnMark = "=";
+        private const char   mccAsnMark = '=';
+        private const String mcsQteMark = "\"";
+        private const char   mccQteMark = '\"';
+        private const String mcsSpcMark = " ";
+        private const char   mccSpcMark = ' ';
         private const char   mccSplitMark = '\u0001';
         private FileStream   moFileStreamProfileFileLock;
         private tvProfile    moInputCommandLineProfile;

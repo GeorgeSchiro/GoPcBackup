@@ -1504,8 +1504,9 @@ You can continue this later wherever you left off. "
                 // means a device was just reattached or no devices were missing.
                 // In other words, a device was just reattached or it must have
                 // been reattached previously (since no device is missing now).
-                lbDeviceReattached = tvMessageBoxResults.None == leShowMissingBackupDevices
-                                        && (lbDeviceReattached || moProfile.bValue("-PreviousBackupDevicesMissing", false));
+                lbDeviceReattached = tvMessageBoxResults.Yes == leShowMissingBackupDevices
+                                        || ( tvMessageBoxResults.None == leShowMissingBackupDevices
+                                            && (lbDeviceReattached || moProfile.bValue("-PreviousBackupDevicesMissing", false)) );
 
                 // Reset setup of backup device checkboxes.
                 if ( tvMessageBoxResults.Yes == leShowMissingBackupDevices )
@@ -1888,65 +1889,72 @@ You can continue this later wherever you left off. "
                 else
                     moDoGoPcBackup.LogIt("The \"backup begin\" script is disabled.");
 
-                // Run the "backup done" script and return the failed file count with bit field.
-                // The exit code is defined in the script as a combination of two integers-
-                // a bit field of found backup devices and a count of copy failures (99 max).
-                // The integer part of the composite number is the bit field.
-                double ldCompositeResult = moDoGoPcBackup.iBackupDoneScriptCopyFailuresWithBitField(true) / 100.0;
-
-                // The fractional part (x 100) is the actual number of copy failures.
-                int liCopyFailures = (int)Math.Round(100 * (ldCompositeResult - (int)ldCompositeResult));
-
-                if ( 0 != liBackupBeginScriptErrors + liCopyFailures )
+                if ( !moProfile.bValue("-BackupDoneScriptEnabled", true) )
                 {
-                    moDoGoPcBackup.SetBackupFailed();
-                    moProfile.Save();
-
-                    if ( 0 != liBackupBeginScriptErrors )
-                        moDoGoPcBackup.ShowError(
-                                  string.Format("The \"backup begin\" script failed. Check the log for errors."
-                                        + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
-                                , "Backup Failed");
-
-                    if ( 0 != liCopyFailures )
-                        moDoGoPcBackup.ShowError(
-                                  string.Format("The \"backup done\" script failed with {0} copy failure{1}. Check the log for errors."
-                                        + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
-                                , "Backup Failed");
+                    moDoGoPcBackup.LogIt("The \"backup done\" script is disabled.");
                 }
                 else
                 {
-                    // Referencing "moDoGoPcBackup.bMainLoopStopped" rather
-                    // than "this.bMainLoopStopped" keeps the timer running.
-                    if ( moDoGoPcBackup.bMainLoopStopped )
+                    // Run the "backup done" script and return the failed file count with bit field.
+                    // The exit code is defined in the script as a combination of two integers-
+                    // a bit field of found backup devices and a count of copy failures (99 max).
+                    // The integer part of the composite number is the bit field.
+                    double ldCompositeResult = moDoGoPcBackup.iBackupDoneScriptCopyFailuresWithBitField(true) / 100.0;
+
+                    // The fractional part (x 100) is the actual number of copy failures.
+                    int liCopyFailures = (int)Math.Round(100 * (ldCompositeResult - (int)ldCompositeResult));
+
+                    if ( 0 != liBackupBeginScriptErrors + liCopyFailures )
                     {
-                        moDoGoPcBackup.LogIt("Backup process stopped.");
+                        moDoGoPcBackup.SetBackupFailed();
+                        moProfile.Save();
+
+                        if ( 0 != liBackupBeginScriptErrors )
+                            moDoGoPcBackup.ShowError(
+                                      string.Format("The \"backup begin\" script failed. Check the log for errors."
+                                            + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
+                                    , "Backup Failed");
+
+                        if ( 0 != liCopyFailures )
+                            moDoGoPcBackup.ShowError(
+                                      string.Format("The \"backup done\" script failed with {0} copy failure{1}. Check the log for errors."
+                                            + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
+                                    , "Backup Failed");
                     }
                     else
                     {
-                        moProfile["-PreviousBackupTime"] = DateTime.Now;
-                        moProfile.Save();
-
-                        bool lbPreviousBackupOk = moProfile.ContainsKey("-PreviousBackupOk") && moProfile.bValue("-PreviousBackupOk", false);
-
-                        if (!lbPreviousBackupOk && tvMessageBoxResults.Yes == tvMessageBox.Show(
-                                          this
-                                        , "The backup scripts finished successfully (after the previous failed backup). Yet the"
-                                            + " backup status is still \"Backup Failed\".\r\n\r\nShall we change it to \"Backup OK?\""
-                                        , "Adjust Backup Status"
-                                        , tvMessageBoxButtons.YesNo
-                                        , tvMessageBoxIcons.Question
-                                        , tvMessageBoxCheckBoxTypes.DontAsk
-                                        , moProfile
-                                        , "-BackupStatusChanged"
-                                        )
-                                    )
+                        // Referencing "moDoGoPcBackup.bMainLoopStopped" rather
+                        // than "this.bMainLoopStopped" keeps the timer running.
+                        if ( moDoGoPcBackup.bMainLoopStopped )
                         {
-                            moProfile["-PreviousBackupDevicesMissing"] = false;
-                            moProfile["-PreviousBackupOk"] = true;
+                            moDoGoPcBackup.LogIt("Backup process stopped.");
+                        }
+                        else
+                        {
+                            moProfile["-PreviousBackupTime"] = DateTime.Now;
                             moProfile.Save();
 
-                            this.GetSetConfigurationDefaults();
+                            bool lbPreviousBackupOk = moProfile.ContainsKey("-PreviousBackupOk") && moProfile.bValue("-PreviousBackupOk", false);
+
+                            if ( !lbPreviousBackupOk && tvMessageBoxResults.Yes == tvMessageBox.Show(
+                                              this
+                                            , "The backup scripts finished successfully (after the previous failed backup). Yet the"
+                                                + " backup status is still \"Backup Failed\".\r\n\r\nShall we change it to \"Backup OK?\""
+                                            , "Adjust Backup Status"
+                                            , tvMessageBoxButtons.YesNo
+                                            , tvMessageBoxIcons.Question
+                                            , tvMessageBoxCheckBoxTypes.DontAsk
+                                            , moProfile
+                                            , "-BackupStatusChanged"
+                                            )
+                                        )
+                            {
+                                moProfile["-PreviousBackupDevicesMissing"] = false;
+                                moProfile["-PreviousBackupOk"] = true;
+                                moProfile.Save();
+
+                                this.GetSetConfigurationDefaults();
+                            }
                         }
                     }
                 }
