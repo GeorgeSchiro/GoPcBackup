@@ -2372,8 +2372,8 @@ echo net use %1  [password not shown]  /user:[username not shown]           >> "
 ::
 :: echo Disconnect drive Z:                                                    ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
 :: echo.                                                                       ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
-:: echo net use Z: /delete                                                     ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
-::      net use Z: /delete                                                     ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+:: echo net use Z: /delete /y                                                  ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
+::      net use Z: /delete /y                                                  ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
 ::
 ::     :: Ignore disconnection errors.
 ::     ::if ERRORLEVEL 1 set /A Errors += 1
