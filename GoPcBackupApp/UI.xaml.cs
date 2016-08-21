@@ -371,7 +371,7 @@ namespace GoPcBackup
 
                     tvMessageBox.ShowBriefly(this, string.Format("The \"{0}\" will now be displayed."
                                     + "\r\n\r\nPlease accept it if you would like to use this software."
-                            , lsLicenseCaption), lsLicenseCaption, tvMessageBoxIcons.Information, 3);
+                            , lsLicenseCaption), lsLicenseCaption, tvMessageBoxIcons.Information, 3000);
 
                     ScrollingText   loLicense = new ScrollingText(moDoGoPcBackup.sFileAsStream(
                                                           moProfile.sRelativeToProfilePathFile(lsLicensePathFile))
@@ -1968,9 +1968,9 @@ You can continue this later wherever you left off. "
             this.bBackupRunning = true;
 
             if ( moProfile.bValue("-CleanupFiles", true) && moProfile.bValue("-BackupFiles", true)
-                    && Visibility.Hidden != this.Visibility )
+                    && moProfile.iValue("-BackupStartedPromptMS", 1000) > 0 && Visibility.Hidden != this.Visibility )
                 tvMessageBox.ShowBriefly(this, "The file cleanup process is now running ..."
-                        , "Backup Started", tvMessageBoxIcons.Information, 2);
+                        , "Backup Started", tvMessageBoxIcons.Information, moProfile.iValue("-BackupStartedPromptMS", 1000));
 
             this.InitProgressBar(moDoGoPcBackup.iCleanupFilesCount());
 

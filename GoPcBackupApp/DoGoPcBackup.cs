@@ -393,12 +393,13 @@ A brief description of each feature follows.
             This is the maximum file age in days. It is 1000 years by default.
             Only files older than this will be considered for deletion.
 
-        -ApplyDeletionLimit=False
+        -ApplyDeletionLimit=True
 
-            Set this switch True and the cleanup process will limit deletions
-            only to files that are regularly replaced by newer files. This way
-            a large collection of very old files won't be wiped out in one run.
-            Old files will only be removed if newer files exist to replace them.
+            Set this switch False and the cleanup process won't limit deletions
+            to files regularly replaced by newer files. Without such a limit
+            a large collection of very old files may be wiped out in one run.
+            With the limit in place an old file will be removed only if a newer
+            file exists to replace it.
 
             In other words, with this switch set, there should always be as many
             files retained as there are days in ""-AgeDays"" multiplied by the
@@ -490,7 +491,6 @@ A brief description of each feature follows.
 
             -AgeDays=90
             -FilesToDelete=C:\Archive\*.*
-            -ApplyDeletionLimit
 
         -CleanupSet=]
 
@@ -1205,11 +1205,25 @@ Notes:
 
                     foreach (DictionaryEntry loFolderToBackup in loFolderToBackupProfile)
                     {
+                        string  lsFolderToBackup = loFolderToBackup.Value.ToString().Trim();
+                        string  lsBackupFiles = null;
+                                if ( Directory.Exists(lsFolderToBackup) )
+                                {
+                                    lsBackupFiles = this.sBackupFileSpec(loBackupSetProfile);
+                                }
+                                else
+                                {
+                                    lsFolderToBackup = Path.GetDirectoryName(lsFolderToBackup);
+                                    lsBackupFiles = Path.GetFileName(lsFolderToBackup);
+                                    // If the given "lsFolderToBackup" is not actually a folder,
+                                    // assume it's a single file (or a file mask).
+                                }
+
                         // Count all files represented by the current file
                         // specifcation and add that number to the total.
                         liBackupFilesCount += Directory.GetFiles(
-                                  loFolderToBackup.Value.ToString()
-                                , this.sBackupFileSpec(loBackupSetProfile)
+                                  lsFolderToBackup
+                                , lsBackupFiles
                                 , SearchOption.AllDirectories).Length;
                     }
                 }
@@ -1346,6 +1360,7 @@ Notes:
                         );
             }
             ));
+            System.Windows.Forms.Application.DoEvents();
 
             return ltvMessageBoxResults;
         }
@@ -1377,6 +1392,7 @@ Notes:
                         );
             }
             ));
+            System.Windows.Forms.Application.DoEvents();
 
             return ltvMessageBoxResults;
         }
@@ -1395,6 +1411,7 @@ Notes:
                 tvMessageBox.ShowError(this.oUI, asMessageText);
             }
             ));
+            System.Windows.Forms.Application.DoEvents();
         }
 
         public void ShowError(string asMessageText, string asMessageCaption)
@@ -1411,6 +1428,7 @@ Notes:
                 tvMessageBox.ShowError(this.oUI, asMessageText, asMessageCaption);
             }
             ));
+            System.Windows.Forms.Application.DoEvents();
         }
 
         private void ShowModelessError(string asMessageText, string asMessageCaption, string asProfilePromptKey)
@@ -1433,6 +1451,7 @@ Notes:
                         );
             }
             ));
+            System.Windows.Forms.Application.DoEvents();
         }
 
         private void LogDeletedFile(string asPathFile, DateTime adtFileDate, long alFileSize)
@@ -1537,6 +1556,7 @@ Notes:
                 this.oUI.IncrementProgressBar(abFill);
             }
             ));
+            System.Windows.Forms.Application.DoEvents();
         }
 
         /// <summary>
@@ -1664,6 +1684,7 @@ No file cleanup will be done until you update the configuration.
                 this.oUI.AppendOutputTextLine(asMessageText);
             }
             ));
+            System.Windows.Forms.Application.DoEvents();
         }
 
 
@@ -1759,7 +1780,7 @@ No file cleanup will be done until you update the configuration.
                                         lsBackupPathFiles = Path.Combine(lsFolderToBackup, this.sBackupFileSpec());
                                     else
                                         lsBackupPathFiles = lsFolderToBackup;
-                                        // If the given "lsFolderToBackup" is not actualy a folder, assume it's a single file (or a file mask).
+                                        // If the given "lsFolderToBackup" is not actually a folder, assume it's a single file (or a file mask).
 
                             if ( 1 == ++liFileCount )
                             {
@@ -3175,7 +3196,6 @@ echo del %FileSpec%                                                             
                     moProfile.Add("-CleanupSet", string.Format(@"
     -AgeDays=365000
     -FilesToDelete={0}*{1}
-    -ApplyDeletionLimit
 
 "
                             , Path.Combine(lsBackupOutputPath, lsBackupOutputFilenameNoExt)
@@ -3384,7 +3404,7 @@ echo del %FileSpec%                                                             
                     {
                         // This boolean prevents wiping out many old files
                         // that are not regularly replaced with newer files.
-                        bool    lbApplyDeletionLimit = aoProfile.bValue("-ApplyDeletionLimit", false);
+                        bool    lbApplyDeletionLimit = aoProfile.bValue("-ApplyDeletionLimit", true);
                         int     liFileDeletionLimit = this.iFileDeletionLimit(
                                         loFileSysInfoList.Count(), adtOlderThan);
                         int     liIndex = 0;

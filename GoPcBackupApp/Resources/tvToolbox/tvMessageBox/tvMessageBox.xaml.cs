@@ -192,7 +192,7 @@ public partial class tvMessageBox : Window
 
     public static tvMessageBoxResults Show(Window aoWindow, string asMessageText)
     {
-        return Show(
+        return tvMessageBox.Show(
                   aoWindow
                 , asMessageText
                 , null
@@ -208,7 +208,7 @@ public partial class tvMessageBox : Window
             , string asMessageCaption
             )
     {
-        return Show(
+        return tvMessageBox.Show(
                   aoWindow
                 , asMessageText
                 , asMessageCaption
@@ -224,7 +224,7 @@ public partial class tvMessageBox : Window
             , tvMessageBoxIcons aeTvMessageBoxIcon
             )
     {
-        return Show(
+        return tvMessageBox.Show(
                   aoWindow
                 , asMessageText
                 , null
@@ -520,7 +520,7 @@ public partial class tvMessageBox : Window
             , string asMessageText
             , string asMessageCaption
             , tvMessageBoxIcons aeTvMessageBoxIcon
-            , int aiCloseAfterSecs
+            , int aiCloseAfterMS
             )
     {
         tvMessageBox    loMsgBox = new tvMessageBox();
@@ -549,9 +549,9 @@ public partial class tvMessageBox : Window
                         loMsgBox.SelectIcon(aeTvMessageBoxIcon);
                         loMsgBox.Show();
 
-        if ( aiCloseAfterSecs > 0 )
+        if ( aiCloseAfterMS > 0 )
         {
-            DateTime ldtCloseTime = DateTime.Now.AddSeconds(aiCloseAfterSecs);
+            DateTime ldtCloseTime = DateTime.Now.AddMilliseconds(aiCloseAfterMS);
 
             while ( DateTime.Now < ldtCloseTime )
             {

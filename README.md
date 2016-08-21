@@ -422,15 +422,16 @@ Options and Features
             This is the maximum file age in days. It is 1000 years by default.
             Only files older than this will be considered for deletion.
 
-        -ApplyDeletionLimit=False
+        -ApplyDeletionLimit=True
 
-            Set this switch True and the cleanup process will limit deletions
-            only to files that are regularly replaced by newer files. This way
-            a large collection of very old files won't be wiped out in one run.
-            Old files will only be removed if newer files exist to replace them.
+            Set this switch False and the cleanup process won't limit deletions
+            to files regularly replaced by newer files. Without such a limit
+            a large collection of very old files may be wiped out in one run.
+            With the limit in place an old file will be removed only if a newer
+            file exists to replace it.
 
             In other words, with this switch set, there should always be as many
-            files retained as there are days in "-AgeDays" multiplied by the
+            files retained as there are days in ""-AgeDays"" multiplied by the
             frequency of backups (1440 divided by -MainLoopMinutes, see below).
 
         -CleanupHidden=False
