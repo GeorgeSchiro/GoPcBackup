@@ -3254,7 +3254,10 @@ echo del %FileSpec%                                                             
                                     break;
                             }
                     // Use 1000 years as the default file age.
-                    DateTime ldtOlderThan = DateTime.Now.AddDays(-loCurrentCleanupSet.iValue("-AgeDays", 365000));
+                    int         liAgeDays = loCurrentCleanupSet.iValue("-AgeDays", 365000);
+                                liAgeDays = 0 == liAgeDays ? -1 : liAgeDays;
+                                // "0" means "delete everything." -1 makes that happen.
+                    DateTime    ldtOlderThan = DateTime.Now.AddDays(-liAgeDays);
 
                     // Get the list of path\file specifications to delete.
                     tvProfile loFilesToDeleteProfile = loCurrentCleanupSet.oOneKeyProfile("-FilesToDelete");
