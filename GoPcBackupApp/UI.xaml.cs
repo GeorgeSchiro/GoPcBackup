@@ -37,14 +37,15 @@ namespace GoPcBackup
         private int     miProcessedFilesCount;
         private int     miProcessedFilesMaximum;
         private bool    mbBackupRan;
-        private bool    mbGetSetDefaultsDone;
+        private bool    mbGetDefaultsDone;
         private bool    mbIgnoreCheck;                                  // This is needed to avoid double hits in checkbox events.
         private bool    mbInShowMissingBackupDevices;                   // This prevents recursive calls into "ShowMissingBackupDevices()".
         private bool    mbShowBackupOutputAfterSysTray;                 // Determines if the text output console is displayed after a systray click.
         private bool    mbStartupDone;                                  // Indicates all activities prior to logo animation are completed.
         private bool    mbUpdateSelectedBackupDevices;                  // Indicates when the selected backup devices list can be updated.
                                                                         // (which differs from the usual "GetSet()" "always update" behavior)
-        private string  msGetSetConfigurationDefaultsError = null;      // This allows configuration errors to be display asynchronously.
+        private string  msGetSetConfigurationDefaultsError = null;      // This allows configuration errors to be displayed asynchronously.
+        private string  msPreviousBackupTime = null;                    // This tracks changes to backup time configuration.
 
         private Button              moStartStopButtonState = new Button();
         private DateTime            mdtNextStart = DateTime.MinValue;
@@ -997,7 +998,7 @@ namespace GoPcBackup
         {
             tvProfile loBackupSet1Profile = new tvProfile(moProfile.sValue("-BackupSet", "(not set)"));
 
-            if ( !mbGetSetDefaultsDone )
+            if ( !mbGetDefaultsDone )
             {
                 try
                 {
@@ -1026,6 +1027,11 @@ namespace GoPcBackup
                     this.VirtualMachineHostPassword.Text = moProfile.sValue("-VirtualMachineHostPassword", "");
 
 
+                    // Step 3
+
+                    // see below
+
+
                     // Step 4
                     this.BackupTime.Text = moProfile.sValue("-BackupTime", "12:00 AM");
                     this.sldBackupTime_ValueFromString(this.BackupTime.Text);
@@ -1035,7 +1041,7 @@ namespace GoPcBackup
                     msGetSetConfigurationDefaultsError = ex.Message;
                 }
 
-                mbGetSetDefaultsDone = true;
+                mbGetDefaultsDone = true;
             }
 
 
@@ -1178,8 +1184,13 @@ namespace GoPcBackup
                 moProfile.Save();
             }
 
-            if ( !this.bMainLoopStopped )
+            // Reset the loop timer only if the backup time was changed in the configuration.
+            if ( !this.bMainLoopStopped && this.BackupTime.Text != msPreviousBackupTime )
+            {
+                msPreviousBackupTime = this.BackupTime.Text;
+                mdtNextStart = DateTime.MinValue;
                 this.bMainLoopRestart = true;
+            }
         }
 
         private bool bValidateConfiguration()
