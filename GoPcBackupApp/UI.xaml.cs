@@ -2024,6 +2024,10 @@ You can continue this later wherever you left off. "
                     // Wait until the given date (if in the future).
                     // Otherwise wait until later today or tomorrow.
 
+                    int liMainLoopMinutes = moProfile.iValue("-MainLoopMinutes", 1440);
+                        if ( liMainLoopMinutes <= 0 )
+                            liMainLoopMinutes = 1440;
+
                     // This is done by parsing out the date string
                     // from the starting datetime string to get the
                     // given time for the given datetime.
@@ -2032,9 +2036,14 @@ You can continue this later wherever you left off. "
                                 ldtBackupTime.ToShortDateString(), null));
 
                     // If the given time has passed, wait until the
-                    // the same time tomorrow.
+                    // next loop time from the previous backup time.
                     if (ldtBackupTime < DateTime.Now)
-                        ldtBackupTime = ldtBackupTime.AddDays(1);
+                        ldtBackupTime = ldtBackupTime.AddMinutes(liMainLoopMinutes);
+
+                    // If the given time has passed, wait
+                    // until the next loop time from now.
+                    if (ldtBackupTime < DateTime.Now)
+                        ldtBackupTime = DateTime.Now.AddMinutes(liMainLoopMinutes);
                 }
             }
             catch (Exception ex)
@@ -2079,7 +2088,8 @@ You can continue this later wherever you left off. "
 
             if ( this.bMainLoopRestart )
             {
-                mdtNextStart= this.dtBackupTime();
+                if ( mdtNextStart < DateTime.Now )
+                    mdtNextStart = this.dtBackupTime();
 
                 this.bMainLoopRestart = false;
             }
@@ -2090,6 +2100,7 @@ You can continue this later wherever you left off. "
             try
             {
                 string lsTimeLeft = ((TimeSpan)(mdtNextStart - DateTime.Now)).ToString();
+
                 lblNextBackupTimeLeft.Content = lsTimeLeft.Substring(0, lsTimeLeft.Length - 8);
 
                 // "ContainsKey" is used here to avoid storing "mcsNoPreviousText" as the 
@@ -2110,7 +2121,7 @@ You can continue this later wherever you left off. "
                 }
                 else
                 {
-                    mdtNextStart = DateTime.Now.AddMinutes(moProfile.iValue("-MainLoopMinutes", 1440));
+                    mdtNextStart = this.dtBackupTime();
                     lblNextBackupTime.Content = (DateTime.Today.Date == mdtNextStart.Date
                             ? ""
                             : mdtNextStart.DayOfWeek.ToString()) + " " + mdtNextStart.ToShortTimeString();
