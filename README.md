@@ -18,7 +18,7 @@ This utility performs file backups and file cleanups in the background.
 
 It also acts as its own scheduler. First, it checks for files to be removed on a given schedule. Then it runs a backup of your files automatically.
 
-There is no need to use a job scheduler unless this software is running on a server computer that has no regular user activity (see -RunOnce below).
+There is no need to use a job scheduler unless this software is running on a server computer that has no regular user activity (see -NoPrompts and -RunOnce below).
 
 You provide various file specifications (ie. locations of the files to backup and to cleanup) as well as file age limits for the files to cleanup. The rest is automatic.
 
@@ -599,6 +599,13 @@ Options and Features
     loops. The default of 100 ms should be a happy medium between a responsive
     overall UI and a responsive process timer UI. You can increase this value
     if you are concerned that the timer UI is using too much CPU while waiting.
+
+-NoPrompts=False
+
+    Set this switch True and all pop-up prompts will be suppressed. Messages
+    are written to the log instead (see -LogPathFile above). You must use this
+    switch whenever the software is run via a server computer batch job or job
+    scheduler (ie. where no user interaction is permitted).
 
 -PreviousBackupDevicesMissing=False
 

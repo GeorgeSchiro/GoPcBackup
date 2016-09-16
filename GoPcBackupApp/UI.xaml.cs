@@ -124,6 +124,22 @@ namespace GoPcBackup
         /// This is used with "HideMe() / ShowMe()"
         /// to track the visible state of this window.
         /// </summary>
+        public bool bNoPrompts
+        {
+            get
+            {
+                return moProfile.bValue("-NoPrompts", false);
+            }
+            set
+            {
+                moProfile["-NoPrompts"] = value;
+            }
+        }
+
+        /// <summary>
+        /// This is used with "HideMe() / ShowMe()"
+        /// to track the visible state of this window.
+        /// </summary>
         public bool bVisible
         {
             get
@@ -309,14 +325,12 @@ namespace GoPcBackup
                 {
                     // If the timer is off, ask about it before exiting.
                     if ( !(bool)this.chkUseTimer.IsChecked
-                            && tvMessageBoxResults.No == tvMessageBox.Show(
-                                      this
-                                    , "Are you sure you want to exit with the timer stopped? (ie. with the backup not running in the background)"
+                            && tvMessageBoxResults.No == this.Show(
+                                      "Are you sure you want to exit with the timer stopped? (ie. with the backup not running in the background)"
                                     , "Timer Stopped"
                                     , tvMessageBoxButtons.YesNo
                                     , tvMessageBoxIcons.Question
                                     , tvMessageBoxCheckBoxTypes.DontAsk
-                                    , moProfile
                                     , "-TimerStopped"
                                     , tvMessageBoxResults.Yes
                                     )
@@ -359,7 +373,7 @@ namespace GoPcBackup
             {
                 if ( moProfile.bValue("-LicenseAccepted", false) )
                 {
-                    this.ShowWizard();
+                    this.DisplayWizard();
                 }
                 else
                 {
@@ -370,24 +384,29 @@ namespace GoPcBackup
                     tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
                             , lsLicensePathFile, null);
 
-                    tvMessageBox.ShowBriefly(this, string.Format("The \"{0}\" will now be displayed."
-                                    + "\r\n\r\nPlease accept it if you would like to use this software."
-                            , lsLicenseCaption), lsLicenseCaption, tvMessageBoxIcons.Information, 3000);
+                    ScrollingText loLicense = null;
 
-                    ScrollingText   loLicense = new ScrollingText(moDoGoPcBackup.sFileAsStream(
-                                                          moProfile.sRelativeToProfilePathFile(lsLicensePathFile))
-                                                        , lsLicenseCaption, true);
-                                    loLicense.TextBackground = Brushes.LightYellow;
-                                    loLicense.OkButtonText = "Accept";
-                                    loLicense.bDefaultButtonDisabled = true;
-                                    loLicense.ShowDialog();
+                    if ( !this.bNoPrompts )
+                    {
+                        tvMessageBox.ShowBriefly(this, string.Format("The \"{0}\" will now be displayed."
+                                        + "\r\n\r\nPlease accept it if you would like to use this software."
+                                , lsLicenseCaption), lsLicenseCaption, tvMessageBoxIcons.Information, 3000);
 
-                    if ( loLicense.bOkButtonClicked )
+                        loLicense = new ScrollingText(moDoGoPcBackup.sFileAsStream(
+                                              moProfile.sRelativeToProfilePathFile(lsLicensePathFile))
+                                            , lsLicenseCaption, true);
+                        loLicense.TextBackground = Brushes.LightYellow;
+                        loLicense.OkButtonText = "Accept";
+                        loLicense.bDefaultButtonDisabled = true;
+                        loLicense.ShowDialog();
+                    }
+
+                    if ( null != loLicense && loLicense.bOkButtonClicked )
                     {
                         moProfile["-LicenseAccepted"] = true;
                         moProfile.Save();
 
-                        this.ShowWizard();
+                        this.DisplayWizard();
                     }
                 }
             }            
@@ -419,7 +438,7 @@ namespace GoPcBackup
                 // Since error output is cached (see "this.GetSetOutputTextPanelErrorCache()"),
                 // the cached error output text should be displayed right away.
                 if ( moProfile.ContainsKey("-PreviousBackupOk") && !moProfile.bValue("-PreviousBackupOk", false) )
-                    this.ShowOutputText();
+                    this.DisplayOutputText();
 
                 // If the timer is checked, start the main loop.
                 if ( (bool)this.chkUseTimer.IsChecked )
@@ -462,12 +481,12 @@ namespace GoPcBackup
             if ( Visibility.Visible == this.MiddlePanelConfigWizard.Visibility )
             {
                 this.HideMiddlePanels();
-                this.ShowBackupRunning();
+                this.DisplayBackupRunning();
             }
             else
             {
                 this.HideMiddlePanels();
-                this.ShowWizard();
+                this.DisplayWizard();
 
                 // Reset setup backup device checkboxes.
                 gridBackupDevices.Children.Clear();
@@ -485,7 +504,7 @@ namespace GoPcBackup
             if ( Visibility.Visible == this.MiddlePanelConfigDetails.Visibility )
             {
                 this.HideMiddlePanels();
-                this.ShowBackupRunning();
+                this.DisplayBackupRunning();
             }
             else
             {
@@ -499,7 +518,7 @@ namespace GoPcBackup
             if ( Visibility.Visible == this.MiddlePanelTimer.Visibility )
             {
                 this.HideMiddlePanels();
-                this.ShowBackupRunning(true);
+                this.DisplayBackupRunning(true);
             }
             else
             {
@@ -522,7 +541,7 @@ namespace GoPcBackup
 
         private void btnShowArchive_Click(object sender, RoutedEventArgs e)
         {
-            this.ShowBackupRunning();
+            this.DisplayBackupRunning();
 
             Process.Start(moProfile.sValue("-WindowsExplorer"
                     , "explorer.exe"), moDoGoPcBackup.sArchivePath());
@@ -530,7 +549,7 @@ namespace GoPcBackup
 
         private void btnShowBackupLogs_Click(object sender, RoutedEventArgs e)
         {
-            this.ShowBackupRunning();
+            this.DisplayBackupRunning();
 
             Process.Start(moProfile.sValue("-WindowsExplorer"
                     , "explorer.exe"), Path.GetDirectoryName(moProfile.sLoadedPathFile));
@@ -680,7 +699,7 @@ namespace GoPcBackup
             tvProfile loBackupSet1Profile = new tvProfile(moProfile.sValue("-BackupSet", "(not set)"));
             if ( loBackupSet1Profile.oOneKeyProfile("-FolderToBackup").Count > 1 )
             {
-                tvMessageBox.ShowWarning(this, string.Format("The profile file (\"{0}\") has been edited manually to contain more than one folder to backup. Please remove the excess or continue to edit the profile by hand."
+                this.ShowWarning(string.Format("The profile file (\"{0}\") has been edited manually to contain more than one folder to backup. Please remove the excess or continue to edit the profile by hand."
                         , Path.GetFileName(moProfile.sLoadedPathFile)), "Can't Change Folder to Backup");
                 return;
             }
@@ -689,7 +708,10 @@ namespace GoPcBackup
             loOpenDialog.RootFolder = Environment.SpecialFolder.Desktop;
             loOpenDialog.SelectedPath = this.FolderToBackup.Text;
 
-            System.Windows.Forms.DialogResult leDialogResult = loOpenDialog.ShowDialog();
+            System.Windows.Forms.DialogResult leDialogResult = System.Windows.Forms.DialogResult.None;
+
+            if ( !this.bNoPrompts )
+                leDialogResult = loOpenDialog.ShowDialog();
 
             if ( System.Windows.Forms.DialogResult.OK == leDialogResult )
                 this.FolderToBackup.Text = loOpenDialog.SelectedPath;
@@ -701,7 +723,10 @@ namespace GoPcBackup
             loOpenDialog.RootFolder = Environment.SpecialFolder.Desktop;
             loOpenDialog.SelectedPath = this.ArchivePath.Text;
 
-            System.Windows.Forms.DialogResult leDialogResult = loOpenDialog.ShowDialog();
+            System.Windows.Forms.DialogResult leDialogResult = System.Windows.Forms.DialogResult.None;
+
+            if ( !this.bNoPrompts )
+                leDialogResult = loOpenDialog.ShowDialog();
 
             if ( System.Windows.Forms.DialogResult.OK == leDialogResult )
                 this.ArchivePath.Text = loOpenDialog.SelectedPath;
@@ -788,7 +813,10 @@ namespace GoPcBackup
             loOpenDialog.RootFolder = Environment.SpecialFolder.Desktop;
             loOpenDialog.SelectedPath = this.VirtualMachineHostArchivePath.Text;
 
-            System.Windows.Forms.DialogResult leDialogResult = loOpenDialog.ShowDialog();
+            System.Windows.Forms.DialogResult leDialogResult = System.Windows.Forms.DialogResult.None;
+
+            if ( !this.bNoPrompts )
+                leDialogResult = loOpenDialog.ShowDialog();
 
             if ( System.Windows.Forms.DialogResult.OK == leDialogResult )
                 this.VirtualMachineHostArchivePath.Text = loOpenDialog.SelectedPath;
@@ -811,7 +839,7 @@ namespace GoPcBackup
                     if (Visibility.Visible != this.MiddlePanelOutputText.Visibility)
                     {
                         this.HideMiddlePanels();
-                        this.ShowOutputText();
+                        this.DisplayOutputText();
                     }
                 }
                 else
@@ -840,6 +868,171 @@ namespace GoPcBackup
                     PostMessage((IntPtr)HWND_BROADCAST, WM_SHOWME, IntPtr.Zero, IntPtr.Zero);
                 }
             }
+        }
+
+
+        // This collection of "Show" methods allows for pop-up messages
+        // to be suppressed and written to the log file instead.
+
+
+        private tvMessageBoxResults Show(
+                  string asMessageText
+                , string asMessageCaption
+                , tvMessageBoxButtons aetvMessageBoxButtons
+                , tvMessageBoxIcons aetvMessageBoxIcon
+                )
+        {
+            if ( this.bNoPrompts )
+                moDoGoPcBackup.LogIt(asMessageText);
+
+            tvMessageBoxResults ltvMessageBoxResults = tvMessageBoxResults.None;
+
+            if ( !this.bNoPrompts )
+                ltvMessageBoxResults = tvMessageBox.Show(
+                          this
+                        , asMessageText
+                        , asMessageCaption
+                        , aetvMessageBoxButtons
+                        , aetvMessageBoxIcon
+                        );
+
+            return ltvMessageBoxResults;
+        }
+
+        private tvMessageBoxResults Show(
+                  string asMessageText
+                , string asMessageCaption
+                , tvMessageBoxButtons aetvMessageBoxButtons
+                , tvMessageBoxIcons aetvMessageBoxIcon
+                , string asProfilePromptKey
+                )
+        {
+            if ( this.bNoPrompts )
+                moDoGoPcBackup.LogIt(asMessageText);
+
+            tvMessageBoxResults ltvMessageBoxResults = tvMessageBoxResults.None;
+
+            if ( !this.bNoPrompts )
+                ltvMessageBoxResults = tvMessageBox.Show(
+                          this
+                        , asMessageText
+                        , asMessageCaption
+                        , aetvMessageBoxButtons
+                        , aetvMessageBoxIcon
+                        , tvMessageBoxCheckBoxTypes.SkipThis
+                        , moProfile
+                        , asProfilePromptKey
+                        );
+
+            return ltvMessageBoxResults;
+        }
+
+        private tvMessageBoxResults Show(
+                  string asMessageText
+                , string asMessageCaption
+                , tvMessageBoxButtons aetvMessageBoxButtons
+                , tvMessageBoxIcons aetvMessageBoxIcon
+                , tvMessageBoxCheckBoxTypes aetvMessageBoxCheckBoxType
+                , string asProfilePromptKey
+                )
+        {
+            if ( this.bNoPrompts )
+                moDoGoPcBackup.LogIt(asMessageText);
+
+            tvMessageBoxResults ltvMessageBoxResults = tvMessageBoxResults.None;
+
+            if ( !this.bNoPrompts )
+                ltvMessageBoxResults = tvMessageBox.Show(
+                          this
+                        , asMessageText
+                        , asMessageCaption
+                        , aetvMessageBoxButtons
+                        , aetvMessageBoxIcon
+                        , tvMessageBoxCheckBoxTypes.SkipThis
+                        , moProfile
+                        , asProfilePromptKey
+                        );
+
+            return ltvMessageBoxResults;
+        }
+
+        private tvMessageBoxResults Show(
+                  string asMessageText
+                , string asMessageCaption
+                , tvMessageBoxButtons aetvMessageBoxButtons
+                , tvMessageBoxIcons aetvMessageBoxIcon
+                , tvMessageBoxCheckBoxTypes aetvMessageBoxCheckBoxType
+                , string asProfilePromptKey
+                , tvMessageBoxResults aetvMessageBoxResult
+                )
+        {
+            if ( this.bNoPrompts )
+                moDoGoPcBackup.LogIt(asMessageText);
+
+            tvMessageBoxResults ltvMessageBoxResults = tvMessageBoxResults.None;
+
+            if ( !this.bNoPrompts )
+                ltvMessageBoxResults = tvMessageBox.Show(
+                          this
+                        , asMessageText
+                        , asMessageCaption
+                        , aetvMessageBoxButtons
+                        , aetvMessageBoxIcon
+                        , tvMessageBoxCheckBoxTypes.SkipThis
+                        , moProfile
+                        , asProfilePromptKey
+                        , aetvMessageBoxResult
+                        );
+
+            return ltvMessageBoxResults;
+        }
+
+        private void ShowError(Exception aoException)
+        {
+            if ( this.bNoPrompts )
+                moDoGoPcBackup.LogIt(aoException.Message);
+
+            // Update the error text cache.
+            this.GetSetOutputTextPanelErrorCache();
+
+            if ( !this.bNoPrompts )
+                tvMessageBox.ShowError(this, aoException);
+        }
+
+        private void ShowError(string asMessageText)
+        {
+            if ( this.bNoPrompts )
+                moDoGoPcBackup.LogIt(asMessageText);
+
+            // Update the error text cache.
+            this.GetSetOutputTextPanelErrorCache();
+
+            if ( !this.bNoPrompts )
+                tvMessageBox.ShowError(this, asMessageText);
+        }
+
+        public void ShowError(string asMessageText, string asMessageCaption)
+        {
+            if ( this.bNoPrompts )
+                moDoGoPcBackup.LogIt(asMessageText);
+
+            // Update the error text cache.
+            this.GetSetOutputTextPanelErrorCache();
+
+            if ( !this.bNoPrompts )
+                tvMessageBox.ShowError(this, asMessageText, asMessageCaption);
+        }
+
+        public void ShowWarning(string asMessageText, string asMessageCaption)
+        {
+            if ( this.bNoPrompts )
+                moDoGoPcBackup.LogIt(asMessageText);
+
+            // Update the error text cache.
+            this.GetSetOutputTextPanelErrorCache();
+
+            if ( !this.bNoPrompts )
+                tvMessageBox.ShowWarning(this, asMessageText, asMessageCaption);
         }
 
         // This "HideMe() / ShowMe()" kludge is necessary
@@ -885,10 +1078,10 @@ namespace GoPcBackup
             if ( moProfile.ContainsKey("-BackupBeginScriptPathFile")
                     && !moProfile.bValue("-BackupBeginScriptInit", false) )
             {
-                lbShowInitBeginScriptWarning = tvMessageBoxResults.OK == tvMessageBox.Show(this
-                        , "Are you sure you want reinitialize the \"backup begin\" script to its default state?"
+                lbShowInitBeginScriptWarning = tvMessageBoxResults.OK == this.Show(
+                          "Are you sure you want reinitialize the \"backup begin\" script to its default state?"
                         , "Reinitialize Begin Script", tvMessageBoxButtons.OKCancel, tvMessageBoxIcons.Exclamation
-                        , tvMessageBoxCheckBoxTypes.DontAsk, moProfile, "-InitBeginScript", tvMessageBoxResults.OK
+                        , tvMessageBoxCheckBoxTypes.DontAsk, "-InitBeginScript", tvMessageBoxResults.OK
                         );
 
                 if ( lbShowInitBeginScriptWarning )
@@ -913,10 +1106,10 @@ namespace GoPcBackup
                         && !moProfile.bValue("-BackupDoneScriptInit", false))
                     )
             {
-                lbShowInitScriptsWarning = tvMessageBoxResults.OK == tvMessageBox.Show(this
-                        , "Are you sure you want reinitialize both backup scripts to their default states?"
+                lbShowInitScriptsWarning = tvMessageBoxResults.OK == this.Show(
+                          "Are you sure you want reinitialize both backup scripts to their default states?"
                         , "Reinitialize Both Scripts", tvMessageBoxButtons.OKCancel, tvMessageBoxIcons.Exclamation
-                        , tvMessageBoxCheckBoxTypes.DontAsk, moProfile, "-InitBothScripts", tvMessageBoxResults.OK
+                        , tvMessageBoxCheckBoxTypes.DontAsk, "-InitBothScripts", tvMessageBoxResults.OK
                         );
 
                 if ( lbShowInitScriptsWarning )
@@ -1305,7 +1498,7 @@ namespace GoPcBackup
 
             if ( null != lsMessage )
             {
-                tvMessageBox.ShowWarning(this, lsMessage, lsCaption);
+                this.ShowWarning(lsMessage, lsCaption);
             }
             else
             {
@@ -1338,7 +1531,7 @@ namespace GoPcBackup
             }
 
             if ( null != lsMessage )
-                tvMessageBox.ShowWarning(this, lsMessage, lsCaption);
+                this.ShowWarning(lsMessage, lsCaption);
 
             return null == lsMessage;
         }
@@ -1382,7 +1575,7 @@ namespace GoPcBackup
         private void btnSetupDone_Click(object sender, RoutedEventArgs e)
         {
             if ( this.bValidateConfiguration()
-                    && tvMessageBoxResults.Yes == tvMessageBox.Show(this, string.Format(@"
+                    && tvMessageBoxResults.Yes == this.Show(string.Format(@"
 Are you sure you want to run the backup?
 
 You can continue this later wherever you left off. "
@@ -1524,9 +1717,8 @@ You can continue this later wherever you left off. "
                     gridBackupDevices.Children.Clear();
 
                 if ( lbDeviceReattached
-                        && tvMessageBoxResults.Yes == tvMessageBox.Show(
-                                  this
-                                    , "The most recent backup " + (moProfile.bValue("-PreviousBackupOk", false)
+                        && tvMessageBoxResults.Yes == this.Show(
+                                      "The most recent backup " + (moProfile.bValue("-PreviousBackupOk", false)
                                     ? "was successful, yet a backup device was attached."
                                     : "failed and then a backup device was reattached.")
                                     + " Attached backup devices should be updated."
@@ -1536,7 +1728,6 @@ You can continue this later wherever you left off. "
                                 , tvMessageBoxButtons.YesNo
                                 , tvMessageBoxIcons.Question
                                 , tvMessageBoxCheckBoxTypes.DontAsk
-                                , moProfile
                                 , "-DeviceReattached"
                                 )
                             )
@@ -1592,8 +1783,8 @@ You can continue this later wherever you left off. "
                         , 1 == loMissingBackupDevices.Count ? "" : "s"
                         );
 
-                leTvMessageBoxResults = tvMessageBox.Show(
-                        this, lsMessage, lsMessageCaption, tvMessageBoxButtons.YesNoCancel, tvMessageBoxIcons.Alert);
+                leTvMessageBoxResults = this.Show(
+                        lsMessage, lsMessageCaption, tvMessageBoxButtons.YesNoCancel, tvMessageBoxIcons.Alert);
             }
 
             return leTvMessageBoxResults;
@@ -1601,9 +1792,8 @@ You can continue this later wherever you left off. "
 
         private void btnRerunBackupScripts_Click(object sender, RoutedEventArgs e)
         {
-            if ( tvMessageBoxResults.Yes == tvMessageBox.Show(
-                      this
-                    , "Are you sure you want to rerun the backup scripts?"
+            if ( tvMessageBoxResults.Yes == this.Show(
+                      "Are you sure you want to rerun the backup scripts?"
                     , "Rerun Scripts"
                     , tvMessageBoxButtons.YesNo
                     , tvMessageBoxIcons.Question
@@ -1621,19 +1811,19 @@ You can continue this later wherever you left off. "
                 );
         }
 
-        private void ShowWizard()
+        private void DisplayWizard()
         {
             this.MiddlePanelConfigWizard.Visibility = Visibility.Visible;
 
             if ( null != msGetSetConfigurationDefaultsError )
             {
                 // This kludge (the "Replace()") is needed to correct for bad MS grammar.
-                tvMessageBox.ShowError(this, msGetSetConfigurationDefaultsError.Replace("a unknown", "an unknown"), "Error Loading Configuration");
+                this.ShowError(msGetSetConfigurationDefaultsError.Replace("a unknown", "an unknown"), "Error Loading Configuration");
                 msGetSetConfigurationDefaultsError = null;
             }
         }
 
-        private void ShowOutputText()
+        private void DisplayOutputText()
         {
             if ( "" != this.BackupProcessOutput.Text.Trim() )
                 this.MiddlePanelOutputText.Visibility = Visibility.Visible;
@@ -1746,12 +1936,12 @@ You can continue this later wherever you left off. "
             lblTimerStatus.Content = asCommonValue;
         }
 
-        private void ShowBackupRunning()
+        private void DisplayBackupRunning()
         {
-            this.ShowBackupRunning(false);
+            this.DisplayBackupRunning(false);
         }
 
-        private void ShowBackupRunning(bool abShowBackupRan)
+        private void DisplayBackupRunning(bool abShowBackupRan)
         {
             if ( this.bBackupRunning || (abShowBackupRan && mbBackupRan) )
                 this.MiddlePanelOutputText.Visibility = Visibility.Visible;
@@ -1759,6 +1949,9 @@ You can continue this later wherever you left off. "
 
         private void ShowHelp()
         {
+            if ( this.bNoPrompts )
+                return;
+
             // If a help window is already open, close it.
             foreach (ScrollingText loWindow in moOtherWindows)
             {
@@ -1798,7 +1991,7 @@ You can continue this later wherever you left off. "
                     lbPreviousBackupError = true;
                     mbShowBackupOutputAfterSysTray = true;
 
-                    tvMessageBox.ShowError(this, "The previous backup did not complete. Check the log."
+                    this.ShowError("The previous backup did not complete. Check the log."
                             + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
                 }
                 else
@@ -1808,7 +2001,7 @@ You can continue this later wherever you left off. "
                         lbPreviousBackupError = true;
                         mbShowBackupOutputAfterSysTray = true;
 
-                        tvMessageBox.ShowError(this, "The previous backup failed. Check the log for errors."
+                        this.ShowError("The previous backup failed. Check the log for errors."
                                 + moDoGoPcBackup.sSysTrayMsg, "Backup Failed");
                     }
                     else
@@ -1816,7 +2009,7 @@ You can continue this later wherever you left off. "
                         int liPreviousBackupDays = (DateTime.Now - moProfile.dtValue("-PreviousBackupTime"
                                                         , DateTime.MinValue)).Days;
 
-                        tvMessageBox.Show(this, string.Format(
+                        this.Show(string.Format(
                                 "The previous backup finished successfully ({0} {1} day{2} ago)."
                                         , liPreviousBackupDays < 1 ? "less than" : "about"
                                         , liPreviousBackupDays < 1 ? 1 : liPreviousBackupDays
@@ -1826,7 +2019,6 @@ You can continue this later wherever you left off. "
                                 , "Backup Finished"
                                 , tvMessageBoxButtons.OK, tvMessageBoxIcons.Done
                                 , tvMessageBoxCheckBoxTypes.SkipThis
-                                , moProfile
                                 , "-PreviousBackupFinished"
                                 );
                     }
@@ -1876,9 +2068,8 @@ You can continue this later wherever you left off. "
                     catch {}
 
                 if ( lbLastRunArgsUnstable )
-                    lbDoRerun = tvMessageBoxResults.OK == tvMessageBox.Show(
-                                      this
-                                    , "Changes have been made to your backup configuration which may cause a rerun to fail.\r\n\r\nAre you sure you want to rerun the backup scripts?"
+                    lbDoRerun = tvMessageBoxResults.OK == this.Show(
+                                      "Changes have been made to your backup configuration which may cause a rerun to fail.\r\n\r\nAre you sure you want to rerun the backup scripts?"
                                     , "Backup Configuration Changed"
                                     , tvMessageBoxButtons.OKCancel
                                     , tvMessageBoxIcons.Question
@@ -1921,13 +2112,13 @@ You can continue this later wherever you left off. "
                         moProfile.Save();
 
                         if ( 0 != liBackupBeginScriptErrors )
-                            moDoGoPcBackup.ShowError(
+                            this.ShowError(
                                       string.Format("The \"backup begin\" script failed. Check the log for errors."
                                             + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
                                     , "Backup Failed");
 
                         if ( 0 != liCopyFailures )
-                            moDoGoPcBackup.ShowError(
+                            this.ShowError(
                                       string.Format("The \"backup done\" script failed with {0} copy failure{1}. Check the log for errors."
                                             + moDoGoPcBackup.sSysTrayMsg, liCopyFailures, 1 == liCopyFailures ? "" : "s")
                                     , "Backup Failed");
@@ -1947,15 +2138,13 @@ You can continue this later wherever you left off. "
 
                             bool lbPreviousBackupOk = moProfile.ContainsKey("-PreviousBackupOk") && moProfile.bValue("-PreviousBackupOk", false);
 
-                            if ( !lbPreviousBackupOk && tvMessageBoxResults.Yes == tvMessageBox.Show(
-                                              this
-                                            , "The backup scripts finished successfully (after the previous failed backup). Yet the"
+                            if ( !lbPreviousBackupOk && tvMessageBoxResults.Yes == this.Show(
+                                              "The backup scripts finished successfully (after the previous failed backup). Yet the"
                                                 + " backup status is still \"Backup Failed\".\r\n\r\nShall we change it to \"Backup OK?\""
                                             , "Adjust Backup Status"
                                             , tvMessageBoxButtons.YesNo
                                             , tvMessageBoxIcons.Question
                                             , tvMessageBoxCheckBoxTypes.DontAsk
-                                            , moProfile
                                             , "-BackupStatusChanged"
                                             )
                                         )
@@ -2062,7 +2251,7 @@ You can continue this later wherever you left off. "
                 this.bMainLoopStopped = true;
 
                 // This kludge (the "Replace()") is needed to correct for bad MS grammar.
-                tvMessageBox.ShowError(this, ex.Message.Replace("a unknown", "an unknown"), "Error Setting Backup Time");
+                this.ShowError(ex.Message.Replace("a unknown", "an unknown"), "Error Setting Backup Time");
             }
 
             return ldtBackupTime;
@@ -2150,7 +2339,7 @@ You can continue this later wherever you left off. "
             }
             catch (Exception ex)
             {
-                tvMessageBox.ShowError(this, ex);
+                this.ShowError(ex);
             }
             finally
             {
