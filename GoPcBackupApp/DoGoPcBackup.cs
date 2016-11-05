@@ -2205,8 +2205,9 @@ cd {1}
                                                     loProcessesArray = Process.GetProcesses();
 
                                                 // Since a window title has been provided, it must be compared to the process(es) found.
+                                                // Wildcards are permitted, but only at the end of titles. We stop at the first match.
                                                 foreach (Process loProcessEntry in loProcessesArray)
-                                                    if ( lsWindowTitle == loProcessEntry.MainWindowTitle )
+                                                    if ( loProcessEntry.MainWindowTitle.StartsWith(lsWindowTitle.Replace("*", "")) )
                                                     {
                                                         lbFound = true;
                                                         break;
