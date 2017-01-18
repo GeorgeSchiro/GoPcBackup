@@ -106,7 +106,6 @@ Here's some of what you might see in a profile file:
         -AgeDays=365
         -FilesToDelete=C:\Archive\AdminFiles*.zip
         -FilesToDelete=C:\Archive\AdminOtherFiles*.zip
-        -ApplyDeletionLimit
 
     -CleanupSet=]
     -CleanupSet=[
@@ -124,7 +123,7 @@ You will notice that the profile data is not formatted as XML. It is expressed i
 
 <b>GoPC Backup</b> uses "7-zip" as its ZIP compression engine. "7-zip" is an excellent tool.  
 
-<b>GoPC Backup</b> is essentially an automation front-end for "7-zip". That said, you can replace "7-zip" with any other command-line driven ZIP tool you might prefer instead. The choice of compression tool is entirely yours. This change is made in the profile file like everything else (see "-ZipToolEXE" below).
+<b>GoPC Backup</b> is essentially an automation front-end for "7-zip". That said, you can replace "7-zip" with any other command-line driven ZIP tool you might prefer instead. The choice of compression tool is entirely yours. Such a change would be made in the profile file like everything else (see "-ZipToolEXE" below).
 
 
 Screenshots
@@ -520,7 +519,6 @@ Options and Features
 
             -AgeDays=90
             -FilesToDelete=C:\Archive\*.*
-            -ApplyDeletionLimit
 
         -CleanupSet=]
 
@@ -640,8 +638,8 @@ Options and Features
 
     This is the list of selected backup devices as a bit field. All bit fields
     have a leading 1 bit to preserve leading zeros. The second bit starts the
-    device list (ie. drive letter list). Drive C: is not available as a backup
-    device. So the second bit identifies drive D:.
+    device list (ie. drive letter list). Drive C: is not available as a device
+    for additional (external) backups. So the second bit identifies drive D:.
 
 -ShowBackupBeginScriptErrors=True
 
@@ -661,8 +659,7 @@ Options and Features
 -ShowProfile=False
 
     Set this switch True to immediately display the entire contents of the profile
-    file at startup in command-line format. This is sometimes helpful to diagnose
-    problems.
+    file at startup in command-line format. This may be helpful as a diagnostic.
 
 -UseConnectVirtualMachineHost=False
 

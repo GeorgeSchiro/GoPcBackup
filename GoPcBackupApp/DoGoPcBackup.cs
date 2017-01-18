@@ -611,8 +611,8 @@ A brief description of each feature follows.
 
     This is the list of selected backup devices as a bit field. All bit fields
     have a leading 1 bit to preserve leading zeros. The second bit starts the
-    device list (ie. drive letter list). Drive C: is not available as a backup
-    device. So the second bit identifies drive D:.
+    device list (ie. drive letter list). Drive C: is not available as a device
+    for additional (external) backups. So the second bit identifies drive D:.
 
 -ShowBackupBeginScriptErrors=True
 
@@ -632,8 +632,7 @@ A brief description of each feature follows.
 -ShowProfile=False
 
     Set this switch True to immediately display the entire contents of the profile
-    file at startup in command-line format. This is sometimes helpful to diagnose
-    problems.
+    file at startup in command-line format. This may be helpful as a diagnostic.
 
 -UseConnectVirtualMachineHost=False
 
@@ -1792,12 +1791,7 @@ No file cleanup will be done until you update the configuration.
 
                             if ( 1 == ++liFileCount )
                             {
-                                if ( moProfile.ContainsKey("-ActivateAlreadyRunningInstance") )
-                                {
-                                    // Backup just the backup profile file as well (to avoid file contention problems with the main instance).
-                                    loBackupFileListStreamWriter.WriteLine(this.sExeRelativePath(lsProcessPathFile, moProfile.sLoadedPathFile));
-                                }
-                                else
+                                if ( !moProfile.ContainsKey("-ActivateAlreadyRunningInstance") )
                                 {
                                     // Backup the backup as well.
                                     loBackupFileListStreamWriter.WriteLine(this.sExeRelativePath(lsProcessPathFile, Path.GetDirectoryName(moProfile.sLoadedPathFile)));
