@@ -426,8 +426,10 @@ public partial class tvMessageBox : Window
             if ( null != aoWindow )             // Try window title first.
                 asMessageCaption = aoWindow.Title;
             else
-            if ( null != Application.Current )  // Next try for application name.
+            if ( null != Application.Current && null != Application.Current.MainWindow )  // Next try for application name.
                 asMessageCaption = Application.Current.MainWindow.Name;
+            else
+                asMessageCaption = System.IO.Path.GetFileNameWithoutExtension(Application.ResourceAssembly.Location);
         }
 
         if ( null != aoWindow )

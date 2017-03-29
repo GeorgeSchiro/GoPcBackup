@@ -158,6 +158,14 @@
         <Setter Property="IsReadOnly" Value="True" />
     </Style>
 
+    <Style x:Key="ConfigWizardUpgradeButton" BasedOn="{StaticResource MainCanvasButton}" TargetType="{x:Type Button}">
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="ToolTip" Value="Copy &amp; Upgrade Previous Configuration" />
+        <Setter Property="Height" Value="90" />
+        <Setter Property="Width" Value="90" />
+    </Style>
+
     <Style x:Key="OutputText" TargetType="{x:Type TextBlock}">
         <Setter Property="Background" Value="Green" />
         <Setter Property="Foreground" Value="White" />

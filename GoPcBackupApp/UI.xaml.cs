@@ -26,7 +26,7 @@ namespace GoPcBackup
         private const string mcsStoppedText         = "stopped";
         private const string mcsWaitingText         = "Waiting";
         private const string mcsNotifyIconIdleText  = "GoPC Backup";
-        private const string mcsNotifyIconProcText  = "GoPC Backup - busy";
+        private const string mcsNotifyIconBusyText  = "GoPC Backup - busy";
 
         private double  miOriginalScreenHeight;
         private double  miOriginalScreenWidth;
@@ -52,6 +52,7 @@ namespace GoPcBackup
         private DispatcherTimer     moMainLoopTimer;
         private ExtendedNotifyIcon  moNotifyIcon;
         private tvMessageBox        moNotifyWaitMessage;
+        private tvMessageBox        moStartupWaitMessage;
         private WindowState         mePreviousWindowState;
 
 
@@ -68,6 +69,11 @@ namespace GoPcBackup
         /// </param>
         public UI(DoGoPcBackup aoDoGoPcBackup)
         {
+            String  lsFilnameOnly = Path.GetFileNameWithoutExtension(aoDoGoPcBackup.oProfile.sExePathFile);
+            String  lcsLoadingMsg = lsFilnameOnly + " loading, please wait ...";
+                    moStartupWaitMessage = new tvMessageBox();
+                    moStartupWaitMessage.ShowWait(this, lcsLoadingMsg, 250);
+
             InitializeComponent();
 
             // This loads window UI defaults from the given profile.
@@ -133,6 +139,22 @@ namespace GoPcBackup
             set
             {
                 moProfile["-NoPrompts"] = value;
+            }
+        }
+
+        /// <summary>
+        /// This is used to display or
+        /// hide the "Upgrade" button.
+        /// </summary>
+        public bool bUpgraded
+        {
+            get
+            {
+                return moProfile.bValue("-Upgraded", false);
+            }
+            set
+            {
+                moProfile["-Upgraded"] = value;
             }
         }
 
@@ -220,7 +242,7 @@ namespace GoPcBackup
                         this.PopulateTimerDisplay(mcsStoppedText);
 
                     this.CreateSysTrayIcon();
-                    moNotifyIcon.targetNotifyIcon.Text = mcsNotifyIconIdleText;
+                    moNotifyIcon.targetNotifyIcon.Text = this.sNotifyIconIdleText;
                     this.EnableButtons();
                 }
                 else
@@ -234,7 +256,7 @@ namespace GoPcBackup
 
                     this.PopulateTimerDisplay(mcsBackingUpText);
                     this.CreateSysTrayIcon();
-                    moNotifyIcon.targetNotifyIcon.Text = mcsNotifyIconProcText;
+                    moNotifyIcon.targetNotifyIcon.Text = mcsNotifyIconBusyText;
 
                     // Indicate that the backup has run at least once.
                     mbBackupRan = true;
@@ -261,9 +283,115 @@ namespace GoPcBackup
         }
         private List<ScrollingText> moOtherWindows = new List<ScrollingText>();
 
+        /// <summary>
+        /// This text is used for the notify icon
+        /// tooltip as well as the main window title.
+        /// </summary>
+        public string sNotifyIconIdleText
+        {
+            get
+            {
+                return mcsNotifyIconIdleText + String.Format(" {0}.{1}"
+                        , System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.Major
+                        , System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.Minor
+                        );
+            }
+        }
+
+
+        public int iCurrentBackupDevicesBitField()
+        {
+            // The leftmost bit is always 1 to preserve leading zeros.
+            int  liCurrentBackupDevicesBitField = 1;
+            char lcPossibleDriveLetter = moDoGoPcBackup.cPossibleDriveLetterBegin;
+
+            foreach ( DriveInfo loDrive in DriveInfo.GetDrives() )
+            {
+                string lsDeviceDriveLetter = loDrive.Name.Substring(0, 1);
+
+                // Skip devices with letters starting before the possible drive letters.
+                if ( String.Compare(lsDeviceDriveLetter, lcPossibleDriveLetter.ToString()) >= 0 )
+                {
+                    // Fill in zeros for all drives prior to or between each drive selected.
+                    while ( String.Compare(lsDeviceDriveLetter, lcPossibleDriveLetter.ToString()) > 0 )
+                    {
+                        liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
+                        ++lcPossibleDriveLetter;
+                    }
+
+                    liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
+                    liCurrentBackupDevicesBitField += (bool)File.Exists(Path.Combine(loDrive.Name, moDoGoPcBackup.sBackupDriveToken)) ? 1 : 0;
+                    ++lcPossibleDriveLetter;
+                }
+            }
+
+            // Fill in zeros for all the drives after the last drive found.
+            for ( char c = lcPossibleDriveLetter; c <= moDoGoPcBackup.cPossibleDriveLetterEnd; ++c )
+            {
+                liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
+            }
+
+            return liCurrentBackupDevicesBitField;
+        }
+
+        public void AppendOutputTextLine(string asTextLine)
+        {
+            this.BackupProcessOutput.Inlines.Add(asTextLine + Environment.NewLine);
+            if ( this.BackupProcessOutput.Inlines.Count > moProfile.iValue("-ConsoleTextLineLength", 100) )
+                this.BackupProcessOutput.Inlines.Remove(this.BackupProcessOutput.Inlines.FirstInline);
+            this.scrBackupProcessOutput.ScrollToEnd();
+
+            this.IncrementProgressBar(false);
+        }
+
+        public void HandleShutdown()
+        {
+            // Save any setup changes.
+            this.GetSetConfigurationDefaults();
+
+            // Update the output text cache.
+            this.GetSetOutputTextPanelCache();
+
+            // Always turn the timer back on during shutdowns. That
+            // way backups should automatically retart after reboot.
+            this.chkUseTimer_SetChecked(true);
+        }
+
+        public void IncrementProgressBar(bool abFill)
+        {
+            if ( !abFill )
+                this.prbBackupProgress.Value = 0 == miProcessedFilesMaximum ? 0
+                        : this.prbBackupProgress.Maximum
+                                * ((double)++miProcessedFilesCount / miProcessedFilesMaximum);
+            else
+                if ( 0 == miProcessedFilesMaximum )
+                {
+                    this.prbBackupProgress.Value = 0;
+                }
+                else
+                    // This kludge is necessary since simply setting
+                    // "this.prbBackupProgress.Value = this.prbBackupProgress.Maximum" fails.
+                    do
+	                {
+                	    this.prbBackupProgress.Value = this.prbBackupProgress.Maximum
+                                * ((double)++miProcessedFilesCount / miProcessedFilesMaximum);
+	                }
+                    while ( miProcessedFilesCount < miProcessedFilesMaximum );
+        }
+
+        public void InitProgressBar(int aiProcessedFilesMaximum)
+        {
+            miProcessedFilesCount = 0;
+            miProcessedFilesMaximum = aiProcessedFilesMaximum;
+            this.prbBackupProgress.Value = 0;
+            this.prbBackupProgress.Minimum = 0;
+            this.prbBackupProgress.Maximum = 100;
+        }
+
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            this.Title = this.sNotifyIconIdleText;
             this.AdjustWindowSize();
             miOriginalScreenHeight = SystemParameters.PrimaryScreenHeight;
             miOriginalScreenWidth = SystemParameters.PrimaryScreenWidth;
@@ -294,7 +422,7 @@ namespace GoPcBackup
             this.chkUseTimer.IsChecked = moProfile.bValue("-AutoStart", true);
 
             // Turns off the "loading" message.
-            moProfile.bAppFullyLoaded = true;
+            moStartupWaitMessage.Close();
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -302,41 +430,34 @@ namespace GoPcBackup
             // Save any setup changes.
             this.GetSetConfigurationDefaults();
 
-            // Do a full exit if shutting down.
-            if ( ShutdownMode.OnExplicitShutdown == Application.Current.ShutdownMode )
+            // Update the output text cache.
+            this.GetSetOutputTextPanelCache();
+
+            if ( !(bool)chkCloseAndExit.IsChecked
+                    && (bool)this.chkUseTimer.IsChecked
+                    && moProfile.bValue("-AllConfigWizardStepsCompleted", false)
+                    )
             {
-                // Always turn the timer back on during shutdowns. That
-                // way backups should automatically retart after reboot.
-                this.chkUseTimer_SetChecked(true);
+                // Minimize to the system tray if "full exit" is not
+                // checked, the loop timer is on and the setup is done.
+                this.HideMe();
+                e.Cancel = true;
             }
             else
             {
-                if ( !(bool)chkCloseAndExit.IsChecked
-                        && (bool)this.chkUseTimer.IsChecked
-                        && moProfile.bValue("-AllConfigWizardStepsCompleted", false)
-                        )
-                {
-                    // Minimize to the system tray if "full exit" is not
-                    // checked, the loop timer is on and the setup is done.
-                    this.HideMe();
-                    e.Cancel = true;
-                }
-                else
-                {
-                    // If the timer is off, ask about it before exiting.
-                    if ( !(bool)this.chkUseTimer.IsChecked
-                            && tvMessageBoxResults.No == this.Show(
-                                      "Are you sure you want to exit with the timer stopped? (ie. with the backup not running in the background)"
-                                    , "Timer Stopped"
-                                    , tvMessageBoxButtons.YesNo
-                                    , tvMessageBoxIcons.Question
-                                    , tvMessageBoxCheckBoxTypes.DontAsk
-                                    , "-TimerStopped"
-                                    , tvMessageBoxResults.Yes
-                                    )
+                // If the timer is off, ask about it before exiting.
+                if ( !(bool)this.chkUseTimer.IsChecked
+                        && tvMessageBoxResults.No == this.Show(
+                                  "Are you sure you want to exit with the timer stopped? (ie. with the backup not running in the background)"
+                                , "Timer Stopped"
+                                , tvMessageBoxButtons.YesNo
+                                , tvMessageBoxIcons.Question
+                                , tvMessageBoxCheckBoxTypes.DontAsk
+                                , "-TimerStopped"
+                                , tvMessageBoxResults.Yes
                                 )
-                        e.Cancel = true;
-                }
+                            )
+                    e.Cancel = true;
             }
         }
 
@@ -368,6 +489,9 @@ namespace GoPcBackup
         private void LogoImageAnimation_Completed(object sender, EventArgs e)
         {
             mbStartupDone = true;
+
+            // Determine the "Setup Done" panel text.
+            this.SetupDoneText();
 
             if ( !moProfile.bValue("-AllConfigWizardStepsCompleted", false) )
             {
@@ -409,14 +533,14 @@ namespace GoPcBackup
                         this.DisplayWizard();
                     }
                 }
-            }            
+            }
             else
             {
                 // Display all of the main application elements needed
                 // after the configuration wizard has been completed.
                 this.HideMiddlePanels();
                 this.MainButtonPanel.IsEnabled = true;
-                this.GetSetOutputTextPanelErrorCache();
+                this.GetSetOutputTextPanelCache();
                 this.PopulateTimerDisplay(mcsStoppedText);
 
                 bool lbPreviousBackupError = this.ShowPreviousBackupStatus();
@@ -435,8 +559,8 @@ namespace GoPcBackup
 
                 this.CreateSysTrayIcon();
 
-                // Since error output is cached (see "this.GetSetOutputTextPanelErrorCache()"),
-                // the cached error output text should be displayed right away.
+                // Since output is cached (see "this.GetSetOutputTextPanelCache()"),
+                // the cached output text should be displayed right away after errors.
                 if ( moProfile.ContainsKey("-PreviousBackupOk") && !moProfile.bValue("-PreviousBackupOk", false) )
                     this.DisplayOutputText();
 
@@ -491,6 +615,184 @@ namespace GoPcBackup
                 // Reset setup backup device checkboxes.
                 gridBackupDevices.Children.Clear();
                 this.ConfigWizardTabs.SelectedIndex = 0;
+            }
+        }
+
+        private void btnSetupDone_Click(object sender, RoutedEventArgs e)
+        {
+            if ( this.bValidateConfiguration() )
+            {
+                if ( this.bUpgraded || moProfile.bValue("-AllConfigWizardStepsCompleted", false) )
+                {
+                    this.SetupDoneApplyProfileUpdates();
+
+                    this.HideMiddlePanels();
+                    this.MainButtonPanel.IsEnabled = true;
+
+                    this.CreateSysTrayIcon();
+                    this.MainLoop();
+
+                    this.PopulateTimerDisplay(mcsWaitingText);
+                    this.MiddlePanelTimer.Visibility = Visibility.Visible;
+                }
+                else
+                if ( tvMessageBoxResults.Yes == this.Show(string.Format(@"
+    Are you sure you want to run the backup?
+
+    You can continue this later wherever you left off. "
+    + @" You can also edit the profile file directly (""{0}"") for"
+    + @" much more detailed configuration (see ""Help"").
+    "
+                                , Path.GetFileName(moProfile.sLoadedPathFile)
+                                )
+                            , "Run Backup"
+                            , tvMessageBoxButtons.YesNo
+                            , tvMessageBoxIcons.Question
+                            )
+                        )
+                {
+                    this.SetupDoneApplyProfileUpdates();
+                    this.SetupDoneText();
+
+                    this.HideMiddlePanels();
+                    this.MainButtonPanel.IsEnabled = true;
+
+                    this.DoBackup();
+                    this.CreateSysTrayIcon();
+                    this.MainLoop();
+                }
+            }
+        }
+
+        private void btnUpgrade_Click(object sender, RoutedEventArgs e)
+        {
+            if ( tvMessageBoxResults.OK == this.Show(string.Format(
+@"Your previous configuration will be copied and upgraded.
+
+{0}
+
+Click 'OK' to locate your previous configuration file (""{1}"")."
+                            , moProfile.sValue("-UpgradeKeysToCopy", @"
+The following configuration keys will be copied:
+
+    -AddTasks
+    -ArchivePath
+    -BackupSet
+    -BackupTime
+    -CleanupSet
+    -UseVirtualMachineHostArchive
+    -VirtualMachineHostArchivePath
+    -VirtualMachineHostPassword
+    -VirtualMachineHostUsername
+    -ZipToolEXEargsMore
+
+Other keys will be upgraded.
+"
+                                )
+                            , Path.GetFileName(moProfile.sLoadedPathFile)
+                            )
+                        , "Upgrade Configuration"
+                        , tvMessageBoxButtons.OKCancel
+                        , tvMessageBoxIcons.Exclamation
+                        )
+                    )
+            {
+                System.Windows.Forms.OpenFileDialog loOpenDialog = new System.Windows.Forms.OpenFileDialog();
+                loOpenDialog.FileName = Path.GetFileName(moProfile.sLoadedPathFile);
+
+                // First, look for the profile file in "CommonApplicationData".
+                string  lsPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                        lsPath = Path.Combine(lsPath, Path.GetFileNameWithoutExtension(moProfile.sExePathFile));
+                        if ( !File.Exists(Path.Combine(lsPath, loOpenDialog.FileName)) )
+                        {
+                            // Then look for it in "ProgramFiles".
+                            lsPath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+                            lsPath = Path.Combine(lsPath, Path.GetFileNameWithoutExtension(moProfile.sExePathFile));
+                            if ( !File.Exists(Path.Combine(lsPath, loOpenDialog.FileName)) )
+                                lsPath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+                                // If not found, use "ProgramFiles" as the default.
+                        }
+
+                loOpenDialog.InitialDirectory = lsPath;
+                loOpenDialog.CheckFileExists = true;
+
+                System.Windows.Forms.DialogResult leDialogResult = System.Windows.Forms.DialogResult.None;
+
+                if ( !this.bNoPrompts )
+                    leDialogResult = loOpenDialog.ShowDialog();
+
+                if ( System.Windows.Forms.DialogResult.OK == leDialogResult )
+                {
+                    tvProfile loOldProfile = new tvProfile(loOpenDialog.FileName, false);
+
+                    if ( 0 == loOldProfile.Count )
+                    {
+                        this.ShowError("The file you selected appears not to be a configuration profile file (or it is in use). Please try again.");
+                    }
+                    else
+                    {
+                        tvProfile   loUpgradeKeysProfile = new tvProfile(loOldProfile.sValue("-UpgradeKeysToCopy", moProfile.sValue("-UpgradeKeysToCopy", "")));
+                                    // Merge in status keys.
+                                    loUpgradeKeysProfile.LoadFromCommandLine(@"
+                                            -PreviousBackupOk
+                                            -PreviousBackupTime
+                                            -SelectedBackupDevices
+                                            -SelectedBackupDevicesBitField
+                                            -Update20170318
+                                            -UpgradeKeysToCopy
+                                            -UseConnectVirtualMachineHost
+						                    ", tvProfileLoadActions.Merge);
+                        tvProfile   loNewProfile = new tvProfile();
+
+                        foreach(DictionaryEntry loKey in loUpgradeKeysProfile)
+                        {
+                            string lsKey = loKey.Key.ToString();
+
+                            // Only replace a key in the new profile if it exists in the old profile.
+                            if ( loOldProfile.ContainsKey(lsKey) )
+                            {
+                                // Remove it from the old profile.
+                                moProfile.Remove(lsKey);
+
+                                // Add it to the new profile (could be multiple entries).                            
+                                foreach(DictionaryEntry loEntry in loOldProfile.oOneKeyProfile(lsKey))
+                                    loNewProfile.Add(loEntry);
+                            }
+                        }
+
+                        int liPreviousProfileCount = moProfile.Count;
+
+                        // The following 3 steps place all upgrade keys on top of the profile for easier access (via text editor).
+                        foreach(DictionaryEntry loEntry in moProfile)
+                            loNewProfile.Add(loEntry);
+
+                        moProfile.Remove("*");
+
+                        foreach(DictionaryEntry loEntry in loNewProfile)
+                            moProfile.Add(loEntry);
+
+                        moProfile.Save();
+
+                        // Reset the configuration panels with the new profile content.
+                        this.GetSetConfigurationDefaults(true);
+
+                        this.Show(String.Format(@"
+{0} items were added to the new profile.
+
+Give the new software a try. When you're confident everything works as expected, run ""Setup Application Folder.exe"" to move the upgraded files to the app folder. 
+"
+                                    , moProfile.Count - liPreviousProfileCount)
+                                , "Configuration Updated"
+                                , tvMessageBoxButtons.OK
+                                , tvMessageBoxIcons.Done
+                                );
+
+                        this.bUpgraded = true;
+
+                        // Determine the "Setup Done" panel text.
+                        this.SetupDoneText();
+                    }
+                }
             }
         }
 
@@ -650,47 +952,6 @@ namespace GoPcBackup
                 else
                     this.mnuRestore_Click(null, null);
             }
-        }
-
-        public void AppendOutputTextLine(string asTextLine)
-        {
-            this.BackupProcessOutput.Inlines.Add(asTextLine + Environment.NewLine);
-            if ( this.BackupProcessOutput.Inlines.Count > moProfile.iValue("-ConsoleTextLineLength", 100) )
-                this.BackupProcessOutput.Inlines.Remove(this.BackupProcessOutput.Inlines.FirstInline);
-            this.scrBackupProcessOutput.ScrollToEnd();
-
-            this.IncrementProgressBar(false);
-        }
-
-        public void InitProgressBar(int aiProcessedFilesMaximum)
-        {
-            miProcessedFilesCount = 0;
-            miProcessedFilesMaximum = aiProcessedFilesMaximum;
-            this.prbBackupProgress.Value = 0;
-            this.prbBackupProgress.Minimum = 0;
-            this.prbBackupProgress.Maximum = 100;
-        }
-
-        public void IncrementProgressBar(bool abFill)
-        {
-            if ( !abFill )
-                this.prbBackupProgress.Value = 0 == miProcessedFilesMaximum ? 0
-                        : this.prbBackupProgress.Maximum
-                                * ((double)++miProcessedFilesCount / miProcessedFilesMaximum);
-            else
-                if ( 0 == miProcessedFilesMaximum )
-                {
-                    this.prbBackupProgress.Value = 0;
-                }
-                else
-                    // This kludge is necessary since simply setting
-                    // "this.prbBackupProgress.Value = this.prbBackupProgress.Maximum" fails.
-                    do
-	                {
-                	    this.prbBackupProgress.Value = this.prbBackupProgress.Maximum
-                                * ((double)++miProcessedFilesCount / miProcessedFilesMaximum);
-	                }
-                    while ( miProcessedFilesCount < miProcessedFilesMaximum );
         }
 
         private void btnSetupStep1_Click(object sender, RoutedEventArgs e)
@@ -860,7 +1121,7 @@ namespace GoPcBackup
                     if ( null == moNotifyWaitMessage )
                         moNotifyWaitMessage = new tvMessageBox();
 
-                    moNotifyWaitMessage.ShowWait(this, mcsNotifyIconProcText + " - please wait ...", 350);
+                    moNotifyWaitMessage.ShowWait(this, mcsNotifyIconBusyText + " - please wait ...", 350);
 
                     // This kludge is necessary to overcome sometimes severe
                     // delays processing click events to redisplay the main 
@@ -992,9 +1253,6 @@ namespace GoPcBackup
             if ( this.bNoPrompts )
                 moDoGoPcBackup.LogIt(aoException.Message);
 
-            // Update the error text cache.
-            this.GetSetOutputTextPanelErrorCache();
-
             if ( !this.bNoPrompts )
                 tvMessageBox.ShowError(this, aoException);
         }
@@ -1003,9 +1261,6 @@ namespace GoPcBackup
         {
             if ( this.bNoPrompts )
                 moDoGoPcBackup.LogIt(asMessageText);
-
-            // Update the error text cache.
-            this.GetSetOutputTextPanelErrorCache();
 
             if ( !this.bNoPrompts )
                 tvMessageBox.ShowError(this, asMessageText);
@@ -1016,9 +1271,6 @@ namespace GoPcBackup
             if ( this.bNoPrompts )
                 moDoGoPcBackup.LogIt(asMessageText);
 
-            // Update the error text cache.
-            this.GetSetOutputTextPanelErrorCache();
-
             if ( !this.bNoPrompts )
                 tvMessageBox.ShowError(this, asMessageText, asMessageCaption);
         }
@@ -1027,9 +1279,6 @@ namespace GoPcBackup
         {
             if ( this.bNoPrompts )
                 moDoGoPcBackup.LogIt(asMessageText);
-
-            // Update the error text cache.
-            this.GetSetOutputTextPanelErrorCache();
 
             if ( !this.bNoPrompts )
                 tvMessageBox.ShowWarning(this, asMessageText, asMessageCaption);
@@ -1189,7 +1438,14 @@ namespace GoPcBackup
 
         private void GetSetConfigurationDefaults()
         {
+            this.GetSetConfigurationDefaults(false);
+        }
+        private void GetSetConfigurationDefaults(bool abResetGetDefaultsDone)
+        {
             tvProfile loBackupSet1Profile = new tvProfile(moProfile.sValue("-BackupSet", "(not set)"));
+
+            if ( abResetGetDefaultsDone )
+                mbGetDefaultsDone = false;
 
             if ( !mbGetDefaultsDone )
             {
@@ -1572,66 +1828,6 @@ namespace GoPcBackup
             mbUpdateSelectedBackupDevices = true;
         }
         
-        private void btnSetupDone_Click(object sender, RoutedEventArgs e)
-        {
-            if ( this.bValidateConfiguration()
-                    && tvMessageBoxResults.Yes == this.Show(string.Format(@"
-Are you sure you want to run the backup?
-
-You can continue this later wherever you left off. "
-+ @" You can also edit the profile file directly (""{0}"") for"
-+ @" much more detailed configuration (see ""Help"").
-", Path.GetFileName(moProfile.sLoadedPathFile))
-                    , "Run Backup", tvMessageBoxButtons.YesNo, tvMessageBoxIcons.Question)
-                    )
-            {
-                moProfile["-AllConfigWizardStepsCompleted"] = true;
-                moProfile.Save();                
-
-                this.HideMiddlePanels();
-                this.MainButtonPanel.IsEnabled = true;
-
-                this.DoBackup();
-                this.CreateSysTrayIcon();
-                this.MainLoop();
-            }
-        }
-
-        public int iCurrentBackupDevicesBitField()
-        {
-            // The leftmost bit is always 1 to preserve leading zeros.
-            int  liCurrentBackupDevicesBitField = 1;
-            char lcPossibleDriveLetter = moDoGoPcBackup.cPossibleDriveLetterBegin;
-
-            foreach ( DriveInfo loDrive in DriveInfo.GetDrives() )
-            {
-                string lsDeviceDriveLetter = loDrive.Name.Substring(0, 1);
-
-                // Skip devices with letters starting before the possible drive letters.
-                if ( String.Compare(lsDeviceDriveLetter, lcPossibleDriveLetter.ToString()) >= 0 )
-                {
-                    // Fill in zeros for all drives prior to or between each drive selected.
-                    while ( String.Compare(lsDeviceDriveLetter, lcPossibleDriveLetter.ToString()) > 0 )
-                    {
-                        liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
-                        ++lcPossibleDriveLetter;
-                    }
-
-                    liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
-                    liCurrentBackupDevicesBitField += (bool)File.Exists(Path.Combine(loDrive.Name, moDoGoPcBackup.sBackupDriveToken)) ? 1 : 0;
-                    ++lcPossibleDriveLetter;
-                }
-            }
-
-            // Fill in zeros for all the drives after the last drive found.
-            for ( char c = lcPossibleDriveLetter; c <= moDoGoPcBackup.cPossibleDriveLetterEnd; ++c )
-            {
-                liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
-            }
-
-            return liCurrentBackupDevicesBitField;
-        }
-
         // Return a bit field of user's preferences for additional backup devices.
         private int iSelectedBackupDevicesBitField()
         {
@@ -1716,10 +1912,10 @@ You can continue this later wherever you left off. "
                 if ( tvMessageBoxResults.Yes == leShowMissingBackupDevices )
                     gridBackupDevices.Children.Clear();
 
-                if ( lbDeviceReattached
+                if ( !this.bBackupRunning && lbDeviceReattached
                         && tvMessageBoxResults.Yes == this.Show(
                                       "The most recent backup " + (moProfile.bValue("-PreviousBackupOk", false)
-                                    ? "was successful, yet a backup device was attached."
+                                    ? "was successful, then a backup device was attached."
                                     : "failed and then a backup device was reattached.")
                                     + " Attached backup devices should be updated."
                                     + " The backup scripts update attached backup devices."
@@ -1835,6 +2031,7 @@ You can continue this later wherever you left off. "
         {
             this.MiddlePanelTimer.Visibility = Visibility.Collapsed;
             this.MiddlePanelConfigWizard.Visibility = Visibility.Collapsed;
+            this.btnUpgrade.Visibility = Visibility.Collapsed;
             this.MiddlePanelConfigDetails.Visibility = Visibility.Collapsed;
             this.MiddlePanelOutputText.Visibility = Visibility.Collapsed;
         }
@@ -1870,34 +2067,26 @@ You can continue this later wherever you left off. "
             this.btnShowTimer.IsEnabled = true;
         }
 
-        public void GetSetOutputTextPanelErrorCache()
+        public void GetSetOutputTextPanelCache()
         {
-            if ( !moProfile.ContainsKey("-PreviousBackupOk")
-                    || moProfile.bValue("-PreviousBackupOk", false) )
+            if ( "" == this.BackupProcessOutput.Text )
             {
-                moProfile.Remove("-PreviousBackupErrorOutputText");
+                this.BackupProcessOutput.Text = moProfile.sValue("-PreviousBackupOutputText", "") + Environment.NewLine;
+                this.scrBackupProcessOutput.ScrollToEnd();
+
+                // Indicate the backup has run at least once.
+                // This is necessary so the output text panel will
+                // be displayed when the timer button is toggled.
+                mbBackupRan = "" != this.BackupProcessOutput.Text;
             }
             else
             {
-                if ( "" == this.BackupProcessOutput.Text )
-                {
-                    this.BackupProcessOutput.Text = moProfile.sValue("-PreviousBackupErrorOutputText", "");
-                    this.scrBackupProcessOutput.ScrollToEnd();
+                // This makes sure the last line of text appears before we save.
+                System.Windows.Forms.Application.DoEvents();
 
-                    // Indicate the backup has run at least once.
-                    // This is necessary so the output text panel will
-                    // be displayed when the timer button is toggled.
-                    mbBackupRan = true;
-                }
-                else
-                {
-                    // This makes sure the last line of text appears before we save.
-                    System.Windows.Forms.Application.DoEvents();
-
-                    moProfile["-PreviousBackupErrorOutputText"] = this.BackupProcessOutput.Text;
-                    moProfile.Save();
-                }
-            }            
+                moProfile["-PreviousBackupOutputText"] = this.BackupProcessOutput.Text;
+                moProfile.Save();
+            }
         }
 
         private void PopulateTimerDisplay(string asCommonValue)
@@ -1947,6 +2136,46 @@ You can continue this later wherever you left off. "
                 this.MiddlePanelOutputText.Visibility = Visibility.Visible;
         }
 
+        private void SetupDoneText()
+        {
+            if ( this.bUpgraded || moProfile.bValue("-AllConfigWizardStepsCompleted", false) )
+            {
+                btnSetupDone.Content = "Setup Done";
+                txtSetupDone.Text = "Please review your choices from the previous setup steps, then click \"Setup Done\".";
+                txtSetupDoneDesc.Text = "If you would prefer to finish this setup at another time, you can close now and continue later wherever you left off.";
+                btnUpgrade.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                btnSetupDone.Content = "Setup Done - Run Backup";
+                txtSetupDone.Text = "Please review your choices from the previous setup steps, then click \"Setup Done - Run Backup\".";
+                txtSetupDoneDesc.Text = @"Your first backup will run now. This will give you a chance to verify the backup works before it runs automatically later.
+
+If you would prefer to finish this setup at another time, you can close now and continue later wherever you left off.";
+                btnUpgrade.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void SetupDoneApplyProfileUpdates()
+        {
+            moProfile["-AllConfigWizardStepsCompleted"] = true;
+
+            // The setup is complete. Now apply profile changes
+            // needed to correspond with various software changes.
+
+            if ( !moProfile.bValue("-Update20170318", false) )
+            {
+                // This is handled indirectly here so the inits will happen during the next backup (not before).
+                moProfile["-ZipToolInit"] = true;
+                moProfile["-BackupBeginScriptInit"] = true;
+                moProfile["-BackupDoneScriptInit"] = true;
+                moProfile["-BackupFailedScriptInit"] = true;
+                moProfile["-Update20170318"] = true;
+            }
+
+            moProfile.Save();                
+        }
+
         private void ShowHelp()
         {
             if ( this.bNoPrompts )
@@ -1972,8 +2201,8 @@ You can continue this later wherever you left off. "
 
         private bool ShowPreviousBackupStatus()
         {
-            bool lbShowPreviousBackupStatus = true;
             bool lbPreviousBackupError = false;
+            bool lbShowPreviousBackupStatus = true;
 
             lbShowPreviousBackupStatus = moProfile.bValue("-BackupFiles", true);
 
@@ -2025,8 +2254,6 @@ You can continue this later wherever you left off. "
                 }
             }
 
-            this.GetSetOutputTextPanelErrorCache();
-
             return lbPreviousBackupError;
         }
 
@@ -2041,7 +2268,7 @@ You can continue this later wherever you left off. "
                 moNotifyIcon.targetNotifyIcon.Icon = new System.Drawing.Icon(
                         Application.GetResourceStream(new Uri(
                         "pack://application:,,,/Resources/images/GoPC.ico")).Stream);
-                moNotifyIcon.targetNotifyIcon.Text = mcsNotifyIconIdleText;
+                moNotifyIcon.targetNotifyIcon.Text = this.sNotifyIconIdleText;
             }
 
             // Also make sure the timer / close checkboxes are visible
@@ -2057,23 +2284,33 @@ You can continue this later wherever you left off. "
             bool lbDoRerun = this.bValidateConfiguration();
             if ( lbDoRerun )
             {
-                // Verify that critical last run values match the current configuration.
-                bool lbLastRunArgsUnstable = false;
-                    try
-                    {
-                        tvProfile loBackupDoneArgs = new tvProfile(moProfile.sValue("-BackupDoneArgs", ""));
-                        if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = loBackupDoneArgs["-LocalArchivePath"].ToString() != moDoGoPcBackup.sArchivePath();
-                        if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = Path.GetDirectoryName(loBackupDoneArgs["-LogPathFile"].ToString()) != Path.GetDirectoryName(moProfile.sRelativeToProfilePathFile(moDoGoPcBackup.sLogPathFile));
-                    }
-                    catch {}
+                // Skip the rerun if the previous backup failed.
+                lbDoRerun = null != moProfile["-PreviousBackupOutputPathFile"] && File.Exists(moProfile["-PreviousBackupOutputPathFile"].ToString());
+                if ( !lbDoRerun )
+                {
+                    moDoGoPcBackup.LogIt("");
+                    moDoGoPcBackup.LogIt("The previous backup does not exist. The backup scripts were not run.");
+                }
+                else
+                {
+                    // Verify critical last run values match the current configuration.
+                    bool lbLastRunArgsUnstable = false;
+                        try
+                        {
+                            tvProfile loBackupDoneArgs = new tvProfile(moProfile.sValue("-BackupDoneArgs", ""));
+                            if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = loBackupDoneArgs["-LocalArchivePath"].ToString() != moDoGoPcBackup.sArchivePath();
+                            if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = Path.GetDirectoryName(loBackupDoneArgs["-LogPathFile"].ToString()) != Path.GetDirectoryName(moProfile.sRelativeToProfilePathFile(moDoGoPcBackup.sLogPathFile));
+                        }
+                        catch {}
 
-                if ( lbLastRunArgsUnstable )
-                    lbDoRerun = tvMessageBoxResults.OK == this.Show(
-                                      "Changes have been made to your backup configuration which may cause a rerun to fail.\r\n\r\nAre you sure you want to rerun the backup scripts?"
-                                    , "Backup Configuration Changed"
-                                    , tvMessageBoxButtons.OKCancel
-                                    , tvMessageBoxIcons.Question
-                                    );
+                    if ( lbLastRunArgsUnstable )
+                        lbDoRerun = tvMessageBoxResults.OK == this.Show(
+                                          "Changes have been made to your backup configuration which may cause a rerun to fail.\r\n\r\nAre you sure you want to rerun the backup scripts?"
+                                        , "Backup Configuration Changed"
+                                        , tvMessageBoxButtons.OKCancel
+                                        , tvMessageBoxIcons.Question
+                                        );
+                }
             }
             if ( lbDoRerun )
             {
@@ -2184,6 +2421,7 @@ You can continue this later wherever you left off. "
 
                 if ( !moProfile.bValue("-BackupFiles", true) )
                 {
+                    moDoGoPcBackup.LogIt("");
                     moDoGoPcBackup.LogIt("Backup files is disabled.");
                 }
                 else

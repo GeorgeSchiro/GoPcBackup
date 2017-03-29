@@ -121,9 +121,9 @@ The setup wizard only edits the first folder referenced within the first backup 
 
 You will notice that the profile data is not formatted as XML. It is expressed in "command-line" format. That makes it easier to read and parse. It is also a reminder that anything you see in the profile file can be overridden with the equivalent "-key=value" pairs passed on the "GoPcBackup.exe" command-line.
 
-<b>GoPC Backup</b> uses "7-zip" as its ZIP compression engine. "7-zip" is an excellent tool.  
+<b>GoPC Backup</b> uses "7-Zip" as its ZIP compression engine. "7-Zip" is an excellent tool.  
 
-<b>GoPC Backup</b> is essentially an automation front-end for "7-zip". That said, you can replace "7-zip" with any other command-line driven ZIP tool you might prefer instead. The choice of compression tool is entirely yours. Such a change would be made in the profile file like everything else (see "-ZipToolEXE" below).
+<b>GoPC Backup</b> is essentially an automation front-end for "7-Zip". That said, you can replace "7-Zip" with any other command-line driven ZIP tool you might prefer instead. The choice of compression tool is entirely yours. Such a change would be made in the profile file like everything else (see "-ZipToolEXE" below).
 
 
 Screenshots
@@ -490,7 +490,7 @@ Options and Features
 
         Here's a single line example:
 
-        -CleanupSet= -AgeDays=90 -FilesToDelete=C:\WINDOWS\TEMP\*.*
+        -CleanupSet= -AgeDays=14 -ApplyDeletionLimit=False -FilesToDelete=C:\WINDOWS\TEMP\*.*
 
 
         Here's a multi-line example:
@@ -498,16 +498,14 @@ Options and Features
         -CleanupSet=[
 
             -AgeDays=60
-            -FilesToDelete=C:\WINDOWS\TEMP\*.*
             -FilesToDelete=C:\WINDOWS\system32\*.log
             -FilesToDelete=C:\WINDOWS\system32\LogFiles\W3SVC1\*.log
-            -FilesToDelete=C:\Documents and Settings\Administrator\Local Settings\Temp\*.*
-            -FilesToDelete=C:\Program Files\GoPcBackup\GoPcBackupList*.txt
 
         -CleanupSet=]
         -CleanupSet=[
 
             -AgeDays=14
+            -ApplyDeletionLimit=False
             -FilesToDelete=C:\Documents and Settings\*.*
             -CleanupHidden
             -CleanupReadOnly
@@ -624,11 +622,23 @@ Options and Features
     shutdown automatically thereafter. This switch is useful if the utility
     is run in a batch process or if it is run by a server job scheduler.
 
+-RunOncePrompts=False
+
+    Set this switch True to display a backup results dialog after -RunOnce
+    is used. This switch is overridden by the -NoPrompts switch (see above).
+
 -SaveProfile=True
 
     Set this switch False to prevent saving to the profile file by the backup
     software itself. This is not recommended since backup status information is 
     written to the profile after each backup runs.
+
+-SaveSansCmdLine=True
+
+    Set this switch False to leave the profile file untouched after a command line
+    has been passed to the EXE and merged with the profile. When true, everything
+    but command line keys will be saved. When false, not even status information
+    will be written to the profile file (ie. ""{INI}"").
 
 -SelectedBackupDevices= NO DEFAULT VALUE
 
@@ -660,6 +670,14 @@ Options and Features
 
     Set this switch True to immediately display the entire contents of the profile
     file at startup in command-line format. This may be helpful as a diagnostic.
+
+-UpgradeKeysToCopy= SEE PROFILE FOR DEFAULT VALUE
+
+    This list of profile keys is used during an upgrade to a new ""{EXE}"".
+    The new software is typically tested on the desktop. The ""Upgrade"" button
+    in the setup wizard is used to import this list of keys into the new profile
+    prior to moving the new software to the application folder (to overwrite the
+    old version via ""Setup Application Folder.exe"").
 
 -UseConnectVirtualMachineHost=False
 
@@ -699,11 +717,11 @@ Options and Features
     Set this switch True to change the profile file from command-line format
     to XML format.
 
--ZipToolEXE=7z.exe
+-ZipToolEXE=7za.exe
 
     This is the ZIP tool executable that performs the backup compression.
 
--ZipToolEXEargs=a -ssw "{BackupOutputPathFile}" @"{BackupPathFiles}" -w"{BackupOutputPath}"
+-ZipToolEXEargs=a -ssw -bb "{BackupOutputPathFile}" @"{BackupPathFiles}" -w"{BackupOutputPath}"
 
     These are command-line arguments passed to the ZIP compression tool (see
     -ZipToolEXE above). The tokens (in curly brackets) are self-evident. They
@@ -728,6 +746,12 @@ Options and Features
     The profile file name will be prepended to the default and the current
     date (see -ZipToolFileListFileDateFormat above) will be inserted (with
     a GUID) between the filename and the extension.
+
+-ZipToolInit=False
+
+    Set this switch True and the zip compression tool will be automatically
+    overwritten from the content embedded in the executable file. Once used
+    this switch will be reset to False.
 
 -ZipToolLastRunCmdPathFile=Run Last Backup.cmd
 

@@ -1139,7 +1139,6 @@ namespace tvToolbox
 
                 if ( mbExit )
                 {
-                    this.bAppFullyLoaded = true;
                     this.bSaveEnabled = false;
                 }
             }
@@ -1164,27 +1163,6 @@ namespace tvToolbox
         private bool mbFileJustCreated = false;
 
         /// <summary>
-        /// Returns true after the application informs
-        /// the profile object it has been fully loaded.
-        /// </summary>
-        public  bool  bAppFullyLoaded
-        {
-            get
-            {
-                return mbAppFullyLoaded;
-            }
-            set
-            {
-                mbAppFullyLoaded = value;
-
-                if ( mbAppFullyLoaded && null != moAppLoadingWaitMsg )
-                    mttvMessageBox.InvokeMember("Close", BindingFlags.InvokeMethod, null, moAppLoadingWaitMsg
-                                                , null);
-            }
-        }
-        private bool mbAppFullyLoaded = false;
-
-        /// <summary>
         /// Returns true if the EXE is in a folder (or subfolder) with the same name.
         /// </summary>
         public bool bInOwnFolder
@@ -1206,7 +1184,14 @@ namespace tvToolbox
         {
             get
             {
-                String[] lsPathFragArray = new String[]{"\\Program Files\\"};
+                String[] lsPathFragArray = {
+                          Path.GetFileName(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData))
+                        , Path.GetFileName(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData))
+                        , Path.GetFileName(Environment.GetFolderPath(Environment.SpecialFolder.CommonProgramFiles))
+                        , Path.GetFileName(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData))
+                        , Path.GetFileName(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles))
+                        , Path.GetFileName(Environment.GetFolderPath(Environment.SpecialFolder.Programs))
+                        };
 
                 foreach (String lsPathFrag in lsPathFragArray)
                 {
@@ -1275,7 +1260,6 @@ namespace tvToolbox
                 {
                     moInputCommandLineProfile = new tvProfile();
                     moInputCommandLineProfile.LoadFromCommandLineArray(this.msInputCommandLineArray, tvProfileLoadActions.Append);
-                    moInputCommandLineProfile.bAppFullyLoaded = true;
                 }
 
                 return mbSaveSansCmdLine;
@@ -2478,7 +2462,6 @@ namespace tvToolbox
             // of one of several default filenames. Returned null means none exist.
             String  lsPathFile = this.sFileExistsFromList(this.sRelativeToProfilePathFile(asPathFile));
             String  lsFilnameOnly = Path.GetFileNameWithoutExtension(this.sExePathFile);
-            String  lcsLoadingMsg = lsFilnameOnly + " loading, please wait ...";
 
             if ( null == lsPathFile )
             {
@@ -2491,14 +2474,31 @@ namespace tvToolbox
                     lsPathFile = asPathFile;
                 }
 
+                // Pause to allow original instance (if any) to close.
+                System.Threading.Thread.Sleep(200);
+
+                // Count running instances.
+                string      lsExeName = Path.GetFileNameWithoutExtension(this.sExePathFile);
+                Process[]   loProcessesArray = Process.GetProcessesByName(lsExeName);
+
+                if ( loProcessesArray.Length > 1 )
+                {
+                    MessageBox.Show(String.Format("\"{0}\" is already running. Please close it and try again."
+                                    , Path.GetFileName(this.sExePathFile))
+                            , lsExeName);
+                    return;
+                }
+                else
                 if ( tvProfileFileCreateActions.PromptToCreateFile == this.eFileCreateAction )
                 {
+                    String lsNewPath = Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), lsFilnameOnly);
+                    String lsNewExePathFile = Path.Combine(lsNewPath, Path.GetFileName(this.sExePathFile));
+
                     // If the EXE is not already in a folder with a matching name and if the 
                     // EXE is not already installed in a typical installation folder, proceed.
                     if ( !this.bInOwnFolder && !this.bInstalledAlready )
                     {
-                        String lsNewPath = Path.Combine(
-                                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), lsFilnameOnly);
                         String lsMessage = String.Format(( Directory.Exists(lsNewPath)
                                 ? "an existing folder ({0}) on your desktop"
                                 : "a new folder ({0}) on your desktop" ), lsFilnameOnly);
@@ -2514,15 +2514,6 @@ Copy and proceed from there?
 "
                                     , lsMessage), "Copy EXE to Desktop?", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) )
                         {
-                            if ( null != mttvMessageBox )
-                            {
-                                moAppLoadingWaitMsg = Activator.CreateInstance(mttvMessageBox);
-                                mttvMessageBox.InvokeMember("ShowWait", BindingFlags.InvokeMethod, null, moAppLoadingWaitMsg
-                                                            , new object[]{null, lcsLoadingMsg, 250});
-                            }
-
-                            String lsNewExePathFile = Path.Combine(lsNewPath, Path.GetFileName(this.sExePathFile));
-
                             if ( !Directory.Exists(lsNewPath) )
                                 Directory.CreateDirectory(lsNewPath);
 
@@ -2531,24 +2522,36 @@ Copy and proceed from there?
                             ProcessStartInfo    loStartInfo = new ProcessStartInfo(lsNewExePathFile);
                                                 loStartInfo.WorkingDirectory = Path.GetDirectoryName(lsNewExePathFile);
                             Process             loProcess = Process.Start(loStartInfo);
-
-                            //this.bExit = true;        // This was moved outside the block after disabling the other show below.
                         }
 
                         this.bExit = true;
                     }
+                    else
+                    if ( this.sExePathFile == lsNewExePathFile )
+                    {
+                        // The EXE has been moved to its own folder on the desktop.
+                        // If it still exists on the desktop directly, remove it.
 
-                    //if ( !this.bExit )
-                    //{
-                    //    if ( !this.bInOwnFolder && DialogResult.Cancel == MessageBox.Show(String.Format(
-                    //                  "The profile file for this program can't be found ({0}).\n\n"
-                    //                + "Create it and proceed anyway?", lsPathFile)
-                    //                        , "Create Profile File?"
-                    //                , MessageBoxButtons.OKCancel, MessageBoxIcon.Question) )
-                    //    {
-                    //        this.bExit = true;
-                    //    }
-                    //}
+                        String lsOldExePathFile = Path.Combine(
+                                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), Path.GetFileName(this.sExePathFile));
+
+                        try
+                        {
+                            File.Delete(lsOldExePathFile);
+                        }
+                        catch
+                        {
+                            // Wait a moment ...
+                            System.Threading.Thread.Sleep(200);
+
+                            // Then try again.
+                            try
+                            {
+                                File.Delete(lsOldExePathFile);
+                            }
+                            catch {}
+                        }
+                    }
                 }
 
                 // Although technically the file was not loaded (since it doesn't exist yet),
@@ -2558,13 +2561,6 @@ Copy and proceed from there?
             }
             else
             {
-                if ( null != mttvMessageBox )
-                {
-                    moAppLoadingWaitMsg = Activator.CreateInstance(mttvMessageBox);
-                    mttvMessageBox.InvokeMember("ShowWait", BindingFlags.InvokeMethod, null, moAppLoadingWaitMsg
-                                                , new object[]{null, lcsLoadingMsg, 250});
-                }
-
                 String  lsFileAsStream = null;
                         this.UnlockProfileFile();
 
@@ -2962,32 +2958,6 @@ Copy and proceed from there?
         }
 
         /// <summary>
-        /// Presents a grid UI for editing the contents of this profile object.
-        /// Well known application independent tvProfile parameters are excluded.
-        /// </summary>
-        public void Edit()
-        {
-            this.Edit(this);
-        }
-
-        /// <summary>
-        /// Presents a grid UI for editing the contents of a profile object.
-        /// Well known application independent tvProfile parameters are excluded.
-        /// </summary>
-        /// <param name="aoProfile">
-        /// The given profile object to edit.
-        /// </param>
-        public void Edit(tvProfile aoProfile)
-        {
-            // This is done via late-binding so that the editor class files
-            // are not required for successful compilation if they are not used.
-            Type    loType = Assembly.GetExecutingAssembly().GetType("tvToolbox.tvProfileEditor", true);
-            Object  loEditor = Activator.CreateInstance(loType, aoProfile);
-
-            loType.GetMethod("ShowDialog", Type.EmptyTypes).Invoke(loEditor, null);
-        }
-
-        /// <summary>
         /// Saves the contents of the profile as a text file.
         /// </summary>
         /// <param name="asPathFile">
@@ -3136,7 +3106,7 @@ Copy and proceed from there?
         {
             this.LoadFromCommandLineArray(asCommandLineArray, tvProfileLoadActions.Overwrite);
 
-            String[] lsIniKeys = new String[] { "-ini", "-ProfileFile" };
+            String[] lsIniKeys = { "-ini", "-ProfileFile" };
 
             int     liIniKeyIndex = - 1;
                     if (      this.ContainsKey(lsIniKeys[0]) )
@@ -3194,7 +3164,6 @@ Copy and proceed from there?
                             loNewProfile.bUseXmlFiles = this.bUseXmlFiles;
                             loNewProfile.bAddStandardDefaults = this.bAddStandardDefaults;
                             loNewProfile.Load(lsProfilePathFile, tvProfileLoadActions.Overwrite);
-                            loNewProfile.bAppFullyLoaded = true;
 
                             this.sActualPathFile = loNewProfile.sActualPathFile;
                             this.sLoadedPathFile = loNewProfile.sLoadedPathFile;
@@ -3213,7 +3182,6 @@ Copy and proceed from there?
                                     loCommandLine.Remove(lsIniKeys[liIniKeyIndex]);
                                 if ( lbFirstArgIsFile )
                                     loCommandLine.Add("-File", lsFirstArg);
-                                loCommandLine.bAppFullyLoaded = true;
 
                     // Now merge in the original command line (with the above
                     // adjustments). Command line items take precedence over file items.
@@ -3342,8 +3310,6 @@ Copy and proceed from there?
         private const char   mccSplitMark = '\u0001';
         private FileStream   moFileStreamProfileFileLock;
         private tvProfile    moInputCommandLineProfile;
-        private Type         mttvMessageBox = Type.GetType("tvMessageBox");
-        private object       moAppLoadingWaitMsg;
 
 
         private class tvProfileEnumerator : IEnumerator

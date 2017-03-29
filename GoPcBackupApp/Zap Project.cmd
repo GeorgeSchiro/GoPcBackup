@@ -12,6 +12,7 @@ rd /s/q "C:\Program Files"\%Project%
 
 :Continue
 del *.user
+del *.suo
 del /ah *.suo
 del bin\*.cmd         /s/q
 del bin\*.config      /s/q

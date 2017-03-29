@@ -27,7 +27,7 @@ namespace GoPcBackup
     ///
     /// Note: This software creates its own support files (including DLLs or
     ///       other EXEs) in the folder that contains it. It will prompt you
-    ///       to create its own folder when you run it the first time.
+    ///       to create its own desktop folder when you run it the first time.
     /// </summary>
 
 
@@ -47,11 +47,10 @@ namespace GoPcBackup
     /// </summary>
     public class DoGoPcBackup : Application
     {
-        private const string        msBackupBeginScriptPathFileDefault  = "GoPcBackupBegin.cmd";
-        private const string        msBackupDoneScriptPathFileDefault   = "GoPcBackupDone.cmd";
-        private const string        msBackupFailedScriptPathFileDefault = "GoPcBackupFailed.cmd";
-        private const string        mcsZipToolDllFilename               = "7z.dll";
-        private const string        mcsZipToolExeFilename               = "7z.exe";
+        private const string        mcsBackupBeginScriptPathFileDefault = "GoPcBackupBegin.cmd";
+        private const string        mcsBackupDoneScriptPathFileDefault  = "GoPcBackupDone.cmd";
+        private const string        mcsBackupFailedScriptPathFileDefault= "GoPcBackupFailed.cmd";
+        private string[]            msZipToolExeFilenames               = {"7za.exe", "7za.chm"};
 
         private bool                mbHasNoDeletionGroups;
         private DateTime            mdtPreviousAddTasksStarted = DateTime.MinValue;
@@ -86,6 +85,8 @@ namespace GoPcBackup
 
             moBackgroundThread = new Thread(new ThreadStart(moBackgroundThread_Start));
             moBackgroundThread.Start();
+
+            this.SessionEnding += new SessionEndingCancelEventHandler(DoGoPcBackup_SessionEnding);
         }
 
         /// <summary>
@@ -463,7 +464,7 @@ A brief description of each feature follows.
 
         Here's a single line example:
 
-        -CleanupSet= -AgeDays=90 -FilesToDelete=C:\WINDOWS\TEMP\*.*
+        -CleanupSet= -AgeDays=14 -ApplyDeletionLimit=False -FilesToDelete=C:\WINDOWS\TEMP\*.*
 
 
         Here's a multi-line example:
@@ -471,16 +472,14 @@ A brief description of each feature follows.
         -CleanupSet=[
 
             -AgeDays=60
-            -FilesToDelete=C:\WINDOWS\TEMP\*.*
             -FilesToDelete=C:\WINDOWS\system32\*.log
             -FilesToDelete=C:\WINDOWS\system32\LogFiles\W3SVC1\*.log
-            -FilesToDelete=C:\Documents and Settings\Administrator\Local Settings\Temp\*.*
-            -FilesToDelete=C:\Program Files\GoPcBackup\GoPcBackupList*.txt
 
         -CleanupSet=]
         -CleanupSet=[
 
             -AgeDays=14
+            -ApplyDeletionLimit=False
             -FilesToDelete=C:\Documents and Settings\*.*
             -CleanupHidden
             -CleanupReadOnly
@@ -597,11 +596,23 @@ A brief description of each feature follows.
     shutdown automatically thereafter. This switch is useful if the utility
     is run in a batch process or if it is run by a server job scheduler.
 
+-RunOncePrompts=False
+
+    Set this switch True to display a backup results dialog after -RunOnce
+    is used. This switch is overridden by the -NoPrompts switch (see above).
+
 -SaveProfile=True
 
     Set this switch False to prevent saving to the profile file by the backup
     software itself. This is not recommended since backup status information is 
     written to the profile after each backup runs.
+
+-SaveSansCmdLine=True
+
+    Set this switch False to leave the profile file untouched after a command line
+    has been passed to the EXE and merged with the profile. When true, everything
+    but command line keys will be saved. When false, not even status information
+    will be written to the profile file (ie. ""{INI}"").
 
 -SelectedBackupDevices= NO DEFAULT VALUE
 
@@ -633,6 +644,14 @@ A brief description of each feature follows.
 
     Set this switch True to immediately display the entire contents of the profile
     file at startup in command-line format. This may be helpful as a diagnostic.
+
+-UpgradeKeysToCopy= SEE PROFILE FOR DEFAULT VALUE
+
+    This list of profile keys is used during an upgrade to a new ""{EXE}"".
+    The new software is typically tested on the desktop. The ""Upgrade"" button
+    in the setup wizard is used to import this list of keys into the new profile
+    prior to moving the new software to the application folder (to overwrite the
+    old version via ""Setup Application Folder.exe"").
 
 -UseConnectVirtualMachineHost=False
 
@@ -672,11 +691,11 @@ A brief description of each feature follows.
     Set this switch True to change the profile file from command-line format
     to XML format.
 
--ZipToolEXE=7z.exe
+-ZipToolEXE=7za.exe
 
     This is the ZIP tool executable that performs the backup compression.
 
--ZipToolEXEargs=a -ssw ""{{BackupOutputPathFile}}"" @""{{BackupPathFiles}}"" -w""{{BackupOutputPath}}""
+-ZipToolEXEargs=a -ssw -bb ""{{BackupOutputPathFile}}"" @""{{BackupPathFiles}}"" -w""{{BackupOutputPath}}""
 
     These are command-line arguments passed to the ZIP compression tool (see
     -ZipToolEXE above). The tokens (in curly brackets) are self-evident. They
@@ -701,6 +720,12 @@ A brief description of each feature follows.
     The profile file name will be prepended to the default and the current
     date (see -ZipToolFileListFileDateFormat above) will be inserted (with
     a GUID) between the filename and the extension.
+
+-ZipToolInit=False
+
+    Set this switch True and the zip compression tool will be automatically
+    overwritten from the content embedded in the executable file. Once used
+    this switch will be reset to False.
 
 -ZipToolLastRunCmdPathFile=Run Last Backup.cmd
 
@@ -734,51 +759,25 @@ Notes:
                         tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
                                 , Application.ResourceAssembly.GetName().Name + ".zip", null);
 
-
-                    // Updates start here.
-                    if ( loProfile.bFileJustCreated )
-                    {
-                        loProfile["-Updated20160416"] = true;
-                        loProfile.Save();
-                    }
-                    else
-                    {
-                        if ( !loProfile.bValue("-Updated20160416", false) )
-                        {
-                            //if ( MessageBoxResult.Cancel == MessageBox.Show(
-                            //          "This software has been updated."
-                            //        + " It requires a change to your -ZipToolEXEargs."
-                            //        + "Shall we remove the old -ZipToolEXEargs now?"
-                            //        , Application.ResourceAssembly.GetName().Name
-                            //        , MessageBoxButton.OKCancel, MessageBoxImage.Question) )
-                            //{
-                            //    loProfile.bExit = true;
-                            //}
-                            //else
-                            //{
-                                loProfile.Remove("-ZipToolEXEargs");
-
-                                loProfile["-Updated20160416"] = true;
-                                loProfile.Save();
-                            //}
-                        }
-                    }
-                    // Updates end here.
-
-
                     if ( !loProfile.bExit )
                     {
                         if ( loProfile.bValue("-RunOnce", false) )
                         {
                             // Run in batch mode.
 
-                            // Turns off the "loading" message.
-                            loProfile.bAppFullyLoaded = true;
-
+                            bool            lbBackupResult = false;
                             DoGoPcBackup    loDoDa = new DoGoPcBackup(loProfile);
                                             loDoDa.CleanupFiles();
-                                            loDoDa.BackupFiles();
-                        }
+                                            lbBackupResult = loDoDa.BackupFiles();
+
+                            if ( loProfile.bValue("-RunOncePrompts", false) && !loProfile.bValue("-NoPrompts", false) )
+                            {
+                                if ( lbBackupResult )
+                                    tvMessageBox.Show(null, "Backup finished successfully.");
+                                else
+                                    tvMessageBox.ShowError(null, "Backup failed. Check log for errors.");
+                            }
+}
                         else
                         {
                             // Run in interactive mode.
@@ -839,8 +838,6 @@ Notes:
                 }
                 else
                 {
-                    aoProfile.bAppFullyLoaded = true;   // Turns off the "loading" message.
-
                     // The default profile was likely attempted but failed to load
                     // (due to contention). Try loading the backup profile instead.
 
@@ -854,12 +851,20 @@ Notes:
                 }
 
                 // Arguments were passed, so start a new "-RunOnce" instance.
-                loProfile.LoadFromCommandLine("-ActivateAlreadyRunningInstance -RunOnce", tvProfileLoadActions.Merge);
-                loProfile.bAppFullyLoaded = true;   // Turns off the "loading" message.
+                loProfile.LoadFromCommandLine("-ActivateAlreadyRunningInstance -RunOnce -SaveProfile=False -AddTasks=\"\"", tvProfileLoadActions.Merge);
 
+                bool            lbBackupResult = false;
                 DoGoPcBackup    loDoDa = new DoGoPcBackup(loProfile);
                                 loDoDa.CleanupFiles();
-                                loDoDa.BackupFiles();
+                                lbBackupResult = loDoDa.BackupFiles();
+
+                if ( loProfile.bValue("-RunOncePrompts", false) && !loProfile.bValue("-NoPrompts", false) )
+                {
+                    if ( lbBackupResult )
+                        tvMessageBox.Show(null, "Backup finished successfully.");
+                    else
+                        tvMessageBox.ShowError(null, "Backup failed. Check log for errors.");
+                }
             }
         }
 
@@ -1408,10 +1413,6 @@ Notes:
         {
             this.LogIt(asMessageText);
 
-            // Update the error text cache.
-            if ( null != this.oUI )
-            this.oUI.GetSetOutputTextPanelErrorCache();
-
             if ( null != this.oUI )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
             {
@@ -1423,11 +1424,7 @@ Notes:
 
         public void ShowError(string asMessageText, string asMessageCaption)
         {
-            this.LogIt(asMessageText);
-
-            // Update the error text cache.
-            if ( null != this.oUI )
-            this.oUI.GetSetOutputTextPanelErrorCache();
+            this.LogIt(String.Format("{1}; {0}", asMessageText, asMessageCaption));
 
             if ( null != this.oUI )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
@@ -1440,11 +1437,7 @@ Notes:
 
         private void ShowModelessError(string asMessageText, string asMessageCaption, string asProfilePromptKey)
         {
-            this.LogIt(asMessageText);
-
-            // Update the error text cache.
-            if ( null != this.oUI )
-            this.oUI.GetSetOutputTextPanelErrorCache();
+            this.LogIt(String.Format("{1}; {0}", asMessageText, asMessageCaption));
 
             if ( null != this.oUI )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
@@ -1704,6 +1697,7 @@ No file cleanup will be done until you update the configuration.
             // Return if backup is disabled.
             if ( !moProfile.bValue("-BackupFiles", true) )
             {
+                this.LogIt("");
                 this.LogIt("Backup files is disabled.");
                 return true;
             }
@@ -1718,9 +1712,25 @@ No file cleanup will be done until you update the configuration.
             int     liBackupDoneScriptFileCopyFailures = 0; // The copy failures count returned by the "backup done" script.
             int     liCurrentBackupDevicesBitField = 0;     // The current backup devices returned by the "backup done" script.
 
-            // Get the embedded zip compression tool from the EXE.
-            tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name, mcsZipToolExeFilename, null);
-            tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name, mcsZipToolDllFilename, null);
+            // Initialize the zip tool.
+            if ( moProfile.bValue("-ZipToolInit", false) )
+            {
+                // First, remove references in the profile.
+                moProfile.Remove("-ZipToolEXE");
+                moProfile.Remove("-ZipToolEXEargs");
+
+                // Then remove the zip tool files from the disk.
+                foreach (string lsFilename in msZipToolExeFilenames)
+                    File.Delete(moProfile.sRelativeToProfilePathFile(lsFilename));
+
+                // This is used only once then reset.
+                moProfile["-ZipToolInit"] = false;
+                moProfile.Save();
+            }
+
+            // Get the embedded zip compression tool files from the EXE.
+            foreach (string lsFilename in msZipToolExeFilenames)
+                tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name, lsFilename, null);
 
             // Get all backup sets.
             tvProfile loBackupSetsProfile = moProfile.oOneKeyProfile("-BackupSet");
@@ -1736,6 +1746,10 @@ No file cleanup will be done until you update the configuration.
             try
             {
                 lbBackupFiles = true;
+
+                moProfile.Remove("-PreviousBackupOk");
+                moProfile.Remove("-PreviousBackupOutputPathFile");
+                moProfile.Save();
 
                 // Run the "backup begin" script and return any errors.
                 if ( moProfile.bValue("-BackupBeginScriptEnabled", true) )
@@ -1753,7 +1767,7 @@ No file cleanup will be done until you update the configuration.
                     if ( this.bMainLoopStopped )
                         break;
 
-                    string lsProcessPathFile = moProfile.sRelativeToProfilePathFile(moProfile.sValue("-ZipToolEXE", mcsZipToolExeFilename));
+                    string lsProcessPathFile = moProfile.sRelativeToProfilePathFile(moProfile.sValue("-ZipToolEXE", msZipToolExeFilenames[0]));
 
                     // Increment the backup set counter.
                     miBackupSetsRun++;
@@ -1794,13 +1808,15 @@ No file cleanup will be done until you update the configuration.
                                 if ( !moProfile.ContainsKey("-ActivateAlreadyRunningInstance") )
                                 {
                                     // Backup the backup as well.
-                                    loBackupFileListStreamWriter.WriteLine(this.sExeRelativePath(lsProcessPathFile, Path.GetDirectoryName(moProfile.sLoadedPathFile)));
+                                    loBackupFileListStreamWriter.WriteLine(this.sExeRelativePath(lsProcessPathFile
+                                            , Path.Combine(Path.GetDirectoryName(moProfile.sLoadedPathFile), this.sBackupFileSpec())));
 
-                                    // Also make an extra - easily accessible - backup of just the profile file.
-                                    lsBackupPathFiles1 = moProfile.sBackupPathFile;     // Discard the pathfile name.
+                                    // Also, make an extra - easily accessible - backup of just the profile file. The assignment is required
+                                    // to create the backup copy (it's a side effect of the property call). The pathfile name is discarded.
+                                    string lsDiscard = moProfile.sBackupPathFile;
                                 }
 
-                                // Save the first pathfile specification (ie. folder) for later reference.
+                                // Save the first pathfile specification (ie. folder) for later reference in the log.
                                 lsBackupPathFiles1 = lsBackupPathFiles;
                             }
 
@@ -1827,7 +1843,7 @@ No file cleanup will be done until you update the configuration.
                     msCurrentBackupOutputPathFile = this.sBackupOutputPathFile();
 
                     string  lsProcessArgs = moProfile.sValue("-ZipToolEXEargs"
-                                    , "a -ssw \"{BackupOutputPathFile}\" @\"{BackupPathFiles}\" -w\"{BackupOutputPath}\" ")
+                                    , "a -ssw -bb \"{BackupOutputPathFile}\" @\"{BackupPathFiles}\" -w\"{BackupOutputPath}\" ")
                                     + " " + moProfile.sValue("-ZipToolEXEargsMore", "");
                             lsProcessArgs = lsProcessArgs.Replace("{BackupPathFiles}", lsZipToolFileListPathFile);
                             lsProcessArgs = lsProcessArgs.Replace("{BackupOutputPath}", Path.GetDirectoryName(msCurrentBackupOutputPathFile));
@@ -1861,7 +1877,10 @@ No file cleanup will be done until you update the configuration.
                             loProcess.StartInfo.RedirectStandardOutput = true;
                             loProcess.StartInfo.CreateNoWindow = true;
 
-                    string  lsLastRunCmd = lsProcessPathFile + " " + lsProcessArgs;
+                    moProfile["-PreviousBackupOutputPathFile"] = msCurrentBackupOutputPathFile;
+                    moProfile.Save();
+
+                    string  lsLastRunCmd = String.Format("\"{0}\" {1}", lsProcessPathFile, lsProcessArgs);
                     string  lsFileAsStream = string.Format(@"
 cd\
 @prompt $
@@ -1872,9 +1891,6 @@ cd {1}
 "                                           , lsLastRunCmd
                                             , Path.GetDirectoryName(moProfile.sExePathFile)
                                             );
-
-                    moProfile.Remove("-PreviousBackupOk");
-                    moProfile.Save();
 
                     // This lets the user see what was run (or rerun it).
                     string          lsLastRunFile = moProfile.sValue("-ZipToolLastRunCmdPathFile", "Run Last Backup.cmd");
@@ -1911,6 +1927,15 @@ cd {1}
                     this.LogIt(string.Format("Backup: \"{0}\"{1}", lsBackupPathFiles1, lsFilesSuffix));
                     this.LogIt("");
                     this.LogIt("Backup command: " + lsLastRunCmd);
+
+                    // Update the output text cache.
+                    if ( null != this.oUI )
+                    this.oUI.Dispatcher.BeginInvoke((Action)(() =>
+                    {
+                        this.oUI.GetSetOutputTextPanelCache();
+                    }
+                    ));
+                    System.Windows.Forms.Application.DoEvents();
 
                     System.Windows.Forms.Application.DoEvents();
 
@@ -2074,8 +2099,16 @@ cd {1}
         {
             string lsPathFile = null;
 
-            // Leave system folder references unchanged to avoid file contention problems.
-            if ( asPathFile.ToLower().StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.System).ToLower()) )
+            // Leave system folder references unchanged to avoid file contention problems. File contention
+            // within the system folder is an issue with the latest versions of Windows. Example error:
+            //
+            //     Windows\System32\drivers\etc : The system cannot find the file specified.
+            //
+            // It's interesting that the above error occurs only when a relative reference is used.
+            // The absolute reference does successfully backup files in "drivers/etc", but the sad
+            // result is files in the archive are stripped of their path specification.
+
+            if (asPathFile.ToLower().StartsWith(Environment.GetFolderPath(Environment.SpecialFolder.System).ToLower()))
                 lsPathFile = asPathFile;
             else
                 lsPathFile = asPathFile.Replace(Path.GetPathRoot(asExePathFile), "");
@@ -2160,6 +2193,15 @@ cd {1}
                             {
                                 this.LogIt(String.Format("Starting Task: {0}", loAddTask.sCommandLine()));
 
+                                // Update the output text cache.
+                                if ( null != this.oUI )
+                                this.oUI.Dispatcher.BeginInvoke((Action)(() =>
+                                {
+                                    this.oUI.GetSetOutputTextPanelCache();
+                                }
+                                ));
+                                System.Windows.Forms.Application.DoEvents();
+
                                 loProcess.Start();
 
                                 // Start output to console also.
@@ -2218,6 +2260,15 @@ cd {1}
                                 else
                                 {
                                     this.LogIt(String.Format("Starting Task: {0}", loAddTask.sCommandLine()));
+
+                                    // Update the output text cache.
+                                    if ( null != this.oUI )
+                                    this.oUI.Dispatcher.BeginInvoke((Action)(() =>
+                                    {
+                                        this.oUI.GetSetOutputTextPanelCache();
+                                    }
+                                    ));
+                                    System.Windows.Forms.Application.DoEvents();
 
                                     loProcess.Start();
 
@@ -2320,7 +2371,7 @@ cd {1}
             }
 
             string lsBackupBeginScriptPathFile = moProfile.sRelativeToProfilePathFile(
-                    moProfile.sValue("-BackupBeginScriptPathFile", msBackupBeginScriptPathFileDefault));
+                    moProfile.sValue("-BackupBeginScriptPathFile", mcsBackupBeginScriptPathFileDefault));
             string lsBackupBeginScriptOutputPathFile = lsBackupBeginScriptPathFile + ".txt";
 
             // If the "backup begin" script has not been redefined to point elsewhere,
@@ -2328,7 +2379,7 @@ cd {1}
             // We do this even if the script file actually exists already. This way
             // the following default script will be written to the profile file if
             // it's not already there.
-            if ( lsBackupBeginScriptPathFile == moProfile.sRelativeToProfilePathFile(msBackupBeginScriptPathFileDefault) )
+            if ( lsBackupBeginScriptPathFile == moProfile.sRelativeToProfilePathFile(mcsBackupBeginScriptPathFileDefault) )
             {
                 bool    lbUseMainhostArchive    = moProfile.bValue("-UseVirtualMachineHostArchive", false);
                 bool    lbUseConnectMainhost    = moProfile.bValue("-UseConnectVirtualMachineHost", false);
@@ -2391,6 +2442,8 @@ echo net use %1  [password not shown]  /user:[username not shown]           >> "
 
      :: Ignore Mainhost connection errors.
      ::if ERRORLEVEL 1 set /A Errors += 1
+echo Note: 'net use %1' errors are ignored.                                 >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
 
 :: Here is some sample network connection script that may be helpful (replace brackets with darts):
 ::
@@ -2456,6 +2509,16 @@ exit  %Errors%
                 this.LogIt("");
                 this.LogIt("Running \"backup begin\" script ...");
 
+                // Update the output text cache.
+                if ( null != this.oUI )
+                this.oUI.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    this.oUI.GetSetOutputTextPanelCache();
+                }
+                ));
+                System.Windows.Forms.Application.DoEvents();
+
+                // Run the "backup begin" script.
                 Process loProcess = new Process();
                         loProcess.StartInfo.FileName = lsBackupBeginScriptPathFile;
                         loProcess.StartInfo.Arguments = string.Format(
@@ -2506,7 +2569,7 @@ exit  %Errors%
 
                         string lsFileAsStream = this.sFileAsStream(lsBackupBeginScriptOutputPathFile);
 
-                        this.LogIt("Here's output from the \"backup begin\" script:\r\n\r\n" + lsFileAsStream);
+                        this.LogIt("Here's output from the \"backup begin\" script:\r\n" + lsFileAsStream);
 
                         if ( moProfile.bValue("-ShowBackupBeginScriptErrors", true) )
                             this.DisplayFileAsErrors(lsFileAsStream, "Backup Begin Script Errors");
@@ -2532,6 +2595,13 @@ exit  %Errors%
         }
         public int iBackupDoneScriptCopyFailuresWithBitField(bool abRerunLastArgs)
         {
+            if ( null == moProfile["-PreviousBackupOutputPathFile"] || !File.Exists(moProfile["-PreviousBackupOutputPathFile"].ToString()) )
+            {
+                this.LogIt("");
+                this.LogIt("The backup does not exist. The \"backup done\" script was not run.");
+                return 0;
+            }
+
             int liBackupDoneScriptCopyFailuresWithBitField = 0;
 
             // Before the "backup done" script can be initialized,
@@ -2544,7 +2614,7 @@ exit  %Errors%
             }
 
             string lsBackupDoneScriptPathFile = moProfile.sRelativeToProfilePathFile(
-                    moProfile.sValue("-BackupDoneScriptPathFile", msBackupDoneScriptPathFileDefault));
+                    moProfile.sValue("-BackupDoneScriptPathFile", mcsBackupDoneScriptPathFileDefault));
             string lsBackupDoneScriptOutputPathFile = lsBackupDoneScriptPathFile + ".txt";
 
             // If the "backup done" script has not been redefined to point elsewhere,
@@ -2552,7 +2622,7 @@ exit  %Errors%
             // We do this even if the script file actually exists already. This way
             // the following default script will be written to the profile file if
             // it's not already there.
-            if ( lsBackupDoneScriptPathFile == moProfile.sRelativeToProfilePathFile(msBackupDoneScriptPathFileDefault) )
+            if ( lsBackupDoneScriptPathFile == moProfile.sRelativeToProfilePathFile(mcsBackupDoneScriptPathFileDefault) )
             {
                 bool    lbUseMainhostArchive    = moProfile.bValue("-UseVirtualMachineHostArchive", false);
                 bool    lbUseConnectMainhost    = moProfile.bValue("-UseConnectVirtualMachineHost", false);
@@ -2762,6 +2832,15 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                                 moProfile.Save();
                             }
 
+                // Update the output text cache.
+                if ( null != this.oUI )
+                this.oUI.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    this.oUI.GetSetOutputTextPanelCache();
+                }
+                ));
+                System.Windows.Forms.Application.DoEvents();
+
                 // Run the "backup done" script.
                 Process loProcess = new Process();
                         loProcess.StartInfo.FileName = lsBackupDoneScriptPathFile;
@@ -2826,7 +2905,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
 
                             string lsFileAsStream = this.sFileAsStream(lsBackupDoneScriptOutputPathFile);
 
-                            this.LogIt("Here's output from the \"backup done\" script:\r\n\r\n" + lsFileAsStream);
+                            this.LogIt("Here's output from the \"backup done\" script:\r\n" + lsFileAsStream);
 
                             if ( moProfile.bValue("-ShowBackupDoneScriptErrors", true) )
                                 this.DisplayFileAsErrors(lsFileAsStream, "Backup Done Script Errors");
@@ -2871,7 +2950,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
             }
 
             string  lsBackupFailedScriptPathFile = moProfile.sRelativeToProfilePathFile(
-                    moProfile.sValue("-BackupFailedScriptPathFile", msBackupFailedScriptPathFileDefault));
+                    moProfile.sValue("-BackupFailedScriptPathFile", mcsBackupFailedScriptPathFileDefault));
             string  lsBackupFailedScriptOutputPathFile = lsBackupFailedScriptPathFile + ".txt";
 
             // If the "backup failed" script has not been redefined to point elsewhere,
@@ -2879,7 +2958,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
             // We do this even if the script file actually exists already. This way
             // the following default script will be written to the profile file if
             // it's not already there.
-            if ( lsBackupFailedScriptPathFile == moProfile.sRelativeToProfilePathFile(msBackupFailedScriptPathFileDefault) )
+            if ( lsBackupFailedScriptPathFile == moProfile.sRelativeToProfilePathFile(mcsBackupFailedScriptPathFileDefault) )
             {
                 string  lsBackupFailedScript = moProfile.sValue("-BackupFailedScriptHelp", @"
 @echo off
@@ -2943,14 +3022,16 @@ if %1=="""" goto :EOF
 :: Initialize the ""backup failed"" script log file. It's for this run only.
 echo.                    > ""{BackupFailedScriptOutputPathFile}"" 2>&1
 
+:: This references the backup file by named variable (rather than positionally):
+set FileSpec=%1
+
+if not exist %FileSpec% echo %FileSpec% is not there. Nothing to do.            >> ""{BackupFailedScriptOutputPathFile}"" 2>&1
+if not exist %FileSpec% goto :EOF
 
 :: Any failed backup file less than this size will be removed.
 set MinFileBytes=1024
 
 set Filesize=%~z1
-
-:: This references the backup file by named variable (rather than positionally):
-set FileSpec=%1
 
 echo If the failed backup file is smaller than %MinFileBytes% bytes,            >> ""{BackupFailedScriptOutputPathFile}"" 2>&1
 echo it will be removed.                                                        >> ""{BackupFailedScriptOutputPathFile}"" 2>&1
@@ -3027,6 +3108,15 @@ echo del %FileSpec%                                                             
                                 moProfile["-BackupFailedArgs"] = loArgs.sCommandBlock();
                                 moProfile.Save();
 
+                // Update the output text cache.
+                if ( null != this.oUI )
+                this.oUI.Dispatcher.BeginInvoke((Action)(() =>
+                {
+                    this.oUI.GetSetOutputTextPanelCache();
+                }
+                ));
+                System.Windows.Forms.Application.DoEvents();
+
                 // Run the "backup failed" script.
                 Process loProcess = new Process();
                         loProcess.StartInfo.FileName = lsBackupFailedScriptPathFile;
@@ -3072,7 +3162,7 @@ echo del %FileSpec%                                                             
   
                     // Get the output from the "backup failed" script.
 
-                    this.LogIt("\r\nHere's output from the \"backup failed\" script:\r\n\r\n"
+                    this.LogIt("\r\nHere's output from the \"backup failed\" script:\r\n"
                             + this.sFileAsStream(lsBackupFailedScriptOutputPathFile));
                 }
 
@@ -3422,69 +3512,73 @@ echo del %FileSpec%                                                             
                             if ( this.bMainLoopStopped )
                                 break;
 
-                            // Show UI activity for each file evaluated.
+                            // Show UI activity for each loFileSysInfo evaluated.
                             this.IncrementUIProgressBar();
 
-                            // Since files are deleted in file date order,
-                            // the oldest files will always be deleted first.
-                            // Once the deletion limit is reached, stop deleting.
-                            if ( lbApplyDeletionLimit && ++liIndex > liFileDeletionLimit )
-                                break;
-
-                            DateTime ldtFileDate;
-                                    switch (aeFileDateTimeType)
-                                    {
-                                        case FileDateTimeTypes.CreationTime:
-                                            ldtFileDate = loFileSysInfo.CreationTime;
-                                            break;
-                                        case FileDateTimeTypes.LastAccessTime:
-                                            ldtFileDate = loFileSysInfo.LastAccessTime;
-                                            break;
-                                        default:
-                                            ldtFileDate = loFileSysInfo.LastWriteTime;
-                                            break;
-                                    }
-                            // Delete the current file only if its file date is older
-                            // than the given date. If it's also a hidden file, the
-                            // -CleanupHidden switch must be specified (see above).
-                            bool lbDoDelete = ldtFileDate < adtOlderThan
-                                    && (    lbCleanupHidden
-                                        ||  FileAttributes.Hidden
-                                        !=  (loFileSysInfo.Attributes & FileAttributes.Hidden));
-
-                            if ( lbDoDelete )
+                            // Only evaluate files for deletion (ie. skip folders).
+                            if ( !Directory.Exists(loFileSysInfo.FullName) )
                             {
-                                try 
-                                {	        
-                                    // Get the file size.
-                                    long llFileSize = new FileInfo(loFileSysInfo.FullName).Length;
+                                // Since files are deleted in file date order,
+                                // the oldest files will always be deleted first.
+                                // Once the deletion limit is reached, stop deleting.
+                                if ( lbApplyDeletionLimit && ++liIndex > liFileDeletionLimit )
+                                    break;
 
-                                    // If the -CleanupReadOnly switch is used (see above),
-                                    // set the current file's attributes to "Normal".
-                                    if (        lbCleanupReadOnly
-                                            &&  FileAttributes.ReadOnly
-                                            ==  (loFileSysInfo.Attributes & FileAttributes.ReadOnly)
-                                            )
-                                        loFileSysInfo.Attributes = FileAttributes.Normal;
+                                DateTime ldtFileDate;
+                                        switch (aeFileDateTimeType)
+                                        {
+                                            case FileDateTimeTypes.CreationTime:
+                                                ldtFileDate = loFileSysInfo.CreationTime;
+                                                break;
+                                            case FileDateTimeTypes.LastAccessTime:
+                                                ldtFileDate = loFileSysInfo.LastAccessTime;
+                                                break;
+                                            default:
+                                                ldtFileDate = loFileSysInfo.LastWriteTime;
+                                                break;
+                                        }
+                                // Delete the current file only if its file date is older
+                                // than the given date. If it's also a hidden file, the
+                                // -CleanupHidden switch must be specified (see above).
+                                bool lbDoDelete = ldtFileDate < adtOlderThan
+                                        && (    lbCleanupHidden
+                                            ||  FileAttributes.Hidden
+                                            !=  (loFileSysInfo.Attributes & FileAttributes.Hidden));
 
-                                    // Hidden files can be deleted without changing attributes.
-
-                                    // Attempt to delete the file. If its attributes still
-                                    // include "readonly", let it blow an error.
-                                    loFileSysInfo.Delete();
-
-                                    this.LogDeletedFile(loFileSysInfo.FullName, ldtFileDate, llFileSize);
-                                }
-                                catch (Exception ex)
+                                if ( lbDoDelete )
                                 {
-                                    if ( !lbDisplayFileDeletionErrors )
-                                        this.LogIt(string.Format("File: \"{0}\"\r\n", loFileSysInfo.FullName) + ex.Message);
-                                    else
-                                        this.ShowModelessError(
-                                                  string.Format("File: \"{0}\"\r\n", loFileSysInfo.FullName) + ex.Message
-                                                , "Error Deleting File"
-                                                , "-FileDeletionErrors"
-                                                );
+                                    try 
+                                    {	        
+                                        // Get the file size.
+                                        long llFileSize = new FileInfo(loFileSysInfo.FullName).Length;
+
+                                        // If the -CleanupReadOnly switch is used (see above),
+                                        // set the current file's attributes to "Normal".
+                                        if (        lbCleanupReadOnly
+                                                &&  FileAttributes.ReadOnly
+                                                ==  (loFileSysInfo.Attributes & FileAttributes.ReadOnly)
+                                                )
+                                            loFileSysInfo.Attributes = FileAttributes.Normal;
+
+                                        // Hidden files can be deleted without changing attributes.
+
+                                        // Attempt to delete the file. If its attributes still
+                                        // include "readonly", let it blow an error.
+                                        loFileSysInfo.Delete();
+
+                                        this.LogDeletedFile(loFileSysInfo.FullName, ldtFileDate, llFileSize);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        if ( !lbDisplayFileDeletionErrors )
+                                            this.LogIt(string.Format("File: \"{0}\"\r\n", loFileSysInfo.FullName) + ex.Message);
+                                        else
+                                            this.ShowModelessError(
+                                                      string.Format("File: \"{0}\"\r\n", loFileSysInfo.FullName) + ex.Message
+                                                    , "Error Deleting File"
+                                                    , "-FileDeletionErrors"
+                                                    );
+                                    }
                                 }
                             }
                         }
@@ -3669,10 +3763,19 @@ echo del %FileSpec%                                                             
 
         private void moBackgroundLoopTimer_Callback(Object state)
         {
-            // This is the "add tasks" subsystem. Arbitrary command
+            // This is the "added tasks" subsystem. Arbitrary command
             // lines are run this way (independent of the main loop).
             if ( moProfile.ContainsKey("-AddTasks") )
                 this.DoAddTasks();
+        }
+
+        void DoGoPcBackup_SessionEnding(object sender, SessionEndingCancelEventArgs e)
+        {
+            this.LogIt("");
+            this.LogIt("Exiting due to log-off or system shutdown.");
+
+            if ( null != this.oUI )
+            this.oUI.HandleShutdown();
         }
     }
 }

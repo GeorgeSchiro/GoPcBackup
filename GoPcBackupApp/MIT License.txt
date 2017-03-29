@@ -2,7 +2,7 @@ The MIT License (MIT)
 
 Copyright (c) 2013 George Schiro
 
-Note: You can always get the latest version as well as its source code from:
+Note: You can get the latest EXE as well as its source code from:
 
          http://github.com/GeorgeSchiro/GoPcBackup
 

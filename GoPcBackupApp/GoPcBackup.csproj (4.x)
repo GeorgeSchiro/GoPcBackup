@@ -8,7 +8,6 @@
     <FileAlignment>512</FileAlignment>
     <WarningLevel>4</WarningLevel>
     <ApplicationIcon>Resources\images\GoPC.ico</ApplicationIcon>
-    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
     <ApplicationRevision>2</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
   </PropertyGroup>
@@ -20,23 +19,17 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Core">
-    </Reference>
+    <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Data.DataSetExtensions">
-    </Reference>
+    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
-    <Reference Include="System.XML" />
     <Reference Include="System.Xaml" />
-    <Reference Include="UIAutomationProvider">
-    </Reference>
-    <Reference Include="WindowsBase">
-    </Reference>
-    <Reference Include="PresentationCore">
-    </Reference>
-    <Reference Include="PresentationFramework">
-    </Reference>
+    <Reference Include="System.XML" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="Resources\GlassButtonStyle.xaml">
@@ -86,16 +79,6 @@
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
     <Compile Include="Resources\SavedWindow.cs" />
     <Compile Include="Resources\ScrollingText.xaml.cs">
       <DependentUpon>ScrollingText.xaml</DependentUpon>
@@ -109,17 +92,6 @@
     <Compile Include="Resources\tvToolbox\tvExtensions.cs" />
     <Compile Include="Resources\tvToolbox\tvFetchResource.cs" />
     <Compile Include="Resources\tvToolbox\tvProfile.cs" />
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <EmbeddedResource Include="GoPcBackup.zip" />
-    <None Include="GoPcBackupSigned.snk" />
-    <None Include="Properties\app.manifest" />
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
@@ -135,9 +107,6 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\images\GoPC.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Setup Application Folder.exe" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.4.5">
@@ -172,10 +141,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="7z.dll" />
-    <EmbeddedResource Include="7z.exe" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Resources\tvToolbox\tvMessageBox\images\Alert.png" />
     <Resource Include="Resources\tvToolbox\tvMessageBox\images\Default.png" />
     <Resource Include="Resources\tvToolbox\tvMessageBox\images\Error.png" />
@@ -185,6 +150,11 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="MIT License.txt" />
+    <EmbeddedResource Include="7za.chm" />
+    <EmbeddedResource Include="7za.exe" />
+    <EmbeddedResource Include="Setup Application Folder.exe" />
+    <EmbeddedResource Include="GoPcBackup.zip" />
+    <EmbeddedResource Include="SetupAppFolder.zip" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

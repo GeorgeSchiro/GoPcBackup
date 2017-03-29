@@ -101,13 +101,14 @@
     1. To get started, please select your primary location to backup.
 </TextBlock>
 <Border Style="{StaticResource ConfigWizardTextBorder}">
-        <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
+    <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
     Click "Select Folder to Backup" to choose the folder 
     containing all of your primary files to backup.<LineBreak/><LineBreak/>
 
     Note: The backup cannot be the entire system drive
     or contain "Windows" or "Program Files".
-</TextBlock></Border>
+    </TextBlock>
+</Border>
 <Button Name="btnSetupStep1" Click="btnSetupStep1_Click" Margin="30" Style="{StaticResource ConfigWizardButton}">
     Select Folder to Backup
 </Button>
@@ -117,6 +118,11 @@
 </StackPanel>
                                     </StackPanel>
                                 </Viewbox>
+                                <Button Name="btnUpgrade" Click="btnUpgrade_Click" Style="{StaticResource ConfigWizardUpgradeButton}">
+                                    <TextBlock Style="{StaticResource MainCanvasButtonMultiLineText}">
+                                        Upgrade
+                                    </TextBlock>
+                                </Button>
                                 <Button Click="btnNextSetupStep_Click" Style="{StaticResource ConfigWizardNextTabButton}">
                                     <TextBlock Style="{StaticResource MainCanvasButtonMultiLineText}">
                                         Next<LineBreak/>Step
@@ -132,10 +138,10 @@
     2. Select your backup output filename and archive location (ie. where all of your backups go).
 </TextBlock>
 <Border Style="{StaticResource ConfigWizardTextBorder}">
-        <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
+    <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
     Type the name of the file (no extension) to contain all of the files in your backup.
-</TextBlock></Border>
-
+    </TextBlock>
+</Border>
 <Grid Margin="90,10,10,10" HorizontalAlignment="Left">
     <Grid.RowDefinitions>
         <RowDefinition />
@@ -253,8 +259,6 @@
     </Grid.ColumnDefinitions>
         
 </Grid>
-
-
                                     </StackPanel>
                                 </Viewbox>
                                 <Button Click="btnNextSetupStep_Click" Style="{StaticResource ConfigWizardNextTabButton}">
@@ -272,12 +276,13 @@
     4. Select the time you would like to run the backup each day.
 </TextBlock>
 <Border Style="{StaticResource ConfigWizardTextBorder}">
-        <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
+    <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
     Slide the "GoPC" logo below to select the daily backup time.<LineBreak/><LineBreak/>
 
     Selecting a daily backup time implies your PC will be running at that time.
     If not, you can run the backup manually by hitting the "GO" button anytime.
-</TextBlock></Border>
+    </TextBlock>
+</Border>
 <StackPanel Margin="20">
     <Label HorizontalAlignment="Center">Backup Time</Label>
     <Slider Name="sldBackupTime" ValueChanged="sldBackupTime_ValueChanged"
@@ -310,18 +315,19 @@
                         <TabItem Name="tabFinishSetup" Header="Finish Setup" Style="{StaticResource ConfigWizardTabItems}">
                             <Viewbox>
                             <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
-<TextBlock Style="{StaticResource ConfigWizardTextTop}">
+<TextBlock Name="txtSetupDone" Style="{StaticResource ConfigWizardTextTop}">
     Please review your choices from the previous setup steps, then click "Setup Done - Run Backup".
 </TextBlock>
 <Border Style="{StaticResource ConfigWizardTextBorder}">
-        <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
+    <TextBlock Name="txtSetupDoneDesc" MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
     Your first backup will run now.
     This will give you a chance to verify the backup
     works before it runs automatically later. <LineBreak/><LineBreak/>
 
     If you would prefer to finish this setup at another time,
     you can close now and continue later wherever you left off.
-</TextBlock></Border>
+    </TextBlock>
+</Border>
 <Grid Margin="20" HorizontalAlignment="Center">
     <Grid.RowDefinitions>
         <RowDefinition />
