@@ -130,23 +130,23 @@ Screenshots
 ===========
 
 
-![Copy EXE to Desktop?] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot00i.png)
-![Main UI             ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot00j.png)
+![Copy EXE to Desktop?](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot00i.png)
+![Main UI             ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot00j.png)
 
 The following setup wizard tabs are displayed when the software is started the first time. They ask a few basic questions about what you want to backup, to where and on what schedule.
 
 The screenshots after that show an actual backup run.
 
-![Setup Wizard Step 1 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot01.png)
-![Setup Wizard Step 2 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot02.png)
-![Setup Wizard Step 3 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot03.png)
-![Setup Wizard Step 4 ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot04.png)
-![Setup Wizard Finish ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot05.png)
-![Run Backup Prompt   ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot06.png)
-![Cleanup Started     ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot07.png)
-![Backup Started      ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot08.png)
-![Backup Running      ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot09.png)
-![Backup Finished     ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot10.png)
+![Setup Wizard Step 1 ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot01.png)
+![Setup Wizard Step 2 ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot02.png)
+![Setup Wizard Step 3 ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot03.png)
+![Setup Wizard Step 4 ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot04.png)
+![Setup Wizard Finish ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot05.png)
+![Run Backup Prompt   ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot06.png)
+![Cleanup Started     ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot07.png)
+![Backup Started      ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot08.png)
+![Backup Running      ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot09.png)
+![Backup Finished     ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot10.png)
 
 With "Use Timer" checked, the software closes to the system tray. There it is ready for the next scheduled backup.
 

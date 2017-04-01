@@ -637,12 +637,12 @@ namespace GoPcBackup
                 }
                 else
                 if ( tvMessageBoxResults.Yes == this.Show(string.Format(@"
-    Are you sure you want to run the backup?
+Are you sure you want to run the backup?
 
-    You can continue this later wherever you left off. "
-    + @" You can also edit the profile file directly (""{0}"") for"
-    + @" much more detailed configuration (see ""Help"").
-    "
+You can continue this later wherever you left off. "
++ @" You can also edit the profile file directly (""{0}"") for"
++ @" much more detailed configuration (see ""Help"").
+"
                                 , Path.GetFileName(moProfile.sLoadedPathFile)
                                 )
                             , "Run Backup"
