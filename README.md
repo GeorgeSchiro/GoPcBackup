@@ -152,7 +152,7 @@ With "Use Timer" checked, the software closes to the system tray. There it is re
 
 After clicking "GoPC" in the system tray and the "Toggle Backup Timer" icon you can see when the next backup starts, the previous run and the previous backup result.
 
-![Next Backup Waiting ] (https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot11.png)
+![Next Backup Waiting ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot11.png)
 
 
 Command-Line Usage
