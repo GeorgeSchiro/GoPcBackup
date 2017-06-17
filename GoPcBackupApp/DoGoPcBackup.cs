@@ -53,7 +53,6 @@ namespace GoPcBackup
         private string[]            msZipToolExeFilenames               = {"7za.exe", "7za.chm"};
 
         private bool                mbHasNoDeletionGroups;
-        private DateTime            mdtPreviousAddTasksStarted = DateTime.MinValue;
         private int                 miBackupSets;
         private int                 miBackupSetsGood;
         private int                 miBackupSetsRun;
@@ -121,9 +120,9 @@ There is no need to use a job scheduler unless this software is running on a
 server computer that has no regular user activity (see -NoPrompts and -RunOnce
 below).
 
-You provide various file specifications (ie. locations of the files to backup
-and to cleanup) as well as file age limits for the files to cleanup. The rest
-is automatic.
+You provide various file specifications (ie. locations of files to backup and
+to cleanup) as well as file age limits for the files to cleanup. The rest is
+automatic.
 
 This utility will run in the background unless its timer is turned off. Its
 simple user interface (UI) is usually minimized to the system tray.
@@ -368,7 +367,7 @@ A brief description of each feature follows.
 
 -BackupTime=12:00 AM
 
-    This is the time each day that the backup starts.
+    This is the time each day the backup starts.
 
 -BackupTimeMinsPerTick=15
 
@@ -383,7 +382,7 @@ A brief description of each feature follows.
 
     This is the number of milliseconds of process thread sleep time between
     file deletions. The default of 1 ms should result in rapid deletions. You 
-    can increase this value if you are concerned that the UI is not responsive
+    can increase this value if you are concerned the UI is not responsive
     enough or the process is using too much CPU while deleting.
 
 -CleanupSet=""One of many file sets to cleanup goes here.""
@@ -568,7 +567,7 @@ A brief description of each feature follows.
     This is the number of milliseconds of process thread sleep wait time between
     loops. The default of 100 ms should be a happy medium between a responsive
     overall UI and a responsive process timer UI. You can increase this value
-    if you are concerned that the timer UI is using too much CPU while waiting.
+    if you are concerned the timer UI is using too much CPU while waiting.
 
 -NoPrompts=False
 
@@ -777,7 +776,7 @@ Notes:
                                 else
                                     tvMessageBox.ShowError(null, "Backup failed. Check log for errors.");
                             }
-}
+                        }
                         else
                         {
                             // Run in interactive mode.
@@ -851,7 +850,7 @@ Notes:
                 }
 
                 // Arguments were passed, so start a new "-RunOnce" instance.
-                loProfile.LoadFromCommandLine("-ActivateAlreadyRunningInstance -RunOnce -SaveProfile=False -AddTasks=\"\"", tvProfileLoadActions.Merge);
+                loProfile.LoadFromCommandLine("-ActivateAlreadyRunningInstance -RunOnce -SaveProfile=False -AddTasks=\"\" -CleanupFiles=False", tvProfileLoadActions.Merge);
 
                 bool            lbBackupResult = false;
                 DoGoPcBackup    loDoDa = new DoGoPcBackup(loProfile);
@@ -870,27 +869,7 @@ Notes:
 
 
         /// <summary>
-        /// This is the main application profile object.
-        /// </summary>
-        public tvProfile oProfile
-        {
-            get
-            {
-                return moProfile;
-            }
-        }
-        private tvProfile moProfile;
-
-        /// <summary>
-        /// This is the main application user interface (UI) object.
-        /// </summary>
-        public UI oUI
-        {
-            get;set;
-        }
-
-        /// <summary>
-        /// This switch is used within the main loop of the UI (see "this.oUI")
+        /// This is used within the main loop of the UI (see "this.oUI")
         /// to stop any loops running within this object as well.
         /// </summary>
         public bool bMainLoopStopped
@@ -903,14 +882,27 @@ Notes:
             {
                 mbMainLoopStopped = value;
 
-                if ( mbMainLoopStopped )
+                if (mbMainLoopStopped)
                 {
                     // Stop the background task timer.
-                    moBackgroundLoopTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                    if ( null != moBackgroundLoopTimer )
+                        moBackgroundLoopTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 }
             }
         }
         private bool mbMainLoopStopped;
+
+        /// <summary>
+        /// This is used to suppress prompts when
+        /// the software is run via a job scheduler.
+        /// </summary>
+        public bool bNoPrompts
+        {
+            get
+            {
+                return moProfile.bValue("-NoPrompts", false);
+            }
+        }
 
         /// <summary>
         /// Returns the first possible backup device drive letter.
@@ -932,6 +924,26 @@ Notes:
             {
                 return 'Z';
             }
+        }
+
+        /// <summary>
+        /// This is the main application profile object.
+        /// </summary>
+        public tvProfile oProfile
+        {
+            get
+            {
+                return moProfile;
+            }
+        }
+        private tvProfile moProfile;
+
+        /// <summary>
+        /// This is the main application user interface (UI) object.
+        /// </summary>
+        public UI oUI
+        {
+            get;set;
         }
 
         /// <summary>
@@ -1357,7 +1369,7 @@ Notes:
 
             tvMessageBoxResults ltvMessageBoxResults = tvMessageBoxResults.None;
 
-            if ( null != this.oUI )
+            if ( null != this.oUI && !this.bNoPrompts )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
             {
                 ltvMessageBoxResults = tvMessageBox.Show(
@@ -1389,7 +1401,7 @@ Notes:
 
             tvMessageBoxResults ltvMessageBoxResults = tvMessageBoxResults.None;
 
-            if ( null != this.oUI )
+            if ( null != this.oUI && !this.bNoPrompts )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
             {
                 ltvMessageBoxResults = tvMessageBox.ShowModeless(
@@ -1413,7 +1425,7 @@ Notes:
         {
             this.LogIt(asMessageText);
 
-            if ( null != this.oUI )
+            if ( null != this.oUI && !this.bNoPrompts )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
             {
                 tvMessageBox.ShowError(this.oUI, asMessageText);
@@ -1426,7 +1438,7 @@ Notes:
         {
             this.LogIt(String.Format("{1}; {0}", asMessageText, asMessageCaption));
 
-            if ( null != this.oUI )
+            if ( null != this.oUI && !this.bNoPrompts )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
             {
                 tvMessageBox.ShowError(this.oUI, asMessageText, asMessageCaption);
@@ -1439,7 +1451,7 @@ Notes:
         {
             this.LogIt(String.Format("{1}; {0}", asMessageText, asMessageCaption));
 
-            if ( null != this.oUI )
+            if ( null != this.oUI && !this.bNoPrompts )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
             {
                 tvMessageBox.ShowModelessError(
@@ -1565,11 +1577,14 @@ Notes:
         /// </summary>
         private void DisplayFileAsErrors(string asFileAsStream, string asCaption)
         {
-            ScrollingText   loErrors = new ScrollingText(asFileAsStream, asCaption);
-                            loErrors.Show();
+            if ( !this.bNoPrompts )
+            {
+                ScrollingText   loErrors = new ScrollingText(asFileAsStream, asCaption);
+                                loErrors.Show();
 
-                            if ( null != this.oUI )
-                            this.oUI.oOtherWindows.Add(loErrors);
+                                if ( null != this.oUI )
+                                this.oUI.oOtherWindows.Add(loErrors);
+            }
         }
 
         /// <summary>
@@ -1583,7 +1598,7 @@ Notes:
                 {
                     string lsFileAsStream = this.sFileAsStream(this.sDeletedFileListOutputPathFile);
 
-                    if ( null != lsFileAsStream )
+                    if ( null != lsFileAsStream && !this.bNoPrompts )
                     {
                         ScrollingText   loFileList = new ScrollingText(lsFileAsStream, "Deleted File List");
                                         loFileList.TextBackground = Brushes.LightYellow;
@@ -1805,11 +1820,11 @@ No file cleanup will be done until you update the configuration.
 
                             if ( 1 == ++liFileCount )
                             {
-                                if ( !moProfile.ContainsKey("-ActivateAlreadyRunningInstance") )
+                                if ( 1 == miBackupSetsRun && !moProfile.ContainsKey("-ActivateAlreadyRunningInstance") )
                                 {
-                                    // Backup the backup as well.
+                                    // Backup the backup as well (1st backup set only) and use the parent filespec (ie. not the current).
                                     loBackupFileListStreamWriter.WriteLine(this.sExeRelativePath(lsProcessPathFile
-                                            , Path.Combine(Path.GetDirectoryName(moProfile.sLoadedPathFile), this.sBackupFileSpec())));
+                                            , Path.Combine(Path.GetDirectoryName(moProfile.sLoadedPathFile), moProfile.sValue("-BackupFileSpec", "*"))));
 
                                     // Also, make an extra - easily accessible - backup of just the profile file. The assignment is required
                                     // to create the backup copy (it's a side effect of the property call). The pathfile name is discarded.
@@ -2118,7 +2133,7 @@ cd {1}
 
 
         /// <summary>
-        /// Do additional tasks (typically launched from the main loop - see UI).
+        /// Do additional scheduled tasks.
         /// </summary>
         public void DoAddTasks()
         {
@@ -2126,11 +2141,16 @@ cd {1}
         }
         public void DoAddTasks(bool abStartup)
         {
-            // Do this at most once per minute to avoid running the same task twice in rapid succession.
-            if ( !abStartup && (!moProfile.ContainsKey("-AddTasks") || DateTime.Now < mdtPreviousAddTasksStarted.AddMinutes(1)) )
-                return;
+            if ( !abStartup )
+            {
+                // Start all scheduled tasks at the top of the minute.
+                if ( 0 != DateTime.Now.Second )
+                    return;
 
-            mdtPreviousAddTasksStarted = DateTime.Now;
+                // Pause the background task timer 1 second to guarantee we won't run the same tasks twice in the same minute.
+                if ( null != moBackgroundLoopTimer )
+                    moBackgroundLoopTimer.Change(1000, moProfile.iValue("-BackgroundLoopSleepMS", 200));
+            }
 
             try
             {
@@ -2150,19 +2170,17 @@ cd {1}
                     if ( abStartup )
                     {
                         lbDoTask = loAddTask.bValue("-OnStartup", false);
-
-                        // Reset pause timer to allow other tasks to run without delay after startup.
-                        mdtPreviousAddTasksStarted = DateTime.Now.AddMinutes(-1);
                     }
                     else
                     {
+                        DateTime    ldtTasksStarted = DateTime.Now;
                         DateTime    ldtTaskStartTime = loAddTask.dtValue("-StartTime", DateTime.MinValue);
                         string      lsTaskDaysOfWeek = loAddTask.sValue("-StartDays", "");
 
                         // If -StartTime is within the current minute, start the task.
                         // If -StartDays is specified, run the task on those days only.
-                        lbDoTask = DateTime.MinValue != ldtTaskStartTime && (int)mdtPreviousAddTasksStarted.TimeOfDay.TotalMinutes == (int)ldtTaskStartTime.TimeOfDay.TotalMinutes
-                                && ("" == lsTaskDaysOfWeek || this.bListIncludesDay(lsTaskDaysOfWeek, mdtPreviousAddTasksStarted));
+                        lbDoTask = DateTime.MinValue != ldtTaskStartTime && (int)ldtTasksStarted.TimeOfDay.TotalMinutes == (int)ldtTaskStartTime.TimeOfDay.TotalMinutes
+                                && ("" == lsTaskDaysOfWeek || this.bListIncludesDay(lsTaskDaysOfWeek, ldtTasksStarted));
                     }
 
                     if ( lbDoTask )
@@ -3754,19 +3772,22 @@ echo del %FileSpec%                                                             
 
         private void moBackgroundThread_Start()
         {
-            // Run any startup related tasks.
-            this.DoAddTasks(true);
+            if ( moProfile.ContainsKey("-AddTasks") )
+            {
+                // First, run any startup related tasks.
+                this.DoAddTasks(true);
 
-            moBackgroundLoopTimer = new Timer(moBackgroundLoopTimer_Callback, null, 0
-                    , moProfile.iValue("-BackgroundLoopSleepMS", 200));
+                // Then periodically check for scheduled tasks to run.
+                moBackgroundLoopTimer = new Timer(moBackgroundLoopTimer_Callback, null, 0
+                        , moProfile.iValue("-BackgroundLoopSleepMS", 200));
+            }
         }
 
         private void moBackgroundLoopTimer_Callback(Object state)
         {
             // This is the "added tasks" subsystem. Arbitrary command
             // lines are run this way (independent of the main loop).
-            if ( moProfile.ContainsKey("-AddTasks") )
-                this.DoAddTasks();
+            this.DoAddTasks();
         }
 
         void DoGoPcBackup_SessionEnding(object sender, SessionEndingCancelEventArgs e)

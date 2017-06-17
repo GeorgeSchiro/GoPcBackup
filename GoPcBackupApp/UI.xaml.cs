@@ -69,10 +69,13 @@ namespace GoPcBackup
         /// </param>
         public UI(DoGoPcBackup aoDoGoPcBackup)
         {
-            String  lsFilnameOnly = Path.GetFileNameWithoutExtension(aoDoGoPcBackup.oProfile.sExePathFile);
-            String  lcsLoadingMsg = lsFilnameOnly + " loading, please wait ...";
-                    moStartupWaitMessage = new tvMessageBox();
-                    moStartupWaitMessage.ShowWait(this, lcsLoadingMsg, 250);
+            if ( !aoDoGoPcBackup.bNoPrompts )
+            {
+                String  lsFilnameOnly = Path.GetFileNameWithoutExtension(aoDoGoPcBackup.oProfile.sExePathFile);
+                String  lcsLoadingMsg = lsFilnameOnly + " loading, please wait ...";
+                        moStartupWaitMessage = new tvMessageBox();
+                        moStartupWaitMessage.ShowWait(this, lcsLoadingMsg, 250);
+            }
 
             InitializeComponent();
 
@@ -125,22 +128,6 @@ namespace GoPcBackup
             return IntPtr.Zero;
         }
 
-
-        /// <summary>
-        /// This is used with "HideMe() / ShowMe()"
-        /// to track the visible state of this window.
-        /// </summary>
-        public bool bNoPrompts
-        {
-            get
-            {
-                return moProfile.bValue("-NoPrompts", false);
-            }
-            set
-            {
-                moProfile["-NoPrompts"] = value;
-            }
-        }
 
         /// <summary>
         /// This is used to display or
@@ -422,7 +409,8 @@ namespace GoPcBackup
             this.chkUseTimer.IsChecked = moProfile.bValue("-AutoStart", true);
 
             // Turns off the "loading" message.
-            moStartupWaitMessage.Close();
+            if ( null != moStartupWaitMessage )
+                moStartupWaitMessage.Close();
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -510,7 +498,7 @@ namespace GoPcBackup
 
                     ScrollingText loLicense = null;
 
-                    if ( !this.bNoPrompts )
+                    if ( !moDoGoPcBackup.bNoPrompts )
                     {
                         tvMessageBox.ShowBriefly(this, string.Format("The \"{0}\" will now be displayed."
                                         + "\r\n\r\nPlease accept it if you would like to use this software."
@@ -718,7 +706,7 @@ Other keys will be upgraded.
 
                 System.Windows.Forms.DialogResult leDialogResult = System.Windows.Forms.DialogResult.None;
 
-                if ( !this.bNoPrompts )
+                if ( !moDoGoPcBackup.bNoPrompts )
                     leDialogResult = loOpenDialog.ShowDialog();
 
                 if ( System.Windows.Forms.DialogResult.OK == leDialogResult )
@@ -971,7 +959,7 @@ Give the new software a try. When you're confident everything works as expected,
 
             System.Windows.Forms.DialogResult leDialogResult = System.Windows.Forms.DialogResult.None;
 
-            if ( !this.bNoPrompts )
+            if ( !moDoGoPcBackup.bNoPrompts )
                 leDialogResult = loOpenDialog.ShowDialog();
 
             if ( System.Windows.Forms.DialogResult.OK == leDialogResult )
@@ -986,7 +974,7 @@ Give the new software a try. When you're confident everything works as expected,
 
             System.Windows.Forms.DialogResult leDialogResult = System.Windows.Forms.DialogResult.None;
 
-            if ( !this.bNoPrompts )
+            if ( !moDoGoPcBackup.bNoPrompts )
                 leDialogResult = loOpenDialog.ShowDialog();
 
             if ( System.Windows.Forms.DialogResult.OK == leDialogResult )
@@ -1076,7 +1064,7 @@ Give the new software a try. When you're confident everything works as expected,
 
             System.Windows.Forms.DialogResult leDialogResult = System.Windows.Forms.DialogResult.None;
 
-            if ( !this.bNoPrompts )
+            if ( !moDoGoPcBackup.bNoPrompts )
                 leDialogResult = loOpenDialog.ShowDialog();
 
             if ( System.Windows.Forms.DialogResult.OK == leDialogResult )
@@ -1118,10 +1106,13 @@ Give the new software a try. When you're confident everything works as expected,
                 }
                 else
                 {
-                    if ( null == moNotifyWaitMessage )
-                        moNotifyWaitMessage = new tvMessageBox();
+                    if ( !moDoGoPcBackup.bNoPrompts )
+                    {
+                        if ( null == moNotifyWaitMessage )
+                            moNotifyWaitMessage = new tvMessageBox();
 
-                    moNotifyWaitMessage.ShowWait(this, mcsNotifyIconBusyText + " - please wait ...", 350);
+                        moNotifyWaitMessage.ShowWait(this, mcsNotifyIconBusyText + " - please wait ...", 350);
+                    }
 
                     // This kludge is necessary to overcome sometimes severe
                     // delays processing click events to redisplay the main 
@@ -1143,12 +1134,12 @@ Give the new software a try. When you're confident everything works as expected,
                 , tvMessageBoxIcons aetvMessageBoxIcon
                 )
         {
-            if ( this.bNoPrompts )
+            if ( moDoGoPcBackup.bNoPrompts )
                 moDoGoPcBackup.LogIt(asMessageText);
 
             tvMessageBoxResults ltvMessageBoxResults = tvMessageBoxResults.None;
 
-            if ( !this.bNoPrompts )
+            if ( !moDoGoPcBackup.bNoPrompts )
                 ltvMessageBoxResults = tvMessageBox.Show(
                           this
                         , asMessageText
@@ -1168,12 +1159,12 @@ Give the new software a try. When you're confident everything works as expected,
                 , string asProfilePromptKey
                 )
         {
-            if ( this.bNoPrompts )
+            if ( moDoGoPcBackup.bNoPrompts )
                 moDoGoPcBackup.LogIt(asMessageText);
 
             tvMessageBoxResults ltvMessageBoxResults = tvMessageBoxResults.None;
 
-            if ( !this.bNoPrompts )
+            if ( !moDoGoPcBackup.bNoPrompts )
                 ltvMessageBoxResults = tvMessageBox.Show(
                           this
                         , asMessageText
@@ -1197,12 +1188,12 @@ Give the new software a try. When you're confident everything works as expected,
                 , string asProfilePromptKey
                 )
         {
-            if ( this.bNoPrompts )
+            if ( moDoGoPcBackup.bNoPrompts )
                 moDoGoPcBackup.LogIt(asMessageText);
 
             tvMessageBoxResults ltvMessageBoxResults = tvMessageBoxResults.None;
 
-            if ( !this.bNoPrompts )
+            if ( !moDoGoPcBackup.bNoPrompts )
                 ltvMessageBoxResults = tvMessageBox.Show(
                           this
                         , asMessageText
@@ -1227,12 +1218,12 @@ Give the new software a try. When you're confident everything works as expected,
                 , tvMessageBoxResults aetvMessageBoxResult
                 )
         {
-            if ( this.bNoPrompts )
+            if ( moDoGoPcBackup.bNoPrompts )
                 moDoGoPcBackup.LogIt(asMessageText);
 
             tvMessageBoxResults ltvMessageBoxResults = tvMessageBoxResults.None;
 
-            if ( !this.bNoPrompts )
+            if ( !moDoGoPcBackup.bNoPrompts )
                 ltvMessageBoxResults = tvMessageBox.Show(
                           this
                         , asMessageText
@@ -1250,37 +1241,37 @@ Give the new software a try. When you're confident everything works as expected,
 
         private void ShowError(Exception aoException)
         {
-            if ( this.bNoPrompts )
+            if ( moDoGoPcBackup.bNoPrompts )
                 moDoGoPcBackup.LogIt(aoException.Message);
 
-            if ( !this.bNoPrompts )
+            if ( !moDoGoPcBackup.bNoPrompts )
                 tvMessageBox.ShowError(this, aoException);
         }
 
         private void ShowError(string asMessageText)
         {
-            if ( this.bNoPrompts )
+            if ( moDoGoPcBackup.bNoPrompts )
                 moDoGoPcBackup.LogIt(asMessageText);
 
-            if ( !this.bNoPrompts )
+            if ( !moDoGoPcBackup.bNoPrompts )
                 tvMessageBox.ShowError(this, asMessageText);
         }
 
         public void ShowError(string asMessageText, string asMessageCaption)
         {
-            if ( this.bNoPrompts )
+            if ( moDoGoPcBackup.bNoPrompts )
                 moDoGoPcBackup.LogIt(asMessageText);
 
-            if ( !this.bNoPrompts )
+            if ( !moDoGoPcBackup.bNoPrompts )
                 tvMessageBox.ShowError(this, asMessageText, asMessageCaption);
         }
 
         public void ShowWarning(string asMessageText, string asMessageCaption)
         {
-            if ( this.bNoPrompts )
+            if ( moDoGoPcBackup.bNoPrompts )
                 moDoGoPcBackup.LogIt(asMessageText);
 
-            if ( !this.bNoPrompts )
+            if ( !moDoGoPcBackup.bNoPrompts )
                 tvMessageBox.ShowWarning(this, asMessageText, asMessageCaption);
         }
 
@@ -1288,6 +1279,9 @@ Give the new software a try. When you're confident everything works as expected,
         // to avoid annoying flicker on some platforms.
         private void HideMe()
         {
+            if ( moDoGoPcBackup.bNoPrompts )
+                return;
+
             this.MainCanvas.Visibility = Visibility.Hidden;
             this.WindowState = mePreviousWindowState;
             this.Hide();
@@ -1301,6 +1295,9 @@ Give the new software a try. When you're confident everything works as expected,
         }
         private void ShowMe(bool abShowMissingBackupDevices)
         {
+            if ( moDoGoPcBackup.bNoPrompts )
+                return;
+
             bool lTopmost = this.Topmost;
 
             this.AdjustWindowSize();
@@ -1321,6 +1318,9 @@ Give the new software a try. When you're confident everything works as expected,
         private bool bShowInitBeginScriptWarning()
         {
             bool lbShowInitBeginScriptWarning = true;
+
+            if ( moDoGoPcBackup.bNoPrompts )
+                return lbShowInitBeginScriptWarning;
 
             // Don't bother asking if the "backup begin" script
             // doesn't exist or the "init" switch has been set already.
@@ -1346,6 +1346,9 @@ Give the new software a try. When you're confident everything works as expected,
         private bool bShowInitScriptsWarning()
         {
             bool lbShowInitScriptsWarning = true;
+
+            if ( moDoGoPcBackup.bNoPrompts )
+                return lbShowInitScriptsWarning;
 
             // Don't bother asking if neither script exists
             // or both "init" switches have been set already.
@@ -1872,6 +1875,9 @@ Give the new software a try. When you're confident everything works as expected,
             if ( mbInShowMissingBackupDevices )
                 return lbDeviceReattached;
 
+            if ( moDoGoPcBackup.bNoPrompts )
+                return lbDeviceReattached;
+
             mbInShowMissingBackupDevices = true;
 
             // Additional backup devices are only used by the "backup done" script.
@@ -1939,6 +1945,9 @@ Give the new software a try. When you're confident everything works as expected,
         private tvMessageBoxResults eShowMissingBackupDevices()
         {
             tvMessageBoxResults leTvMessageBoxResults = tvMessageBoxResults.None;
+
+            if ( moDoGoPcBackup.bNoPrompts )
+                return leTvMessageBoxResults;
 
             List<char> loMissingBackupDevices = moDoGoPcBackup.oMissingBackupDevices(
                                                     this.iCurrentBackupDevicesBitField());
@@ -2178,7 +2187,7 @@ If you would prefer to finish this setup at another time, you can close now and 
 
         private void ShowHelp()
         {
-            if ( this.bNoPrompts )
+            if ( moDoGoPcBackup.bNoPrompts )
                 return;
 
             // If a help window is already open, close it.
@@ -2203,6 +2212,9 @@ If you would prefer to finish this setup at another time, you can close now and 
         {
             bool lbPreviousBackupError = false;
             bool lbShowPreviousBackupStatus = true;
+
+            if ( moDoGoPcBackup.bNoPrompts )
+                return lbShowPreviousBackupStatus;
 
             lbShowPreviousBackupStatus = moProfile.bValue("-BackupFiles", true);
 
@@ -2278,6 +2290,9 @@ If you would prefer to finish this setup at another time, you can close now and 
 
         private void RerunBackupScripts()
         {
+            if ( moDoGoPcBackup.bNoPrompts )
+                return;
+
             this.GetSetConfigurationDefaults();
 
             // Only do the rerun if the current configuration is valid.
@@ -2404,7 +2419,7 @@ If you would prefer to finish this setup at another time, you can close now and 
         {
             this.bBackupRunning = true;
 
-            if ( moProfile.bValue("-CleanupFiles", true) && moProfile.bValue("-BackupFiles", true)
+            if ( !moDoGoPcBackup.bNoPrompts && moProfile.bValue("-CleanupFiles", true) && moProfile.bValue("-BackupFiles", true)
                     && moProfile.iValue("-BackupStartedPromptMS", 1000) > 0 && Visibility.Hidden != this.Visibility )
                 tvMessageBox.ShowBriefly(this, "The file cleanup process is now running ..."
                         , "Backup Started", tvMessageBoxIcons.Information, moProfile.iValue("-BackupStartedPromptMS", 1000));

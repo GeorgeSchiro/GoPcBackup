@@ -1988,28 +1988,23 @@ namespace tvToolbox
         /// </returns>
         public String sCommandLine()
         {
+            foreach ( DictionaryEntry loEntry in this )
+                if ( loEntry.Value.ToString().Contains(Environment.NewLine) )
+                    return this.sCommandBlock();
+
             StringBuilder lsbCommandLine = new StringBuilder();
 
             foreach ( DictionaryEntry loEntry in this )
             {
                 String lsValue = loEntry.Value.ToString();
 
-                if ( lsValue.Contains(Environment.NewLine) )
+                if ( lsValue.Contains(mcsSpcMark) || lsValue.Contains(mcsArgMark) )
                 {
-                    lsbCommandLine.Append(mcsSpcMark + loEntry.Key.ToString() + mcsAsnMark + mcsBeginBlockMark + Environment.NewLine);
-                    lsbCommandLine.Append(lsValue);
-                    lsbCommandLine.Append(mcsSpcMark + loEntry.Key.ToString() + mcsAsnMark + mcsEndBlockMark + Environment.NewLine);
+                    lsbCommandLine.Append(mcsSpcMark + loEntry.Key.ToString() + mcsAsnMark + mcsQteMark + lsValue + mcsQteMark);
                 }
                 else
                 {
-                    if ( lsValue.Contains(mcsSpcMark) || lsValue.Contains(mcsArgMark) )
-                    {
-                        lsbCommandLine.Append(mcsSpcMark + loEntry.Key.ToString() + mcsAsnMark + mcsQteMark + lsValue + mcsQteMark);
-                    }
-                    else
-                    {
-                        lsbCommandLine.Append(mcsSpcMark + loEntry.Key.ToString() + mcsAsnMark + lsValue);
-                    }
+                    lsbCommandLine.Append(mcsSpcMark + loEntry.Key.ToString() + mcsAsnMark + lsValue);
                 }
             }
 

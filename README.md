@@ -8,9 +8,9 @@ It backs up files from a virtual PC (running Windows) to its virtual machine hos
 
 <b>GoPC Backup</b> is not limited to virtual machines. It can also backup and cleanup files on any Windows PC.
 
-During a crisis, scrambling to assemble pieces of backups to restore can be harrowing. Having everything in one place really makes more sense. Have you heard about backups that were never tested until a system crash? Have you ever worried that your backup may fail to restore when you need it?
+During a crisis, scrambling to assemble pieces of backups to restore can be harrowing. Having everything in one place really makes more sense. Have you heard about backups that were never tested until a system crash? Have you ever worried your backup may fail to restore when you need it?
 
-For these reasons <b>GoPC Backup</b> does full backups rather than incremental backups and it uses common ZIP files that can be verified anytime simply by opening them and browsing their contents. Any ZIP file software can browse and restore your backups. This means that you can easily restore individual files or all of them.
+For these reasons <b>GoPC Backup</b> does full backups rather than incremental backups and it uses common ZIP files that can be verified anytime simply by opening them and browsing their contents. Any ZIP file software can browse and restore your backups. This means you can easily restore individual files or all of them.
 
 <b>GoPC Backup</b> creates date-named ZIP files. That way you can keep and review previous versions of your files as an archive.
 
@@ -20,7 +20,7 @@ It also acts as its own scheduler. First, it checks for files to be removed on a
 
 There is no need to use a job scheduler unless this software is running on a server computer that has no regular user activity (see -NoPrompts and -RunOnce below).
 
-You provide various file specifications (ie. locations of the files to backup and to cleanup) as well as file age limits for the files to cleanup. The rest is automatic.
+You provide various file specifications (ie. locations of files to backup and to cleanup) as well as file age limits for the files to cleanup. The rest is automatic.
 
 <b>GoPC Backup</b> will run in the background unless its timer is turned off. The simple user interface (UI) is usually minimized to the system tray.
 
@@ -81,7 +81,7 @@ The setup wizard asks for a few basic pieces of information, most of which have 
 
 After running a backup you can inspect the results and make adjustments as needed. The adjustments can be made either through the setup wizard or through the profile file directly.
 
-Whatever you can't configure through the <b>GoPC Backup</b> UI you can configure by editing the profile file by hand (ie. "GoPcBackup.exe.txt"). This is typically done with notepad. The profile file is usually located in the same folder as the backup software (ie. "GoPcBackup.exe").
+Whatever you can't configure through the <b>GoPC Backup</b> UI you can configure by editing the profile file by hand (ie. "GoPcBackup.exe.txt"). This is typically done with notepad. The profile file is usually located in the same folder as the backup software (ie. "GoPcBackup.exe") with a similar name (eg. "GoPcBackup.exe.txt").
 
 Here's some of what you might see in a profile file:
 
@@ -119,7 +119,7 @@ You can have multiple backup sets as well as multiple cleanup sets in the same p
 
 The setup wizard only edits the first folder referenced within the first backup set. For anything else you need to edit the profile file by hand.
 
-You will notice that the profile data is not formatted as XML. It is expressed in "command-line" format. That makes it easier to read and parse. It is also a reminder that anything you see in the profile file can be overridden with the equivalent "-key=value" pairs passed on the "GoPcBackup.exe" command-line.
+You will notice the profile data is not formatted as XML. It is expressed in "command-line" format. That makes it easier to read and parse. It is also a reminder that anything you see in the profile file can be overridden with the equivalent "-key=value" pairs passed on the "GoPcBackup.exe" command-line.
 
 <b>GoPC Backup</b> uses "7-Zip" as its ZIP compression engine. "7-Zip" is an excellent tool.  
 
@@ -394,7 +394,7 @@ Options and Features
 
 -BackupTime=12:00 AM
 
-    This is the time each day that the backup starts.
+    This is the time each day the backup starts.
 
 -BackupTimeMinsPerTick=15
 
@@ -409,7 +409,7 @@ Options and Features
 
     This is the number of milliseconds of process thread sleep time between
     file deletions. The default of 1 ms should result in rapid deletions. You 
-    can increase this value if you are concerned that the UI is not responsive
+    can increase this value if you are concerned the UI is not responsive
     enough or the process is using too much CPU while deleting.
 
 -CleanupSet="One of many file sets to cleanup goes here."
@@ -594,7 +594,7 @@ Options and Features
     This is the number of milliseconds of process thread sleep wait time between
     loops. The default of 100 ms should be a happy medium between a responsive
     overall UI and a responsive process timer UI. You can increase this value
-    if you are concerned that the timer UI is using too much CPU while waiting.
+    if you are concerned the timer UI is using too much CPU while waiting.
 
 -NoPrompts=False
 
