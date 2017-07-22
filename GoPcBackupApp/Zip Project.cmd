@@ -1,25 +1,30 @@
 set Project=GoPcBackup
 set  ZipEXE=7za.exe
+:: Add "C:\Desktop\Projects\GoPcBackup\GoPcBackupApp" to PATH environment variable.
 
 for /f "tokens=1-9 delims=\" %%a in ("%cd%") do set a=%%a %%b %%c %%d %%e %%f %%g %%h %%i
 for %%i in (%a%) do set ProjectFolder=%%i
+if not "%ProjectFolder%"=="Windows" goto Continue
 
-if not %Project%.==. goto Continue
+@echo off
+echo.
+echo Can't run this from a UNC path.
+pause
+goto EOF
 
-set Project=%ProjectFolder%
 
 :Continue
-cd ..
+if "%Project%"=="" set Project=%ProjectFolder%
 
-del                                              %ProjectFolder%\%Project%.zip
-echo %ProjectFolder%\%ZipEXE% -bb a -r -xr!bin -xr!obj %ProjectFolder%\%Project%.zip %ProjectFolder%\*.*
-     %ProjectFolder%\%ZipEXE% -bb a -r -xr!bin -xr!obj %ProjectFolder%\%Project%.zip %ProjectFolder%\*.*
+del                                    %Project%.zip
+echo %ZipEXE% -bb a -r -xr!bin -xr!obj %Project%.zip *.*
+     %ZipEXE% -bb a -r -xr!bin -xr!obj %Project%.zip *.*
 
-if not exist %ProjectFolder%\bin\Release\*.* goto EOF
+if not exist bin\Release\*.* goto EOF
 
-cd %ProjectFolder%\bin\Release
+cd bin\Release
 
-      del Setup.zip
-      del Setup.zzz
-..\..\%ZipEXE% a Setup.zip %Project%.exe
-      copy Setup.zip *.zzz
+del Setup.zip
+del Setup.zzz
+%ZipEXE% a Setup.zip %Project%.exe
+copy Setup.zip *.zzz

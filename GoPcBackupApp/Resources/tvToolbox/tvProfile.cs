@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using System.Xml;
+using System.Xml.Linq;
 
 
 namespace tvToolbox
@@ -21,18 +22,6 @@ namespace tvToolbox
     /// using asNamespace. The resulting file is written to asPathFile.
     /// </summary>
     public delegate void FetchResourceToDisk2(String asNamespace, String asResourceName, String asPathFile);
-
-    /// <summary>
-    /// Supported tvProfile data types.
-    /// </summary>
-    public enum tvProfileSupportedDataTypes
-    {
-         Bool
-        ,DateTime
-        ,Double
-        ,Integer
-        ,String
-    }
 
     /// <summary>
     /// Default profile file actions specify how defaults are handled at runtime.
@@ -97,7 +86,7 @@ namespace tvToolbox
         /// to be loaded that do not match any current items will be appended
         /// to the end of the profile. Note: "*" as well as formal regular
         /// expressions can be used to match multiple keys. This means that
-        /// long keys can be referenced on the command line with "*"
+        /// long keys can be referenced on the command-line with "*"
         /// (eg. "-Auto*" matches "-AutoRun" and "-AutoPlay"). Keys with
         /// wildcards will not be appended.
         /// </summary>
@@ -117,7 +106,7 @@ namespace tvToolbox
     /// </p>
     /// <p>
     /// The key feature of tvProfile is its seamless integration of
-    /// file based properties with command line arguments and switches.
+    /// file based properties with command-line arguments and switches.
     /// </p>
     /// <p>
     /// Application parameters (eg. <see langword='-Key1="value one" -Key2=abc
@@ -128,7 +117,7 @@ namespace tvToolbox
     /// '-Switch=True'/>.
     /// </p>
     /// <p>
-    /// tvProfile command line switches / parameters typically override
+    /// tvProfile command-line switches / parameters typically override
     /// corresponding keys found in a profile file.
     /// </p>
     /// <p>
@@ -141,7 +130,7 @@ namespace tvToolbox
     /// populate it with default values.
     /// </p>
     /// <p>
-    /// As an alternative to the default delimited "command line" profile
+    /// As an alternative to the default delimited "command-line" profile
     /// file format, XML can be used instead by passing a boolean to the
     /// class constructor or by setting <see cref="bUseXmlFiles"/>.
     /// </p>
@@ -169,7 +158,7 @@ namespace tvToolbox
     ///     <term>-ini="path/file"</term>
     ///     <description>
     ///     A profile file location used to override the default profile file.
-    ///     Alternatively, if the first argument passed on the command line is
+    ///     Alternatively, if the first argument passed on the command-line is
     ///     actually a file location (ie. a path/file specification) that refers
     ///     to an existing file, that file will be assumed to be a profile file
     ///     to override the default.
@@ -178,9 +167,9 @@ namespace tvToolbox
     /// <item>
     ///     <term>-File="path/file"</term>
     ///     <description>
-    ///     The first command line argument passed to the application, if a
+    ///     The first command-line argument passed to the application, if a
     ///     profile file location has otherwise been provided. In other words,
-    ///     if there is already an "-ini" key passed on the command line
+    ///     if there is already an "-ini" key passed on the command-line
     ///     (after the first argument), then any file passed as the first
     ///     argument (a file that actually exists) will be added to the
     ///     profile as <see langword='-File="path/file"' />.
@@ -191,8 +180,8 @@ namespace tvToolbox
     ///     <description>
     ///     False by default. This and "-ini" (with its alias -ProfileFile) are
     ///     the only parameters that do not appear in a profile file. It is only
-    ///     passed on the application command line. When the switch <see langword='-NoCreate'/>
-    ///     appears on the command line, users are not prompted to create a profile
+    ///     passed on the application command-line. When the switch <see langword='-NoCreate'/>
+    ///     appears on the command-line, users are not prompted to create a profile
     ///     file. If a default profile does not exist at runtime, one will not
     ///     be created and default values will not be persisted. This option only
     ///     makes sense when the application needs to run with its original
@@ -217,14 +206,14 @@ namespace tvToolbox
     ///     <term>-SaveSansCmdLine</term>
     ///     <description>
     ///     True by default. Set this false to prevent automated changes
-    ///     to the profile file after command line merges have occured.
-    ///     When true, everything but command line keys will be saved.
+    ///     to the profile file after command-line merges have occured.
+    ///     When true, everything but command-line keys will be saved.
     ///     </description>
     /// </item>
     /// <item>
     ///     <term>-ShowProfile</term>
     ///     <description>
-    ///     False by default. Display the contents of the profile in "command line"
+    ///     False by default. Display the contents of the profile in "command-line"
     ///     format during application startup. This is sometimes helpful for
     ///     debugging purposes.
     ///     </description>
@@ -234,7 +223,7 @@ namespace tvToolbox
     ///     <description>
     ///     False by default. Set this true to convert the profile file to XML
     ///     format and to maintain it that way. Set it false to convert it
-    ///     back to line delimited "command line" format.
+    ///     back to line delimited "command-line" format.
     ///     </description>
     /// </item>
     /// </list>
@@ -261,7 +250,7 @@ namespace tvToolbox
         /// the top of an application during initialization.
         ///
         /// The profile is first initialized using the aeDefaultFileAction
-        /// enum. Then any command line arguments (typically passed from
+        /// enum. Then any command-line arguments (typically passed from
         /// the environment) are merged into the profile. This way command
         /// line arguments override properties in the profile file.
         ///
@@ -276,7 +265,7 @@ namespace tvToolbox
         /// This string array is typically passed from the environment to the
         /// running application (eg. from Environment.GetCommandLineArgs() ).
         /// It is merged with the default profile file or any other profile
-        /// found within the list of command line arguments.
+        /// found within the list of command-line arguments.
         /// </param>
         /// <param name="aeDefaultFileAction">
         /// This enum indicates how to handle automatic loading and saving
@@ -288,7 +277,7 @@ namespace tvToolbox
         /// </param>
         /// <param name="abUseXmlFiles">
         /// If true, XML file format will be used. If false, line delimited
-        /// "command line" format will be used (the default format).
+        /// "command-line" format will be used (the default format).
         /// </param>
         public tvProfile(
 
@@ -310,7 +299,7 @@ namespace tvToolbox
             }
 
             // "bDefaultFileReplaced = True" means that a replacement profile file has been passed on
-            // the command line. Consequently, no attempt to load the default profile file should be made.
+            // the command-line. Consequently, no attempt to load the default profile file should be made.
             if ( !this.bDefaultFileReplaced && tvProfileDefaultFileActions.NoDefaultFile != aeDefaultFileAction )
             {
                 this.Load(null, tvProfileLoadActions.Overwrite);
@@ -346,7 +335,7 @@ namespace tvToolbox
         /// the top of an application during initialization.
         ///
         /// The profile is first initialized using the aeDefaultFileAction
-        /// enum. Then any command line arguments (typically passed from
+        /// enum. Then any command-line arguments (typically passed from
         /// the environment) are merged into the profile. This way command
         /// line arguments override properties in the profile file.
         ///
@@ -361,7 +350,7 @@ namespace tvToolbox
         /// This string array is typically passed from the environment to the
         /// running application (eg. from Environment.GetCommandLineArgs() ).
         /// It is merged with the default profile file or any other profile
-        /// found within the list of command line arguments.
+        /// found within the list of command-line arguments.
         /// </param>
         /// <param name="aeDefaultFileAction">
         /// This enum indicates how to handle automatic loading and saving
@@ -409,7 +398,7 @@ namespace tvToolbox
             }
 
             // "bDefaultFileReplaced = True" means that a replacement profile file has been passed on
-            // the command line. Consequently, no attempt to load the default profile file should be made.
+            // the command-line. Consequently, no attempt to load the default profile file should be made.
             if ( !this.bDefaultFileReplaced && tvProfileDefaultFileActions.NoDefaultFile != aeDefaultFileAction )
             {
                 this.Load(asXmlFile, tvProfileLoadActions.Overwrite);
@@ -452,7 +441,7 @@ namespace tvToolbox
         /// </param>
         /// <param name="abUseXmlFiles">
         /// If true, XML file format will be used. If false, line delimited
-        /// "command line" format will be used (the default format).
+        /// "command-line" format will be used (the default format).
         /// </param>
         public tvProfile(
 
@@ -462,6 +451,7 @@ namespace tvToolbox
                 )
                 : this()
         {
+            this.eDefaultFileAction = tvProfileDefaultFileActions.AutoLoadSaveDefaultFile;
             this.eFileCreateAction = aeFileCreateAction;
             this.bUseXmlFiles = abUseXmlFiles;
 
@@ -476,7 +466,7 @@ namespace tvToolbox
         /// This string array is typically passed from the environment to the
         /// running application (eg. from Environment.GetCommandLineArgs() ).
         /// It is merged with the default profile file or any other profile
-        /// found within the list of command line arguments.
+        /// found within the list of command-line arguments.
         /// </param>
         /// <param name="aeDefaultFileAction">
         /// This enum indicates how to handle automatic loading and saving
@@ -540,7 +530,7 @@ namespace tvToolbox
         }
 
         /// <summary>
-        /// This constructor initializes a profile object from a command line
+        /// This constructor initializes a profile object from a command-line
         /// string (eg. <see langword='-Key1="value one" -Switch1 -Key2=2'/>)
         /// rather than from a string array.
         ///
@@ -549,7 +539,7 @@ namespace tvToolbox
         /// in the body of an application.
         /// </summary>
         /// <param name="asCommandLine">
-        /// This string (not a string array) should contain a command line
+        /// This string (not a string array) should contain a command-line
         /// of <see langword='-key="value"'/> pairs.
         /// </param>
         public tvProfile(String asCommandLine) : this()
@@ -593,7 +583,7 @@ namespace tvToolbox
         /// </param>
         /// <param name="abUseXmlFiles">
         /// If true, XML file format will be used. If false, line delimited
-        /// "command line" format will be used (the default format).
+        /// "command-line" format will be used (the default format).
         /// </param>
         public tvProfile(
 
@@ -616,7 +606,7 @@ namespace tvToolbox
         /// This string array is typically passed from the environment to the
         /// running application (eg. from Environment.GetCommandLineArgs() ).
         /// It is merged with the default profile file or any other profile
-        /// found within the list of command line arguments.
+        /// found within the list of command-line arguments.
         /// </param>
         /// <param name="asXmlFile">
         /// This is the path/file that contains the XML to load.
@@ -658,11 +648,11 @@ namespace tvToolbox
         /// This string array is typically passed from the environment to the
         /// running application (eg. from Environment.GetCommandLineArgs() ).
         /// It is merged with the default profile file or any other profile
-        /// found within the list of command line arguments.
+        /// found within the list of command-line arguments.
         /// </param>
         /// <param name="abUseXmlFiles">
         /// If true, XML file format will be used. If false, line delimited
-        /// "command line" format will be used (the default format).
+        /// "command-line" format will be used (the default format).
         /// </param>
         public tvProfile(
 
@@ -686,7 +676,7 @@ namespace tvToolbox
         /// This string array is typically passed from the environment to the
         /// running application (eg. from Environment.GetCommandLineArgs() ).
         /// It is merged with the default profile file or any other profile
-        /// found within the list of command line arguments.
+        /// found within the list of command-line arguments.
         /// </param>
         public tvProfile(
 
@@ -1211,8 +1201,8 @@ namespace tvToolbox
         /// </p>
         /// <p>
         /// This property will be set false whenever anything is merged into a
-        /// profile (eg. command line arguments) and <see cref="bSaveSansCmdLine"/>
-        /// is false. In other words, command line arguments are not normally 
+        /// profile (eg. command-line arguments) and <see cref="bSaveSansCmdLine"/>
+        /// is false. In other words, command-line arguments are not normally 
         /// written to a profile file. This behavior can be overridden in code 
         /// by setting this property to true after a merge.
         /// </p>
@@ -1242,11 +1232,11 @@ namespace tvToolbox
         private bool mbSaveEnabled = false;
 
         /// <summary>
-        /// Returns true if all but command line merged keys will be saved to a profile
+        /// Returns true if all but command-line merged keys will be saved to a profile
         /// file. The predefined <see langword='-SaveSansCmdLine=false'/> switch can be
         /// used to disable this behavior so that merged profiles are never saved (see 
         /// <see cref="tvProfile"/> remarks). In other words, if this property is set 
-        /// false and command line arguments have been merged into the profile, the 
+        /// false and command-line arguments have been merged into the profile, the 
         /// <see cref="Save()"/> method will be disabled (unless overridden in code).
         /// </summary>
         public  bool  bSaveSansCmdLine
@@ -1273,7 +1263,7 @@ namespace tvToolbox
 
         /// <summary>
         /// Returns true if profile files will be read and written in XML format
-        /// rather than the default line delimited "command line" format.
+        /// rather than the default line delimited "command-line" format.
         /// 
         /// The default value of this property is false.
         /// </summary>
@@ -1387,7 +1377,7 @@ namespace tvToolbox
         private tvProfileFileCreateActions meFileCreateAction = tvProfileFileCreateActions.NoFileCreate;
 
         /// <summary>
-        /// The original "command line string" input passed to the constructor.
+        /// The original "command-line string" input passed to the constructor.
         /// </summary>
         public  String  sInputCommandLine
         {
@@ -1403,7 +1393,7 @@ namespace tvToolbox
         private String msInputCommandLine;
 
         /// <summary>
-        /// The original "command line string array" input passed to the constructor.
+        /// The original "command-line string array" input passed to the constructor.
         /// </summary>
         public  String[]  sInputCommandLineArray
         {
@@ -1978,13 +1968,13 @@ namespace tvToolbox
         private static int miCommandBlockRecursionLevel = 0;
 
         /// <summary>
-        /// Returns the entire contents of the profile as a "command line" string
+        /// Returns the entire contents of the profile as a "command-line" string
         /// (eg. <see langword='-Key1=one -Key2=2 -Key3 -Key4="we have four"'/>).
         /// This feature is handy for minimally serializing profiles, passing them
         /// around easily and storing them elsewhere.
         /// </summary>
         /// <returns>
-        /// A "command line" string (not a string array).
+        /// A "command-line" string (not a string array).
         /// </returns>
         public String sCommandLine()
         {
@@ -2012,12 +2002,12 @@ namespace tvToolbox
         }
 
         /// <summary>
-        /// Returns the entire contents of the profile as a "command line" string
+        /// Returns the entire contents of the profile as a "command-line" string
         /// array (eg. <see langword='-Key1=one'/>, <see langword='-Key2=2'/>,
         /// <see langword='-Key3'/>, <see langword='-Key4="we have four"'/>).
         /// </summary>
         /// <returns>
-        /// A "command line" string array.
+        /// A "command-line" string array.
         /// </returns>
         public String[] sCommandLineArray()
         {
@@ -2088,69 +2078,96 @@ namespace tvToolbox
         /// </returns>
         public String sXml(bool abStartDocument, bool abStandAlone)
         {
-            StringBuilder lsbFileAsStream = new StringBuilder();
+            StringBuilder   lsbFileAsStream = new StringBuilder();
+            StringWriter    loStringWriter = null;
+            XmlTextWriter   loXmlTextWriter = null;
 
-            XmlTextWriter   loXml = new XmlTextWriter(new StringWriter(lsbFileAsStream));
-                            loXml.Formatting = Formatting.Indented;
-
-            if ( abStartDocument )
+            try
             {
-                if ( abStandAlone )
-                {
-                    loXml.WriteStartDocument(true);
-                }
-                else
-                {
-                    // Don't even bother to write a "standalone" attribute.
-                    loXml.WriteStartDocument();
-                }
-            }
+                loXmlTextWriter = new XmlTextWriter(loStringWriter = new StringWriter(lsbFileAsStream));
+                loXmlTextWriter.Formatting = Formatting.Indented;
 
-            String[] lsXpathArray = this.sXmlXpath.Split('/');
-
-            for ( int i = 0; i < lsXpathArray.Length; i++ )
-            {
-                if ( i < lsXpathArray.Length - 1 )
+                if ( abStartDocument )
                 {
-                    loXml.WriteStartElement(lsXpathArray[i]);
-                }
-                else
-                {
-                    foreach ( DictionaryEntry loEntry in this )
+                    if ( abStandAlone )
                     {
-                        loXml.WriteStartElement(lsXpathArray[i]);
-
-                            bool lbTextBlock = -1 != loEntry.Value.ToString().IndexOf(Environment.NewLine);
-
-                            loXml.WriteAttributeString(this.sXmlKeyKey, loEntry.Key.ToString());
-
-                            if ( lbTextBlock )
-                            {
-                                loXml.WriteAttributeString(this.sXmlValueKey, Environment.NewLine + loEntry.Value.ToString() + Environment.NewLine);
-                            }
-                            else
-                            {
-                                loXml.WriteAttributeString(this.sXmlValueKey, loEntry.Value.ToString());
-                            }
-
-                        loXml.WriteEndElement();
+                        loXmlTextWriter.WriteStartDocument(true);
+                    }
+                    else
+                    {
+                        // Don't even bother to write a "standalone" attribute.
+                        loXmlTextWriter.WriteStartDocument();
                     }
                 }
-            }
 
-            for ( int i = 0; i < lsXpathArray.Length - 1; i++ )
+                String[] lsXpathArray = this.sXmlXpath.Split('/');
+
+                for ( int i = 0; i < lsXpathArray.Length; i++ )
+                {
+                    if ( i < lsXpathArray.Length - 1 )
+                    {
+                        loXmlTextWriter.WriteStartElement(lsXpathArray[i]);
+                    }
+                    else
+                    {
+                        // We use "lbSaveSansCmdLine" below instead of "mbSaveSansCmdLine" for the
+                        // needed side effects. Also, we don't want "-SaveSansCmdLine" added here.
+                        var lbRemoveSaveSansCmdLineKey = !this.ContainsKey("-SaveSansCmdLine");
+                        var lbSaveSansCmdLine = this.bSaveSansCmdLine;
+                            if ( lbRemoveSaveSansCmdLineKey )
+                                this.Remove("-SaveSansCmdLine");
+
+                        foreach ( DictionaryEntry loEntry in this )
+                        {
+                            String lsKey = loEntry.Key.ToString();
+                            String lsValue = loEntry.Value.ToString();
+
+                            // "lbSaveSansCmdLine" is referenced here (in lieu of "this.bSaveSansCmdLine") to gain a little speed.
+                            if ( !lbSaveSansCmdLine || null == moInputCommandLineProfile
+                                    || (lbSaveSansCmdLine && !moInputCommandLineProfile.ContainsKey(lsKey)) )
+                            {
+                                loXmlTextWriter.WriteStartElement(lsXpathArray[i]);
+
+                                    bool lbTextBlock = -1 != lsValue.IndexOf(Environment.NewLine);
+
+                                    loXmlTextWriter.WriteAttributeString(this.sXmlKeyKey, lsKey);
+
+                                    if ( lbTextBlock )
+                                    {
+                                        loXmlTextWriter.WriteAttributeString(this.sXmlValueKey, Environment.NewLine + lsValue + Environment.NewLine);
+                                    }
+                                    else
+                                    {
+                                        loXmlTextWriter.WriteAttributeString(this.sXmlValueKey, lsValue);
+                                    }
+
+                                loXmlTextWriter.WriteEndElement();
+                            }
+                        }
+                    }
+                }
+
+                for ( int i = 0; i < lsXpathArray.Length - 1; i++ )
+                {
+                    loXmlTextWriter.WriteEndElement();
+                }
+
+                if ( abStartDocument )
+                    loXmlTextWriter.WriteEndDocument();
+
+                // Replace entities since they have no impact on subsequent successful XML reads.
+                lsbFileAsStream.Replace("&#xD;&#xA;", Environment.NewLine);
+
+                // Replace "utf-16" with "UTF-8" to allow current browser support.
+                lsbFileAsStream.Replace("encoding=\"utf-16\"", "encoding=\"UTF-8\"");
+            }
+            finally
             {
-                loXml.WriteEndElement();
+                if ( null != loXmlTextWriter )
+                    loXmlTextWriter.Close();
+                if ( null != loStringWriter )
+                    loStringWriter.Close();
             }
-
-            if ( abStartDocument )
-                loXml.WriteEndDocument();
-
-            // !!!FIX THIS!!! Replace entities since they have no impact on subsequent successful XML reads.
-            lsbFileAsStream.Replace("&#xD;&#xA;", Environment.NewLine);
-
-            // !!!FIX THIS!!! Replace "utf-16" with "UTF-8" to allow current browser support.
-            lsbFileAsStream.Replace("encoding=\"utf-16\"", "encoding=\"UTF-8\"");
 
             return lsbFileAsStream.ToString();
         }
@@ -2418,7 +2435,7 @@ namespace tvToolbox
 
         /// <summary>
         /// Reloads the profile from the original text file used to load it and
-        /// merges in the original command line as well. Any changes to the
+        /// merges in the original command-line as well. Any changes to the
         /// profile in memory (not saved) since the last load will be lost.
         /// </summary>
         public void Reload()
@@ -2436,7 +2453,7 @@ namespace tvToolbox
         /// <p>
         /// If <see cref="bUseXmlFiles"/> is true, text files will be read assuming
         /// standard XML "configuration file" format rather than line delimited
-        /// "command line" format.
+        /// "command-line" format.
         /// </p>
         /// </summary>
         /// <param name="asPathFile">
@@ -2587,12 +2604,6 @@ Copy and proceed from there?
                                 loStreamReader.Close();
                         }
 
-                        if ( !this.bLockProfileFile(lsPathFile) )
-                        {
-                            this.bExit = true;
-                            return;
-                        }
-
                 int liDoOver = 1;
 
                 do
@@ -2630,7 +2641,7 @@ Copy and proceed from there?
                                 // The profile file format is as expected. No do-over is needed.
                                 liDoOver = 0;
 
-                                // The default file format is line delimited "command line" format.
+                                // The default file format is line delimited "command-line" format.
                                 this.LoadFromCommandLineArray(lsFileAsStream.Replace(Environment.NewLine, mccSplitMark.ToString())
                                         .Split(mccSplitMark), aeLoadAction);
 
@@ -2650,6 +2661,9 @@ Copy and proceed from there?
                 while ( liDoOver-- > 0 );
 
                 this.sLoadedPathFile = lsPathFile;
+
+                if ( !this.bLockProfileFile(lsPathFile) )
+                    this.bExit = true;
             }
 
             // If it doesn't already exist, create the file.
@@ -2665,7 +2679,7 @@ Copy and proceed from there?
         }
 
         /// <summary>
-        /// Loads the profile with items from the given "command line" string.
+        /// Loads the profile with items from the given "command-line" string.
         /// </summary>
         /// <param name="asCommandLine">
         /// A string (not a string array) of the form:
@@ -2690,7 +2704,7 @@ Copy and proceed from there?
 
             if ( -1 != asCommandLine.IndexOf('\n') )
             {
-                // If the command line is actually already line delimited, then we're practically done.
+                // If the command-line is actually already line delimited, then we're practically done.
                 this.LoadFromCommandLineArray(asCommandLine.Replace(Environment.NewLine, mccSplitMark.ToString())
                         .Split(mccSplitMark), aeLoadAction);
             }
@@ -2736,7 +2750,7 @@ Copy and proceed from there?
         }
 
         /// <summary>
-        /// Loads the profile with items from the given "command line"
+        /// Loads the profile with items from the given "command-line"
         /// string array.
         /// </summary>
         /// <param name="asCommandLineArray">
@@ -2840,7 +2854,7 @@ Copy and proceed from there?
                                 case tvProfileLoadActions.Merge:
 
                                     // Only disable saving after merges if the "bSaveSansCmdLine" switch is turned off.
-                                    // Likewise, only after merges do we bother to check for command line keys to remove.
+                                    // Likewise, only after merges do we bother to check for command-line keys to remove.
                                     if ( !this.bSaveSansCmdLine )
                                         this.bSaveEnabled = false;
 
@@ -2975,7 +2989,7 @@ Copy and proceed from there?
         /// <p>
         /// If <see cref="bUseXmlFiles"/> is true, text files will be written in
         /// standard XML "configuration file" format rather than line delimited
-        /// "command line" format.
+        /// "command-line" format.
         /// </p>
         /// </summary>
         public void Save()
@@ -2985,11 +2999,46 @@ Copy and proceed from there?
                 return;
             }
 
-            String lsFileAsStream = null;
+            bool    lbAlreadyThere = File.Exists(this.sActualPathFile);
+            String  lsFileAsStream = null;
 
             if ( this.bUseXmlFiles )
             {
-                lsFileAsStream = this.sXml(true, false);
+                if ( !lbAlreadyThere )
+                {
+                    lsFileAsStream = this.sXml(true, false);
+                }
+                else
+                {
+                    string      lsXmlXpath = this.sXmlXpath;
+                    XmlDocument loXmlDocument = new XmlDocument();
+                                loXmlDocument.Load(this.sActualPathFile);
+                    XmlNode     loXmlNode = loXmlDocument.SelectSingleNode("configuration/appSettings");
+                                if ( null != loXmlNode )
+                                {
+                                    // Replace all application settings already there.
+                                    this.sXmlXpath = "add";
+                                    loXmlNode.InnerXml = this.sXml(false, false);
+                                    this.sXmlXpath = lsXmlXpath;
+                                }
+                                else
+                                {
+                                    loXmlNode = loXmlDocument.SelectSingleNode("configuration");
+                                    if ( null != loXmlNode )
+                                    {
+                                        // Add an application settings section.
+                                        this.sXmlXpath = "appSettings/add";
+                                        XmlDocumentFragment loXmlDocumentFragment = loXmlDocument.CreateDocumentFragment();
+                                                            loXmlDocumentFragment.InnerXml = this.sXml(false, false);
+
+                                        loXmlDocument.DocumentElement.InsertBefore(loXmlDocumentFragment, loXmlDocument.DocumentElement.FirstChild);
+                                        this.sXmlXpath = lsXmlXpath;
+                                    }
+                                }
+
+                    // Replace entities since they have no impact on subsequent successful XML reads.
+                    lsFileAsStream = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + XDocument.Parse(loXmlDocument.InnerXml).ToString().Replace("&#xD;&#xA;", Environment.NewLine);
+                }
             }
             else
             {
@@ -3029,8 +3078,6 @@ Copy and proceed from there?
 
                 lsFileAsStream = lsbFileAsStream.ToString();
             }
-
-            bool lbAlreadyThere = File.Exists(this.sActualPathFile);
 
             this.UnlockProfileFile();
 
@@ -3138,7 +3185,7 @@ Copy and proceed from there?
             {
                 if ( null != lsProfilePathFile )
                 {
-                    // If the first argument passed on the command line is actually
+                    // If the first argument passed on the command-line is actually
                     // a file (that exists) and if an -ini key was also provided, then
                     // add the file reference to the profile using the "-File" key.
                     lbFirstArgIsFile = true;
@@ -3168,7 +3215,7 @@ Copy and proceed from there?
                 {
                     this.bFileJustCreated = loNewProfile.bFileJustCreated;
 
-                    // We now need a slightly modified version of the given command line
+                    // We now need a slightly modified version of the given command-line
                     // (ie. sans the -ini key but with a -File key, if appropriate).
                     tvProfile   loCommandLine = new tvProfile();
                                 loCommandLine.LoadFromCommandLineArray(
@@ -3178,8 +3225,8 @@ Copy and proceed from there?
                                 if ( lbFirstArgIsFile )
                                     loCommandLine.Add("-File", lsFirstArg);
 
-                    // Now merge in the original command line (with the above
-                    // adjustments). Command line items take precedence over file items.
+                    // Now merge in the original command-line (with the above
+                    // adjustments). command-line items take precedence over file items.
                     loNewProfile.LoadFromCommandLineArray(loCommandLine.sCommandLineArray(), tvProfileLoadActions.Merge);
                     this.bSaveEnabled = loNewProfile.bSaveEnabled;
 
@@ -3268,8 +3315,10 @@ Copy and proceed from there?
             {
                 try
                 {
-                    moFileStreamProfileFileLock =
-                            File.Open(asPathFile, FileMode.Open, FileAccess.Read, FileShare.None);
+                    // mbUseXmlFiles is intentionally used here (instead of "this.bUseXmlFiles") to avoid side effects.
+                    if ( !mbUseXmlFiles )
+                        moFileStreamProfileFileLock =
+                                File.Open(asPathFile, FileMode.Open, FileAccess.Read, FileShare.None);
 
                     lbLockProfileFile = true;
                 }
@@ -3284,7 +3333,6 @@ Copy and proceed from there?
             if ( null != moFileStreamProfileFileLock )
             {
                 moFileStreamProfileFileLock.Close();
-                moFileStreamProfileFileLock.Dispose();
                 moFileStreamProfileFileLock = null;
                 GC.Collect();
             }

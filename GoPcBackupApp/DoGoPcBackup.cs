@@ -94,11 +94,13 @@ namespace GoPcBackup
         [STAThread]
         static void Main(string[] args)
         {
-            DoGoPcBackup loMain  = null;
+            DoGoPcBackup    loMain  = null;
+            tvProfile       loProfile = null;
 
             try
             {
-                tvProfile   loProfile = new tvProfile(args);
+                loProfile = new tvProfile(args);
+
                 bool        lbFirstInstance;
                             Mutex loMutex = new Mutex(false, "Global\\" + Application.ResourceAssembly.GetName().Name, out lbFirstInstance);
                             if ( !lbFirstInstance )
@@ -800,11 +802,13 @@ Notes:
             }
             catch (SecurityException)
             {
-                tvFetchResource.NetworkSecurityStartupErrorMessage();
+                if ( null == loProfile || !loProfile.bValue("-NoPrompts", false) )
+                    tvFetchResource.NetworkSecurityStartupErrorMessage();
             }
             catch (Exception ex)
             {
-                tvFetchResource.ErrorMessage(null, ex.Message);
+                if ( null == loProfile || !loProfile.bValue("-NoPrompts", false) )
+                    tvFetchResource.ErrorMessage(null, ex.Message);
             }
             finally
             {
@@ -820,7 +824,7 @@ Notes:
         public static extern bool PostMessage(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam);
         public static readonly int HWND_BROADCAST = 0xffff;
      
-        public static void ActivateAlreadyRunningInstance(string[] args, tvProfile aoProfile)
+        private static void ActivateAlreadyRunningInstance(string[] args, tvProfile aoProfile)
         {
             if ( 0 == args.Length )
             {

@@ -1695,7 +1695,7 @@ Give the new software a try. When you're confident everything works as expected,
                     string lsPathfile = Path.GetDirectoryName(moProfile.sLoadedPathFile)
                                             + Path.DirectorySeparatorChar + BackupOutputFilename.Text;
                     FileStream loFileStream = File.Create(lsPathfile);
-                    loFileStream.Close();
+                               loFileStream.Close();
                     File.Delete(lsPathfile);
                 }
                 catch
