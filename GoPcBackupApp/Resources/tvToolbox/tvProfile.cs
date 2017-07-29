@@ -2604,6 +2604,14 @@ Copy and proceed from there?
                                 loStreamReader.Close();
                         }
 
+                        // If we can't lock the profile file,
+                        // the app is most likely already running.
+                        if ( !this.bLockProfileFile(lsPathFile) )
+                        {
+                            this.bExit = true;
+                            return;
+                        }
+
                 int liDoOver = 1;
 
                 do
