@@ -686,7 +686,7 @@ Other keys will be upgraded.
                     )
             {
                 System.Windows.Forms.OpenFileDialog loOpenDialog = new System.Windows.Forms.OpenFileDialog();
-                loOpenDialog.FileName = Path.GetFileName(moProfile.sLoadedPathFile);
+                                                    loOpenDialog.FileName = Path.GetFileName(moProfile.sLoadedPathFile);
 
                 // First, look for the profile file in "CommonApplicationData".
                 string  lsPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);

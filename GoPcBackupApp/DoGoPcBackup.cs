@@ -50,7 +50,8 @@ namespace GoPcBackup
         private const string        mcsBackupBeginScriptPathFileDefault = "GoPcBackupBegin.cmd";
         private const string        mcsBackupDoneScriptPathFileDefault  = "GoPcBackupDone.cmd";
         private const string        mcsBackupFailedScriptPathFileDefault= "GoPcBackupFailed.cmd";
-        private string[]            msZipToolExeFilenames               = {"7za.exe", "7za.chm"};
+        private const string        mcsStartupScript                    = "Startup.cmd";
+        private string[]            msZipToolExeFilenamesArray          = {"7za.exe", "7za.chm"};
 
         private bool                mbHasNoDeletionGroups;
         private int                 miBackupSets;
@@ -754,6 +755,22 @@ Notes:
                     // Fetch simple setup.
                     tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
                             , "Setup Application Folder.exe", null);
+
+                    // Fetch startup script.
+                    tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
+                            , mcsStartupScript, null);
+
+                        string  lsStartupScriptPathFile = loProfile.sRelativeToProfilePathFile(mcsStartupScript);
+                        string  lsCurrentInstallationFolder = Path.GetDirectoryName(lsStartupScriptPathFile);
+                        string  lsPreviousInstallationFolder = loProfile.sValue("-InstallationFolder", "{InstallationFolder}");
+                                if ( lsCurrentInstallationFolder != lsPreviousInstallationFolder )
+                                {
+                                    File.WriteAllText(lsStartupScriptPathFile, File.ReadAllText(lsStartupScriptPathFile)
+                                            .Replace(lsPreviousInstallationFolder, lsCurrentInstallationFolder));
+
+                                    loProfile["-InstallationFolder"] = lsCurrentInstallationFolder;
+                                    loProfile.Save();
+                                }
 
                     // Fetch source code.
                     if ( loProfile.bValue("-FetchSource", false) )
@@ -1739,7 +1756,7 @@ No file cleanup will be done until you update the configuration.
                 moProfile.Remove("-ZipToolEXEargs");
 
                 // Then remove the zip tool files from the disk.
-                foreach (string lsFilename in msZipToolExeFilenames)
+                foreach (string lsFilename in msZipToolExeFilenamesArray)
                     File.Delete(moProfile.sRelativeToProfilePathFile(lsFilename));
 
                 // This is used only once then reset.
@@ -1748,7 +1765,7 @@ No file cleanup will be done until you update the configuration.
             }
 
             // Get the embedded zip compression tool files from the EXE.
-            foreach (string lsFilename in msZipToolExeFilenames)
+            foreach (string lsFilename in msZipToolExeFilenamesArray)
                 tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name, lsFilename, null);
 
             // Get all backup sets.
@@ -1786,7 +1803,7 @@ No file cleanup will be done until you update the configuration.
                     if ( this.bMainLoopStopped )
                         break;
 
-                    string lsProcessPathFile = moProfile.sRelativeToProfilePathFile(moProfile.sValue("-ZipToolEXE", msZipToolExeFilenames[0]));
+                    string lsProcessPathFile = moProfile.sRelativeToProfilePathFile(moProfile.sValue("-ZipToolEXE", msZipToolExeFilenamesArray[0]));
 
                     // Increment the backup set counter.
                     miBackupSetsRun++;

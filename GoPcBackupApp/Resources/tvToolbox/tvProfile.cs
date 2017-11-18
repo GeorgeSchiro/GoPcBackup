@@ -2585,7 +2585,11 @@ Copy and proceed from there?
                         }
                         catch (IOException ex)
                         {
-                            if ( !ex.Message.Contains("being used by another process") )
+                            if ( ex.Message.Contains("being used by another process") )
+                            {
+                                throw ex;
+                            }
+                            else
 	                        {
                                 // Wait a moment ...
                                 System.Threading.Thread.Sleep(200);
@@ -2662,6 +2666,7 @@ Copy and proceed from there?
                             {
                                 // mbUseXmlFiles is intentionally used here (instead of "this.bUseXmlFiles") to avoid side effects.
                                 mbUseXmlFiles = true;
+                                this.UnlockProfileFile();
                             }
                         }
                     }
