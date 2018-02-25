@@ -2587,7 +2587,9 @@ Copy and proceed from there?
                         {
                             if ( ex.Message.Contains("being used by another process") )
                             {
-                                throw ex;
+                                // The app is most likely already running.
+                                this.bExit = true;
+                                return;
                             }
                             else
 	                        {

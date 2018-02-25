@@ -1,3 +1,3 @@
 cd "{InstallationFolder}"
 
-start GoPcBackup.exe -NoPrompts
+start GoPcBackup.exe -NoPrompts %*

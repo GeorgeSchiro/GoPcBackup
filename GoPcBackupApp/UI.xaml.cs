@@ -461,6 +461,9 @@ namespace GoPcBackup
                     loWindow.Close();
 
             moDoGoPcBackup.KillAddedTasks();
+
+            moDoGoPcBackup.LogIt("");
+            moDoGoPcBackup.LogIt(String.Format("{0} application window closed (ie. \"full exit\").", Path.GetFileName(Application.ResourceAssembly.Location)));
         }
 
         private void Window_StateChanged(object sender, EventArgs e)
@@ -1433,6 +1436,15 @@ Give the new software a try. When you're confident everything works as expected,
             this.BackupTime.Text = lsHour + ":" + lsMin + " " + (lbIsAM ? "AM" : "PM");
         }
 
+        private void BackupTime_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            try
+            {
+                this.sldBackupTime_ValueFromString(this.BackupTime.Text);
+            }
+            catch {}
+        }
+
         private void sldBackupTime_ValueFromString(string asTimeOnly)
         {
             TimeSpan loTimeSpan = DateTime.Parse(asTimeOnly) - DateTime.Today;
@@ -2314,7 +2326,7 @@ If you would prefer to finish this setup at another time, you can close now and 
                         {
                             tvProfile loBackupDoneArgs = new tvProfile(moProfile.sValue("-BackupDoneArgs", ""));
                             if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = loBackupDoneArgs["-LocalArchivePath"].ToString() != moDoGoPcBackup.sArchivePath();
-                            if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = Path.GetDirectoryName(loBackupDoneArgs["-LogPathFile"].ToString()) != Path.GetDirectoryName(moProfile.sRelativeToProfilePathFile(moDoGoPcBackup.sLogPathFile));
+                            if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = Path.GetDirectoryName(loBackupDoneArgs["-LogPathFile"].ToString()) != Path.GetDirectoryName(moProfile.sRelativeToProfilePathFile(DoGoPcBackup.sLogPathFile(moProfile)));
                         }
                         catch {}
 

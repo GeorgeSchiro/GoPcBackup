@@ -300,7 +300,7 @@
 </StackPanel>
 <StackPanel Style="{StaticResource ConfigWizardStackPanelBottom}">
     <Label>Selected Time:</Label>
-    <TextBox Name="BackupTime" Style="{StaticResource ConfigWizardTextSelected}"></TextBox>
+    <TextBox Name="BackupTime" Style="{StaticResource ConfigWizardTextSelected}" TextChanged="BackupTime_TextChanged" />
 </StackPanel>
 <Label Height="10"></Label>  
                                     </StackPanel>

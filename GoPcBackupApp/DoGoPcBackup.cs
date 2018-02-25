@@ -19,7 +19,7 @@ namespace GoPcBackup
     /// <summary>
     /// GoPcBackup.exe
     ///
-    /// Run this program. It will prompt you to create a default profile file:
+    /// Run this program. It will prompt to create a folder with profile file:
     ///
     ///     GoPcBackup.exe.txt
     ///
@@ -53,6 +53,7 @@ namespace GoPcBackup
         private const string        mcsStartupScript                    = "Startup.cmd";
         private string[]            msZipToolExeFilenamesArray          = {"7za.exe", "7za.chm"};
 
+        private bool                mbAddTasksStartupDelayDone;
         private bool                mbHasNoDeletionGroups;
         private int                 miBackupSets;
         private int                 miBackupSetsGood;
@@ -647,6 +648,16 @@ A brief description of each feature follows.
     Set this switch True to immediately display the entire contents of the profile
     file at startup in command-line format. This may be helpful as a diagnostic.
 
+-StartupTasksDelaySecs=0
+
+    Set this value to greater than zero to delay all task scheduler defined startup
+    tasks by that number of seconds (see -AddTasks above).
+
+-StartupTasksDisabled=False
+
+    Set this switch True to skip any and all startup tasks that may be defined by
+    the task scheduler subsystem (see -AddTasks above).
+
 -UpgradeKeysToCopy= SEE PROFILE FOR DEFAULT VALUE
 
     This list of profile keys is used during an upgrade to a new ""{EXE}"".
@@ -665,7 +676,7 @@ A brief description of each feature follows.
     Set this switch True and code will be added to the ""backup done"" script
     (see -BackupDoneScriptPathFile above) to copy backups to your virtual
     machine host computer (assuming you have one). Alternatively, any network
-    share can be referenced here for a similar purpose.
+    share can be referenced instead (see -VirtualMachineHostArchivePath below).
 
 -VirtualMachineHostArchivePath= NO DEFAULT VALUE
 
@@ -673,7 +684,7 @@ A brief description of each feature follows.
     virtual machine host share (see -UseVirtualMachineHostArchive above).
 
     You may want to reference your VM host by IP address rather than by name.
-    Doing so is often more reliable than using net bios names on your local
+    Doing so is often more reliable than using NetBIOS names on your local
     area network.
 
 -VirtualMachineHostPassword= NO DEFAULT VALUE
@@ -752,6 +763,9 @@ Notes:
                             .Replace("}}", "}")
                             );
 
+                    DoGoPcBackup.LogIt(loProfile, "");
+                    DoGoPcBackup.LogIt(loProfile, String.Format("{0} started.", Path.GetFileName(Application.ResourceAssembly.Location)));
+
                     // Fetch simple setup.
                     tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
                             , "Setup Application Folder.exe", null);
@@ -765,8 +779,17 @@ Notes:
                         string  lsPreviousInstallationFolder = loProfile.sValue("-InstallationFolder", "{InstallationFolder}");
                                 if ( lsCurrentInstallationFolder != lsPreviousInstallationFolder )
                                 {
-                                    File.WriteAllText(lsStartupScriptPathFile, File.ReadAllText(lsStartupScriptPathFile)
-                                            .Replace(lsPreviousInstallationFolder, lsCurrentInstallationFolder));
+                                    try
+                                    {
+                                        File.WriteAllText(lsStartupScriptPathFile, File.ReadAllText(lsStartupScriptPathFile)
+                                                .Replace(lsPreviousInstallationFolder, lsCurrentInstallationFolder));
+                                    }
+                                    catch (IOException ex)
+                                    {
+                                        // Ignore IO conflicts since mcsStartupScript is likely running.
+                                        if ( !ex.Message.Contains("being used by another process") )
+                                            throw ex;
+                                    }
 
                                     loProfile["-InstallationFolder"] = lsCurrentInstallationFolder;
                                     loProfile.Save();
@@ -817,13 +840,17 @@ Notes:
                     }
                 }
             }
-            catch (SecurityException)
+            catch (SecurityException ex)
             {
+                DoGoPcBackup.LogIt(loProfile, DoGoPcBackup.sExceptionMessage(ex));
+
                 if ( null == loProfile || !loProfile.bValue("-NoPrompts", false) )
                     tvFetchResource.NetworkSecurityStartupErrorMessage();
             }
             catch (Exception ex)
             {
+                DoGoPcBackup.LogIt(loProfile, DoGoPcBackup.sExceptionMessage(ex));
+
                 if ( null == loProfile || !loProfile.bValue("-NoPrompts", false) )
                     tvFetchResource.ErrorMessage(null, ex.Message);
             }
@@ -887,6 +914,137 @@ Notes:
                 }
             }
         }
+
+        /// <summary>
+        /// Write the given asMessageText to a text file as well as
+        /// to the output console of the UI window (if it exists).
+        /// </summary>
+        /// <param name="asMessageText">The text message string to log.</param>
+        public static void LogIt(tvProfile aoProfile, string asMessageText)
+        {
+            StreamWriter loStreamWriter = null;
+
+            try
+            {
+                if ( null == aoProfile )
+                    aoProfile = new tvProfile();
+
+                loStreamWriter = new StreamWriter(aoProfile.sRelativeToProfilePathFile(DoGoPcBackup.sLogPathFile(aoProfile)), true);
+                loStreamWriter.WriteLine(DateTime.Now.ToString(aoProfile.sValueNoTrim(
+                        "-LogEntryDateTimeFormatPrefix", "yyyy-MM-dd hh:mm:ss:fff tt  "))
+                        + asMessageText);
+            }
+            catch { /* Can't log a log failure. */ }
+            finally
+            {
+                if ( null != loStreamWriter )
+                    loStreamWriter.Close();
+            }
+        }
+
+        /// <summary>
+        /// Returns the current "LogPathFile" name.
+        /// </summary>
+        public static string sLogPathFile(tvProfile aoProfile)
+        {
+            return DoGoPcBackup.sUniqueIntOutputPathFile(
+                      DoGoPcBackup.sLogPathFileBase(aoProfile)
+                    , aoProfile.sValue("-LogFileDateFormat", "-yyyy-MM-dd")
+                    , true
+                    );
+        }
+
+        /// <summary>
+        /// Returns the full message string from the given exception object.
+        /// </summary>
+        private static string sExceptionMessage(Exception ex)
+        {
+            return ex.Message + (null == ex.InnerException ? "": "; " + ex.InnerException.Message) + "\r\n" + ex.StackTrace;
+        }
+
+        /// <summary>
+        /// Returns the current "LogPathFile" base name.
+        /// </summary>
+        private static string sLogPathFileBase(tvProfile aoProfile)
+        {
+            string  lsLogPathFileBase = aoProfile.sValue("-LogPathFile"
+                            , Path.Combine("Logs", Path.GetFileNameWithoutExtension(aoProfile.sLoadedPathFile)
+                            + "Log.txt"));
+            string  lsPath = Path.GetDirectoryName(aoProfile.sRelativeToProfilePathFile(lsLogPathFileBase));
+                    if ( !Directory.Exists(lsPath) )
+                        Directory.CreateDirectory(lsPath);
+
+            return lsLogPathFileBase;
+        }
+
+        /// <summary>
+        /// Returns a unique output pathfile based on an integer.
+        /// </summary>
+        /// <param name="asBasePathFile">The base pathfile string.
+        /// It is segmented to form the output pathfile</param>
+        /// <param name="asDateFormat">The format of the date inserted into the output filename.</param>
+        /// <param name="abAppendOutput">If true, this boolean indicates that an existing file will be appended to. </param>
+        /// <returns></returns>
+        private static string sUniqueIntOutputPathFile(
+                  string asBasePathFile
+                , string asDateFormat
+                , bool abAppendOutput
+                )
+        {
+            // Get the path from the given asBasePathFile.
+            string  lsOutputPath = Path.GetDirectoryName(asBasePathFile);
+            // Make a filename from the given asBasePathFile and the current date.
+            string  lsBaseFilename = Path.GetFileNameWithoutExtension(asBasePathFile)
+                    + DateTime.Today.ToString(asDateFormat);
+            // Get the filename extention from the given asBasePathFile.
+            string  lsBaseFileExt = Path.GetExtension(asBasePathFile);
+
+            string  lsOutputFilename = lsBaseFilename + lsBaseFileExt;
+            int     liUniqueFilenameSuffix = 1;
+            string  lsOutputPathFile = null;
+            bool    lbDone = false;
+
+            do
+            {
+                // If we are appending, we're done. Otherwise,
+                // check for existence of the requested dated pathfile.
+                lsOutputPathFile = Path.Combine(lsOutputPath, lsOutputFilename);
+                lbDone = abAppendOutput | !File.Exists(lsOutputPathFile);
+
+                // If the given pathfile already exists, create a variation on the dated
+                // filename by appending an integer (see liUniqueFilenameSuffix above).
+                // Keep trying until a unique dated pathfile is identified.
+                if ( !lbDone )
+                    lsOutputFilename = lsBaseFilename + "." + (++liUniqueFilenameSuffix).ToString() + lsBaseFileExt;
+            }
+            while ( !lbDone );
+
+            return lsOutputPathFile;
+        }
+
+        /// <summary>
+        /// Returns a unique output pathfile based on a GUID.
+        /// </summary>
+        /// <param name="asBasePathFile">The base pathfile string.
+        /// It is segmented to form the output pathfile</param>
+        /// <param name="asDateFormat">The format of the date inserted into the output filename.</param>
+        /// <returns></returns>
+        private static string sUniqueGuidOutputPathFile(
+                  string asBasePathFile
+                , string asDateFormat
+                )
+        {
+            // Get the path from the given asBasePathFile.
+            string  lsOutputPath = Path.GetDirectoryName(asBasePathFile);
+            // Make a filename from the given asBasePathFile and the current date.
+            string  lsBaseFilename = Path.GetFileNameWithoutExtension(asBasePathFile)
+                    + DateTime.Today.ToString(asDateFormat);
+            // Get the filename extention from the given asBasePathFile.
+            string  lsBaseFileExt = Path.GetExtension(asBasePathFile);
+
+            return Path.Combine(lsOutputPath, lsBaseFilename + "." + Guid.NewGuid().ToString() + lsBaseFileExt);
+        }
+
 
 
         /// <summary>
@@ -968,46 +1126,13 @@ Notes:
         }
 
         /// <summary>
-        /// Returns the current "LogPathFile" name.
-        /// </summary>
-        public string sLogPathFile
-        {
-            get
-            {
-                return this.sUniqueIntOutputPathFile(
-                          this.sLogPathFileBase
-                        , moProfile.sValue("-LogFileDateFormat", "-yyyy-MM-dd")
-                        , true
-                        );
-            }
-        }
-
-        /// <summary>
-        /// Returns the current "LogPathFile" base name.
-        /// </summary>
-        public string sLogPathFileBase
-        {
-            get
-            {
-                string  lsLogPathFileBase = moProfile.sValue("-LogPathFile"
-                                , Path.Combine("Logs", Path.GetFileNameWithoutExtension(moProfile.sLoadedPathFile)
-                                + "Log.txt"));
-                string  lsPath = Path.GetDirectoryName(this.oProfile.sRelativeToProfilePathFile(lsLogPathFileBase));
-                        if ( !Directory.Exists(lsPath) )
-                            Directory.CreateDirectory(lsPath);
-
-                return lsLogPathFileBase;
-            }
-        }
-
-        /// <summary>
         /// Returns the current "ZipToolFileListPathFile" name.
         /// </summary>
         public string ZipToolFileListPathFile
         {
             get
             {
-                return this.sUniqueGuidOutputPathFile(
+                return DoGoPcBackup.sUniqueGuidOutputPathFile(
                           this.sZipToolFileListPathFileBase
                         , moProfile.sValue("-ZipToolFileListFileDateFormat", "-yyyy-MM-dd")
                         );
@@ -1050,7 +1175,7 @@ Notes:
         {
             get
             {
-                return this.sUniqueIntOutputPathFile(
+                return DoGoPcBackup.sUniqueIntOutputPathFile(
                           this.sDeletedFileListOutputPathFileBase
                         , moProfile.sValue("-DeletedFileListDateFormat", "-yyyy-MM-dd")
                         , true
@@ -1152,7 +1277,7 @@ Notes:
         /// </summary>
         private string sBackupOutputPathFile(tvProfile aoBackupSetProfile)
         {
-            return this.sUniqueIntOutputPathFile(
+            return DoGoPcBackup.sUniqueIntOutputPathFile(
                       this.sBackupOutputPathFileBase(aoBackupSetProfile)
                     , moProfile.sValue("-BackupOutputFilenameDateFormat", "-yyyy-MM-dd")
                     , false
@@ -1300,75 +1425,6 @@ Notes:
             // If the file count is less than or equal to the
             // file deletion limit, nothing will be deleted.
             return aiFileCount - liFileDeletionLimit;
-        }
-
-
-        /// <summary>
-        /// Returns a unique output pathfile based on an integer.
-        /// </summary>
-        /// <param name="asBasePathFile">The base pathfile string.
-        /// It is segmented to form the output pathfile</param>
-        /// <param name="asDateFormat">The format of the date inserted into the output filename.</param>
-        /// <param name="abAppendOutput">If true, this boolean indicates that an existing file will be appended to. </param>
-        /// <returns></returns>
-        private string sUniqueIntOutputPathFile(
-                  string asBasePathFile
-                , string asDateFormat
-                , bool abAppendOutput
-                )
-        {
-            // Get the path from the given asBasePathFile.
-            string  lsOutputPath = Path.GetDirectoryName(asBasePathFile);
-            // Make a filename from the given asBasePathFile and the current date.
-            string  lsBaseFilename = Path.GetFileNameWithoutExtension(asBasePathFile)
-                    + DateTime.Today.ToString(asDateFormat);
-            // Get the filename extention from the given asBasePathFile.
-            string  lsBaseFileExt = Path.GetExtension(asBasePathFile);
-
-            string  lsOutputFilename = lsBaseFilename + lsBaseFileExt;
-            int     liUniqueFilenameSuffix = 1;
-            string  lsOutputPathFile = null;
-            bool    lbDone = false;
-
-            do
-            {
-                // If we are appending, we're done. Otherwise,
-                // check for existence of the requested dated pathfile.
-                lsOutputPathFile = Path.Combine(lsOutputPath, lsOutputFilename);
-                lbDone = abAppendOutput | !File.Exists(lsOutputPathFile);
-
-                // If the given pathfile already exists, create a variation on the dated
-                // filename by appending an integer (see liUniqueFilenameSuffix above).
-                // Keep trying until a unique dated pathfile is identified.
-                if ( !lbDone )
-                    lsOutputFilename = lsBaseFilename + "." + (++liUniqueFilenameSuffix).ToString() + lsBaseFileExt;
-            }
-            while ( !lbDone );
-
-            return lsOutputPathFile;
-        }
-
-        /// <summary>
-        /// Returns a unique output pathfile based on a GUID.
-        /// </summary>
-        /// <param name="asBasePathFile">The base pathfile string.
-        /// It is segmented to form the output pathfile</param>
-        /// <param name="asDateFormat">The format of the date inserted into the output filename.</param>
-        /// <returns></returns>
-        private string sUniqueGuidOutputPathFile(
-                  string asBasePathFile
-                , string asDateFormat
-                )
-        {
-            // Get the path from the given asBasePathFile.
-            string  lsOutputPath = Path.GetDirectoryName(asBasePathFile);
-            // Make a filename from the given asBasePathFile and the current date.
-            string  lsBaseFilename = Path.GetFileNameWithoutExtension(asBasePathFile)
-                    + DateTime.Today.ToString(asDateFormat);
-            // Get the filename extention from the given asBasePathFile.
-            string  lsBaseFileExt = Path.GetExtension(asBasePathFile);
-
-            return Path.Combine(lsOutputPath, lsBaseFilename + "." + Guid.NewGuid().ToString() + lsBaseFileExt);
         }
 
 
@@ -1698,21 +1754,7 @@ No file cleanup will be done until you update the configuration.
         /// <param name="asMessageText">The text message string to log.</param>
         public void LogIt(string asMessageText)
         {
-            StreamWriter loStreamWriter = null;
-
-            try
-            {
-                loStreamWriter = new StreamWriter(moProfile.sRelativeToProfilePathFile(this.sLogPathFile), true);
-                loStreamWriter.WriteLine(DateTime.Now.ToString(moProfile.sValueNoTrim(
-                        "-LogEntryDateTimeFormatPrefix", "yyyy-MM-dd hh:mm:ss:fff tt  "))
-                        + asMessageText);
-            }
-            catch { /* Can't log a log failure. */ }
-            finally
-            {
-                if ( null != loStreamWriter )
-                    loStreamWriter.Close();
-            }
+            DoGoPcBackup.LogIt(moProfile, asMessageText);
 
             if ( null != this.oUI )
             this.oUI.Dispatcher.BeginInvoke((Action)(() =>
@@ -2190,7 +2232,17 @@ cd {1}
 
                     if ( abStartup )
                     {
-                        lbDoTask = loAddTask.bValue("-OnStartup", false);
+                        lbDoTask = loAddTask.bValue("-OnStartup", false) && !moProfile.bValue("-StartupTasksDisabled", false);
+
+                        if ( loAddTask.bValue("-OnStartup", false) && !lbDoTask )
+                            this.LogIt(String.Format("Skipping startup task: {0}", loAddTask.sCommandLine()));
+
+                        if ( lbDoTask && !mbAddTasksStartupDelayDone )
+                        {
+                            System.Threading.Thread.Sleep(1000 * moProfile.iValue("-StartupTasksDelaySecs", 0));
+
+                            mbAddTasksStartupDelayDone = true;
+                        }
                     }
                     else
                     {
@@ -2860,12 +2912,12 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                             }
                             else
                             {
-                                loArgs.Add("-BackupOutputPathFile"          , msCurrentBackupOutputPathFile                                          );
-                                loArgs.Add("-BackupOutputFilename"          , Path.GetFileName(msCurrentBackupOutputPathFile)                        );
-                                loArgs.Add("-BackupBaseOutputFilename"      , Path.GetFileName(this.sBackupOutputPathFileBase())                     );
-                                loArgs.Add("-LocalArchivePath"              , this.sArchivePath()                                                    );
-                                loArgs.Add("-VirtualMachineHostArchivePath" , moProfile.sValue("-VirtualMachineHostArchivePath", "")                 );
-                                loArgs.Add("-LogPathFile"                   , moProfile.sRelativeToProfilePathFile(this.sLogPathFile)                );
+                                loArgs.Add("-BackupOutputPathFile"          , msCurrentBackupOutputPathFile                                             );
+                                loArgs.Add("-BackupOutputFilename"          , Path.GetFileName(msCurrentBackupOutputPathFile)                           );
+                                loArgs.Add("-BackupBaseOutputFilename"      , Path.GetFileName(this.sBackupOutputPathFileBase())                        );
+                                loArgs.Add("-LocalArchivePath"              , this.sArchivePath()                                                       );
+                                loArgs.Add("-VirtualMachineHostArchivePath" , moProfile.sValue("-VirtualMachineHostArchivePath", "")                    );
+                                loArgs.Add("-LogPathFile"                   , moProfile.sRelativeToProfilePathFile(DoGoPcBackup.sLogPathFile(moProfile)));
 
                                 moProfile["-BackupDoneArgs"] = loArgs.sCommandBlock();
                                 moProfile.Save();
@@ -3354,8 +3406,8 @@ echo del %FileSpec%                                                             
                             , Path.Combine(Path.GetDirectoryName(this.sZipToolFileListPathFileBase)
                                     , "*" + Path.GetExtension(this.sZipToolFileListPathFileBase))
 
-                            , Path.Combine(Path.GetDirectoryName(this.sLogPathFileBase)
-                                    , "*" + Path.GetExtension(this.sLogPathFileBase))
+                            , Path.Combine(Path.GetDirectoryName(DoGoPcBackup.sLogPathFileBase(moProfile))
+                                    , "*" + Path.GetExtension(DoGoPcBackup.sLogPathFileBase(moProfile)))
                             ));
                 }
 
@@ -3814,7 +3866,7 @@ echo del %FileSpec%                                                             
         void DoGoPcBackup_SessionEnding(object sender, SessionEndingCancelEventArgs e)
         {
             this.LogIt("");
-            this.LogIt("Exiting due to log-off or system shutdown.");
+            this.LogIt(String.Format("{0} exiting due to log-off or system shutdown.", Path.GetFileName(Application.ResourceAssembly.Location)));
 
             if ( null != this.oUI )
             this.oUI.HandleShutdown();

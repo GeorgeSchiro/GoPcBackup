@@ -151,6 +151,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="MIT License.txt" />
+    <EmbeddedResource Include="Startup.cmd" />
     <EmbeddedResource Include="7za.chm" />
     <EmbeddedResource Include="7za.exe" />
     <EmbeddedResource Include="Setup Application Folder.exe" />

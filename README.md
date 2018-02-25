@@ -430,7 +430,7 @@ Options and Features
             file exists to replace it.
 
             In other words, with this switch set, there should always be as many
-            files retained as there are days in ""-AgeDays"" multiplied by the
+            files retained as there are days in "-AgeDays" multiplied by the
             frequency of backups (1440 divided by -MainLoopMinutes, see below).
 
         -CleanupHidden=False
@@ -638,7 +638,7 @@ Options and Features
     Set this switch False to leave the profile file untouched after a command line
     has been passed to the EXE and merged with the profile. When true, everything
     but command line keys will be saved. When false, not even status information
-    will be written to the profile file (ie. ""{INI}"").
+    will be written to the profile file (ie. "GoPcBackup.exe.txt").
 
 -SelectedBackupDevices= NO DEFAULT VALUE
 
@@ -671,13 +671,23 @@ Options and Features
     Set this switch True to immediately display the entire contents of the profile
     file at startup in command-line format. This may be helpful as a diagnostic.
 
+-StartupTasksDelaySecs=0
+
+    Set this value to greater than zero to delay all task scheduler defined startup
+    tasks by that number of seconds (see -AddTasks above).
+
+-StartupTasksDisabled=False
+
+    Set this switch True to skip any and all startup tasks that may be defined by
+    the task scheduler subsystem (see -AddTasks above).
+
 -UpgradeKeysToCopy= SEE PROFILE FOR DEFAULT VALUE
 
-    This list of profile keys is used during an upgrade to a new ""{EXE}"".
-    The new software is typically tested on the desktop. The ""Upgrade"" button
+    This list of profile keys is used during an upgrade to a new "GoPcBackup.exe".
+    The new software is typically tested on the desktop. The "Upgrade" button
     in the setup wizard is used to import this list of keys into the new profile
     prior to moving the new software to the application folder (to overwrite the
-    old version via ""Setup Application Folder.exe"").
+    old version via "Setup Application Folder.exe").
 
 -UseConnectVirtualMachineHost=False
 
@@ -689,7 +699,7 @@ Options and Features
     Set this switch True and code will be added to the "backup done" script
     (see -BackupDoneScriptPathFile above) to copy backups to your virtual
     machine host computer (assuming you have one). Alternatively, any network
-    share can be referenced here for a similar purpose.
+    share can be referenced instead (see -VirtualMachineHostArchivePath below).
 
 -VirtualMachineHostArchivePath= NO DEFAULT VALUE
 
@@ -697,7 +707,7 @@ Options and Features
     virtual machine host share (see -UseVirtualMachineHostArchive above).
 
     You may want to reference your VM host by IP address rather than by name.
-    Doing so is often more reliable than using net bios names on your local
+    Doing so is often more reliable than using NetBIOS names on your local
     area network.
 
 -VirtualMachineHostPassword= NO DEFAULT VALUE
