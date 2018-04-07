@@ -3184,7 +3184,7 @@ Copy and proceed from there?
                     try
                     {
                         if ( -1 != this.sInputCommandLineArray[0].IndexOf(".vshost.")
-                                || this.sInputCommandLineArray[0] == this.sExePathFile )
+                                || this.sRelativeToProfilePathFile(this.sInputCommandLineArray[0]) == this.sExePathFile )
                         {
                             lsFirstArg = this.sInputCommandLineArray[1];
                         }
@@ -3192,26 +3192,26 @@ Copy and proceed from there?
                         {
                             lsFirstArg = this.sInputCommandLineArray[0];
                         }
+
+                        if ( null != lsFirstArg
+                                && File.Exists(this.sRelativeToProfilePathFile(lsFirstArg)) )
+                        {
+                            if ( null != lsProfilePathFile )
+                            {
+                                // If the first argument passed on the command-line is actually
+                                // a file (that exists) and if an -ini key was also provided, then
+                                // add the file reference to the profile using the "-File" key.
+                                lbFirstArgIsFile = true;
+                            }
+                            else
+                            {
+                                // If no -ini key was passed, then assume the referenced file is
+                                // actually a profile file to be loaded.
+                                lsProfilePathFile = lsFirstArg;
+                            }
+                        }
                     }
                     catch {}
-
-            if ( null != lsFirstArg
-                    && File.Exists(this.sRelativeToProfilePathFile(lsFirstArg)) )
-            {
-                if ( null != lsProfilePathFile )
-                {
-                    // If the first argument passed on the command-line is actually
-                    // a file (that exists) and if an -ini key was also provided, then
-                    // add the file reference to the profile using the "-File" key.
-                    lbFirstArgIsFile = true;
-                }
-                else
-                {
-                    // If no -ini key was passed, then assume the referenced file is
-                    // actually a profile file to be loaded.
-                    lsProfilePathFile = lsFirstArg;
-                }
-            }
 
             if ( null != lsProfilePathFile )
             {
