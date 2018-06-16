@@ -774,6 +774,10 @@ Notes:
                     tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
                             , mcsStartupScript, null);
 
+                    // Fetch startup MMC script.
+                    tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
+                            , "Startup.msc", null);
+
                         string  lsStartupScriptPathFile = loProfile.sRelativeToProfilePathFile(mcsStartupScript);
                         string  lsCurrentInstallationFolder = Path.GetDirectoryName(lsStartupScriptPathFile);
                         string  lsPreviousInstallationFolder = loProfile.sValue("-InstallationFolder", "{InstallationFolder}");

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -179,6 +179,7 @@
   <ItemGroup>
     <EmbeddedResource Include="MIT License.txt" />
     <EmbeddedResource Include="Startup.cmd" />
+    <EmbeddedResource Include="Startup.msc" />
     <EmbeddedResource Include="7za.chm" />
     <EmbeddedResource Include="7za.exe" />
     <EmbeddedResource Include="Setup Application Folder.exe" />
