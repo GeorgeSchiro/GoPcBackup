@@ -801,8 +801,7 @@ Notes:
 
                     // Fetch source code.
                     if ( loProfile.bValue("-FetchSource", false) )
-                        tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name
-                                , Application.ResourceAssembly.GetName().Name + ".zip", null);
+                        tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name, "GoPcBackup.zip", null);
 
                     if ( !loProfile.bExit )
                     {
@@ -971,12 +970,20 @@ Notes:
         /// </summary>
         private static string sLogPathFileBase(tvProfile aoProfile)
         {
-            string  lsLogPathFileBase = aoProfile.sValue("-LogPathFile"
-                            , Path.Combine("Logs", Path.GetFileNameWithoutExtension(aoProfile.sLoadedPathFile)
-                            + "Log.txt"));
-            string  lsPath = Path.GetDirectoryName(aoProfile.sRelativeToProfilePathFile(lsLogPathFileBase));
-                    if ( !Directory.Exists(lsPath) )
-                        Directory.CreateDirectory(lsPath);
+            string  lsPath = "Logs";
+            string  lsLogFile = "Log.txt";
+            string  lsLogPathFileBase = lsLogFile;
+
+            try
+            {
+                lsLogPathFileBase = aoProfile.sValue("-LogPathFile"
+                        , Path.Combine(lsPath, Path.GetFileNameWithoutExtension(aoProfile.sLoadedPathFile) + lsLogFile));
+
+                lsPath = Path.GetDirectoryName(aoProfile.sRelativeToProfilePathFile(lsLogPathFileBase));
+                if ( !Directory.Exists(lsPath) )
+                    Directory.CreateDirectory(lsPath);
+            }
+            catch {}
 
             return lsLogPathFileBase;
         }

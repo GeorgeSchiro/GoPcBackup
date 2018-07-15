@@ -3039,7 +3039,11 @@ Copy and proceed from there?
                                 else
                                 {
                                     loXmlNode = loXmlDocument.SelectSingleNode("configuration");
-                                    if ( null != loXmlNode )
+                                    if ( null == loXmlNode )
+                                    {
+                                        throw new Exception("XML configuration tags missing. Can't continue.");
+                                    }
+                                    else
                                     {
                                         // Add an application settings section.
                                         this.sXmlXpath = "appSettings/add";
