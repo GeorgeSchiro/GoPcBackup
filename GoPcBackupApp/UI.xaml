@@ -211,11 +211,11 @@
                                 <Viewbox>
                                     <StackPanel Style="{StaticResource ConfigWizardStackPanelTop}">
 <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextTop}">
-3. Select the additional backup devices you would like to copy your backups to.
+3. Select additional backup devices you would like to copy your backup to.
 </TextBlock>
 <Border Margin="10,10,10,30" Style="{StaticResource ConfigWizardTextBorder}">
     <TextBlock MaxWidth="800" Style="{StaticResource ConfigWizardTextBottom}">
-    Your backups will be copied to the root folder of each device you select (uses backup scripts). After each backup,
+    Your backup will be copied to the root folder of each device you select (uses backup scripts). After each backup,
     you will be reminded if any of your backup devices were missing. <LineBreak/><LineBreak/>
         
     Notes:  <LineBreak/>

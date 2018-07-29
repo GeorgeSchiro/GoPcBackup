@@ -1975,7 +1975,7 @@ cd\
 @prompt $
 {0}
 @echo.
-cd {1}
+cd ""{1}""
 @pause
 "                                           , lsLastRunCmd
                                             , Path.GetDirectoryName(moProfile.sExePathFile)
@@ -2276,6 +2276,7 @@ cd {1}
                                 loProcess.OutputDataReceived += new DataReceivedEventHandler(this.BackupProcessOutputHandler);
                                 loProcess.StartInfo.FileName = lsCommandEXE;
                                 loProcess.StartInfo.Arguments = loAddTask.sValue("-CommandArgs", "");
+                                loProcess.StartInfo.WorkingDirectory = Path.GetDirectoryName(moProfile.sLoadedPathFile);
                                 loAddTask.bValue("-UnloadOnExit", false);
 
                                 // The following subset of parameters are overridden when -TimeoutMinutes is set. This is
@@ -2636,6 +2637,7 @@ exit  %Errors%
                                 , ""
                                 , ""
                                 );
+                        loProcess.StartInfo.WorkingDirectory = Path.GetDirectoryName(moProfile.sLoadedPathFile);
                         loProcess.StartInfo.UseShellExecute = true;
                         loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         loProcess.Start();
@@ -2959,6 +2961,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                                 , ""
                                 , ""
                                 );
+                        loProcess.StartInfo.WorkingDirectory = Path.GetDirectoryName(moProfile.sLoadedPathFile);
                         loProcess.StartInfo.UseShellExecute = true;
                         loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         loProcess.Start();
@@ -3235,6 +3238,7 @@ echo del %FileSpec%                                                             
                                 , ""
                                 , ""
                                 );
+                        loProcess.StartInfo.WorkingDirectory = Path.GetDirectoryName(moProfile.sLoadedPathFile);
                         loProcess.StartInfo.UseShellExecute = true;
                         loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         loProcess.Start();

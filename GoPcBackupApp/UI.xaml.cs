@@ -1438,16 +1438,22 @@ Give the new software a try. When you're confident everything works as expected,
 
         private void BackupTime_TextChanged(object sender, TextChangedEventArgs e)
         {
-            try
-            {
-                this.sldBackupTime_ValueFromString(this.BackupTime.Text);
-            }
-            catch {}
+            bool        lbProperMin = false;
+            string[]    lsTimeArray = this.BackupTime.Text.Split(':');
+                        if ( lsTimeArray.Length > 1 )
+                        {
+                            lsTimeArray = lsTimeArray[1].Split(' ');
+                            lbProperMin = lsTimeArray[0].Length > 1;
+                        }
+            DateTime    ldtDiscard = DateTime.MinValue;
+                        if ( lbProperMin && DateTime.TryParse(this.BackupTime.Text, out ldtDiscard) )
+                            this.sldBackupTime_ValueFromString(this.BackupTime.Text);
         }
 
         private void sldBackupTime_ValueFromString(string asTimeOnly)
         {
             TimeSpan loTimeSpan = DateTime.Parse(asTimeOnly) - DateTime.Today;
+
             this.sldBackupTime.Value = loTimeSpan.TotalMinutes / moProfile.iValue("-BackupTimeMinsPerTick", 15);
         }
 
