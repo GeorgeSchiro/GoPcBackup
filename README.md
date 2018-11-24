@@ -212,6 +212,13 @@ Options and Features
 
             Set this switch True and nothing will be displayed when the task runs.
 
+        -DelaySecs=0
+
+            Set this value to greater than zero to delay this task by that number of
+            seconds past its scheduled start time (or at startup). If -OnStartup is
+            true (see below) this delay will be in addition to the general startup
+            tasks delay (if any, see -StartupTasksDelaySecs below).
+
         -OnStartup=False
 
             Set this switch True and the task will start each time "GoPcBackup.exe"

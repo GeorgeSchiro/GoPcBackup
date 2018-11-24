@@ -189,6 +189,13 @@ A brief description of each feature follows.
 
             Set this switch True and nothing will be displayed when the task runs.
 
+        -DelaySecs=0
+
+            Set this value to greater than zero to delay this task by that number of
+            seconds past its scheduled start time (or at startup). If -OnStartup is
+            true (see below) this delay will be in addition to the general startup
+            tasks delay (if any, see -StartupTasksDelaySecs below).
+
         -OnStartup=False
 
             Set this switch True and the task will start each time ""{EXE}""
@@ -2250,15 +2257,21 @@ cd ""{1}""
 
                         if ( lbDoTask && !mbAddTasksStartupDelayDone )
                         {
-                            System.Threading.Thread.Sleep(1000 * moProfile.iValue("-StartupTasksDelaySecs", 0));
+                            if ( 0 != moProfile.iValue("-StartupTasksDelaySecs", 0) )
+                                System.Threading.Thread.Sleep(1000 * moProfile.iValue("-StartupTasksDelaySecs", 0));
 
                             mbAddTasksStartupDelayDone = true;
                         }
+
+                        if ( lbDoTask && 0 != loAddTask.iValue("-DelaySecs", 0) )
+                            System.Threading.Thread.Sleep(1000 * loAddTask.iValue("-DelaySecs", 0));
                     }
                     else
                     {
                         DateTime    ldtTasksStarted = DateTime.Now;
                         DateTime    ldtTaskStartTime = loAddTask.dtValue("-StartTime", DateTime.MinValue);
+                                    if ( DateTime.MinValue != ldtTaskStartTime )
+                                        ldtTaskStartTime = ldtTaskStartTime.AddSeconds(loAddTask.iValue("-DelaySecs", 0));
                         string      lsTaskDaysOfWeek = loAddTask.sValue("-StartDays", "");
 
                         // If -StartTime is within the current minute, start the task.
