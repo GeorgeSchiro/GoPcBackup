@@ -629,9 +629,9 @@ Options and Features
     shutdown automatically thereafter. This switch is useful if the utility
     is run in a batch process or if it is run by a server job scheduler.
 
--RunOncePrompts=False
+-RunOncePrompts=True
 
-    Set this switch True to display a backup results dialog after -RunOnce
+    Set this switch False to not display a backup results dialog after -RunOnce
     is used. This switch is overridden by the -NoPrompts switch (see above).
 
 -SaveProfile=True
