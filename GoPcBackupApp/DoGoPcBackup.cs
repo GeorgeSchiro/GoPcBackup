@@ -606,9 +606,9 @@ A brief description of each feature follows.
     shutdown automatically thereafter. This switch is useful if the utility
     is run in a batch process or if it is run by a server job scheduler.
 
--RunOncePrompts=False
+-RunOncePrompts=True
 
-    Set this switch True to display a backup results dialog after -RunOnce
+    Set this switch False to not display a backup results dialog after -RunOnce
     is used. This switch is overridden by the -NoPrompts switch (see above).
 
 -SaveProfile=True
@@ -821,7 +821,7 @@ Notes:
                                             loDoDa.CleanupFiles();
                                             lbBackupResult = loDoDa.BackupFiles();
 
-                            if ( loProfile.bValue("-RunOncePrompts", false) && !loProfile.bValue("-NoPrompts", false) )
+                            if ( loProfile.bValue("-RunOncePrompts", true) && !loProfile.bValue("-NoPrompts", false) )
                             {
                                 if ( lbBackupResult )
                                     tvMessageBox.Show(null, "Backup finished successfully.");
@@ -915,7 +915,7 @@ Notes:
                                 loDoDa.CleanupFiles();
                                 lbBackupResult = loDoDa.BackupFiles();
 
-                if ( loProfile.bValue("-RunOncePrompts", false) && !loProfile.bValue("-NoPrompts", false) )
+                if ( loProfile.bValue("-RunOncePrompts", true) && !loProfile.bValue("-NoPrompts", false) )
                 {
                     if ( lbBackupResult )
                         tvMessageBox.Show(null, "Backup finished successfully.");
@@ -2850,7 +2850,10 @@ for %%d in (D: E: F: G: H: I: J: K: L: M: N: O: P: Q: R: S: T: U: V: W: X: Y: Z:
 
 set /A CompositeResult = 100 * (8388608 + %BackupDeviceDecimalBitField%) + %CopyFailures%
 
-echo   CompositeResult=%CompositeResult%                                    >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo CompositeResult=%CompositeResult%                                      >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+
 exit  %CompositeResult%
 
 :DoCopy
