@@ -294,6 +294,11 @@ Options and Features
     it will be recreated from the content found in -BackupBeginScriptHelp (see 
     above).
 
+-BackupBeginScriptTimeoutMins=5
+
+    This determines how many minutes the "backup begin" script will be
+    permitted to run before throwing a timeout error.
+
 -BackupDoneScriptEnabled=True
 
     Set this switch False to skip running the "backup done" script.
@@ -320,6 +325,11 @@ Options and Features
     If you delete the file, it will be recreated from the content found in 
     -BackupDoneScriptHelp (see above).
 
+-BackupDoneScriptTimeoutMins=180
+
+    This determines how many minutes the "backup done" script will be
+    permitted to run before throwing a timeout error.
+
 -BackupFailedScriptEnabled=True
 
     Set this switch False to skip running the "backup failed" script.
@@ -345,6 +355,11 @@ Options and Features
     edit the contents of the file or point this parameter to another file.
     If you delete the file, it will be recreated from the content found in 
     -BackupFailedScriptHelp (see above).
+
+-BackupFailedScriptTimeoutMins=1
+
+    This determines how many minutes the "backup failed" script will be
+    permitted to run before throwing a timeout error.
 
 -BackupDriveToken=(This is my GoPC backup drive.)
 
@@ -408,6 +423,11 @@ Options and Features
     This determines how many minutes the backup time changes with each tick
     of the backup time selection slider in the UI.
 
+-BackupTimeoutMins=60
+
+    This determines how many minutes the backup will be permitted to run
+    before throwing a timeout error.
+
 -CleanupFiles=True
 
     Set this switch False to disable cleanups (ie. do file backups only).
@@ -464,6 +484,12 @@ Options and Features
             These are the files evaluated for deletion based on their age
             (see -AgeDays above). Wildcards are expected but not required
             (you can reference a single file if you like).
+
+            Note: the -ApplyDeletionLimit switch (see above) applies to
+                  each occurrence of this value separately. In other words,
+                  each -FilesToDelete file specification is evaluated for
+                  a deletion limit count as a separate collection of files
+                  independent of all other -FilesToDelete collections.
 
         -Recurse=False
 

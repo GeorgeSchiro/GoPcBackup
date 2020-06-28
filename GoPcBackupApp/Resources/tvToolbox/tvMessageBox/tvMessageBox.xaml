@@ -20,8 +20,8 @@
         </ResourceDictionary>
     </Window.Resources>
     <Canvas Name="MainCanvas" Background="Transparent">
-        <Border Name="FirstBorder" BorderBrush="Green" BorderThickness="7" CornerRadius="60">
-            <Border Name="SecondBorder" BorderBrush="Yellow" Background="#CFFFCF" BorderThickness="3" CornerRadius="53">
+        <Border Name="FirstBorder" Style="{StaticResource MainCanvasFirstBorder}">
+            <Border Name="SecondBorder" Style="{StaticResource MainCanvasSecondBorder}">
                 <StackPanel>
                     <StackPanel Name="TopPanel" Orientation="Horizontal" >
                         <Image Name="AlertIcon" Source="images/Alert.png" Style="{StaticResource Image}" />

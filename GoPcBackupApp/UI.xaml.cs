@@ -286,41 +286,6 @@ namespace GoPcBackup
         }
 
 
-        public int iCurrentBackupDevicesBitField()
-        {
-            // The leftmost bit is always 1 to preserve leading zeros.
-            int  liCurrentBackupDevicesBitField = 1;
-            char lcPossibleDriveLetter = moDoGoPcBackup.cPossibleDriveLetterBegin;
-
-            foreach ( DriveInfo loDrive in DriveInfo.GetDrives() )
-            {
-                string lsDeviceDriveLetter = loDrive.Name.Substring(0, 1);
-
-                // Skip devices with letters starting before the possible drive letters.
-                if ( String.Compare(lsDeviceDriveLetter, lcPossibleDriveLetter.ToString()) >= 0 )
-                {
-                    // Fill in zeros for all drives prior to or between each drive selected.
-                    while ( String.Compare(lsDeviceDriveLetter, lcPossibleDriveLetter.ToString()) > 0 )
-                    {
-                        liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
-                        ++lcPossibleDriveLetter;
-                    }
-
-                    liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
-                    liCurrentBackupDevicesBitField += (bool)File.Exists(Path.Combine(loDrive.Name, moDoGoPcBackup.sBackupDriveToken)) ? 1 : 0;
-                    ++lcPossibleDriveLetter;
-                }
-            }
-
-            // Fill in zeros for all the drives after the last drive found.
-            for ( char c = lcPossibleDriveLetter; c <= moDoGoPcBackup.cPossibleDriveLetterEnd; ++c )
-            {
-                liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
-            }
-
-            return liCurrentBackupDevicesBitField;
-        }
-
         public void AppendOutputTextLine(string asTextLine)
         {
             this.BackupProcessOutput.Inlines.Add(asTextLine + Environment.NewLine);
@@ -1968,7 +1933,7 @@ Give the new software a try. When you're confident everything works as expected,
                 return leTvMessageBoxResults;
 
             List<char> loMissingBackupDevices = moDoGoPcBackup.oMissingBackupDevices(
-                                                    this.iCurrentBackupDevicesBitField());
+                                                    moDoGoPcBackup.iCurrentBackupDevicesBitField());
 
             if ( 0 != loMissingBackupDevices.Count )
             {
@@ -2461,17 +2426,28 @@ If you would prefer to finish this setup at another time, you can close now and 
                 {
                     this.InitProgressBar(moDoGoPcBackup.iBackupFilesCount());
 
-                    if ( moDoGoPcBackup.BackupFiles() )
+                    try
                     {
-                        this.IncrementProgressBar(true);
+                        if ( moDoGoPcBackup.BackupFiles() )
+                        {
+                            this.IncrementProgressBar(true);
+                        }
+                        else
+                        {
+                            this.InitProgressBar(0);
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        this.InitProgressBar(0);
+                        throw ex;
                     }
+                    finally
+                    {
+                        if ( this.bVisible )
+                            this.ShowMissingBackupDevices();
 
-                    if ( this.bVisible )
-                        this.ShowMissingBackupDevices();
+                        this.bBackupRunning = false;
+                    }
                 }
             }
 

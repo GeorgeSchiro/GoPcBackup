@@ -271,6 +271,11 @@ A brief description of each feature follows.
     it will be recreated from the content found in -BackupBeginScriptHelp (see 
     above).
 
+-BackupBeginScriptTimeoutMins=5
+
+    This determines how many minutes the ""backup begin"" script will be
+    permitted to run before throwing a timeout error.
+
 -BackupDoneScriptEnabled=True
 
     Set this switch False to skip running the ""backup done"" script.
@@ -297,6 +302,11 @@ A brief description of each feature follows.
     If you delete the file, it will be recreated from the content found in 
     -BackupDoneScriptHelp (see above).
 
+-BackupDoneScriptTimeoutMins=180
+
+    This determines how many minutes the ""backup done"" script will be
+    permitted to run before throwing a timeout error.
+
 -BackupFailedScriptEnabled=True
 
     Set this switch False to skip running the ""backup failed"" script.
@@ -322,6 +332,11 @@ A brief description of each feature follows.
     edit the contents of the file or point this parameter to another file.
     If you delete the file, it will be recreated from the content found in 
     -BackupFailedScriptHelp (see above).
+
+-BackupFailedScriptTimeoutMins=1
+
+    This determines how many minutes the ""backup failed"" script will be
+    permitted to run before throwing a timeout error.
 
 -BackupDriveToken=(This is my GoPC backup drive.)
 
@@ -385,6 +400,11 @@ A brief description of each feature follows.
     This determines how many minutes the backup time changes with each tick
     of the backup time selection slider in the UI.
 
+-BackupTimeoutMins=60
+
+    This determines how many minutes the backup will be permitted to run
+    before throwing a timeout error.
+
 -CleanupFiles=True
 
     Set this switch False to disable cleanups (ie. do file backups only).
@@ -441,6 +461,12 @@ A brief description of each feature follows.
             These are the files evaluated for deletion based on their age
             (see -AgeDays above). Wildcards are expected but not required
             (you can reference a single file if you like).
+
+            Note: the -ApplyDeletionLimit switch (see above) applies to
+                  each occurrence of this value separately. In other words,
+                  each -FilesToDelete file specification is evaluated for
+                  a deletion limit count as a separate collection of files
+                  independent of all other -FilesToDelete collections.
 
         -Recurse=False
 
@@ -840,6 +866,8 @@ Notes:
                                 // Load the UI.
                                 UI  loUI = new UI(loMain);
                                     loMain.oUI = loUI;
+                                    loMain.MainWindow = loUI;
+                                    loMain.ShutdownMode = System.Windows.ShutdownMode.OnMainWindowClose;
 
                                 loMain.Run(loUI);
                             }
@@ -1368,6 +1396,41 @@ Notes:
             }
 
             return liCleanupFilesCount;
+        }
+
+        public int iCurrentBackupDevicesBitField()
+        {
+            // The leftmost bit is always 1 to preserve leading zeros.
+            int  liCurrentBackupDevicesBitField = 1;
+            char lcPossibleDriveLetter = this.cPossibleDriveLetterBegin;
+
+            foreach ( DriveInfo loDrive in DriveInfo.GetDrives() )
+            {
+                string lsDeviceDriveLetter = loDrive.Name.Substring(0, 1);
+
+                // Skip devices with letters starting before the possible drive letters.
+                if ( String.Compare(lsDeviceDriveLetter, lcPossibleDriveLetter.ToString()) >= 0 )
+                {
+                    // Fill in zeros for all drives prior to or between each drive selected.
+                    while ( String.Compare(lsDeviceDriveLetter, lcPossibleDriveLetter.ToString()) > 0 )
+                    {
+                        liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
+                        ++lcPossibleDriveLetter;
+                    }
+
+                    liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
+                    liCurrentBackupDevicesBitField += (bool)File.Exists(Path.Combine(loDrive.Name, this.sBackupDriveToken)) ? 1 : 0;
+                    ++lcPossibleDriveLetter;
+                }
+            }
+
+            // Fill in zeros for all the drives after the last drive found.
+            for ( char c = lcPossibleDriveLetter; c <= this.cPossibleDriveLetterEnd; ++c )
+            {
+                liCurrentBackupDevicesBitField = liCurrentBackupDevicesBitField << 1;
+            }
+
+            return liCurrentBackupDevicesBitField;
         }
 
         /// <summary>
@@ -2043,15 +2106,25 @@ cd ""{1}""
                     if ( loProcess.StartInfo.RedirectStandardOutput )
                         loProcess.BeginOutputReadLine();
 
+                    DateTime ltdProcessTimeout = DateTime.Now.AddMinutes(moProfile.iValue("-BackupTimeoutMins", 60));
+
                     // Wait for the backup process to finish.
-                    while ( !this.bMainLoopStopped && !loProcess.HasExited )
+                    while ( !this.bMainLoopStopped && !loProcess.HasExited && DateTime.Now < ltdProcessTimeout )
                     {
                         System.Windows.Forms.Application.DoEvents();
                         System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                     }
 
+                    if ( DateTime.Now >= ltdProcessTimeout && !this.bMainLoopStopped )
+                    {
+                        lbBackupFiles = false;
+
+                        this.LogIt("");
+                        this.LogIt("The backup process timed-out.");
+                    }
+
                     // Do final wait then call "WaitForExit()" to flush the output steams.
-                    if ( !this.bMainLoopStopped && loProcess.WaitForExit(1000 * moProfile.iValue("-KillProcessOrderlyWaitSecs", 30)) )
+                    if ( lbBackupFiles && !this.bMainLoopStopped && loProcess.WaitForExit(1000 * moProfile.iValue("-KillProcessOrderlyWaitSecs", 30)) )
                         loProcess.WaitForExit();
 
                     // Stop output to console.
@@ -2060,15 +2133,14 @@ cd ""{1}""
                     if ( loProcess.StartInfo.RedirectStandardOutput )
                         loProcess.CancelOutputRead();
 
-                    // If a stop request came through, kill the backup process.
-                    if ( this.bMainLoopStopped && !this.bKillProcess(loProcess) )
-                        this.ShowError("The backup process could not be stopped."
-                                , "Backup Failed");
+                    // If the process failed or a stop request came through, kill the backup process.
+                    if ( (!lbBackupFiles || this.bMainLoopStopped) && !this.bKillProcess(loProcess) )
+                        this.ShowError("The backup process could not be stopped.", "Backup Failed");
 
                     // The backup process finished uninterrupted.
                     if ( !this.bMainLoopStopped )
                     {
-                        if ( 0 != loProcess.ExitCode )
+                        if ( !lbBackupFiles || 0 != loProcess.ExitCode )
                         {
                             // The backup process failed.
                             this.LogIt(string.Format("The backup to \"{0}\" failed."
@@ -2655,21 +2727,31 @@ exit  %Errors%
                         loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         loProcess.Start();
 
+                DateTime ltdProcessTimeout = DateTime.Now.AddMinutes(moProfile.iValue("-BackupBeginScriptTimeoutMins", 5));
+
                 // Wait for the "backup begin" script to finish.
-                while ( !this.bMainLoopStopped && !loProcess.HasExited )
+                while ( !this.bMainLoopStopped && !loProcess.HasExited && DateTime.Now < ltdProcessTimeout )
                 {
                     System.Windows.Forms.Application.DoEvents();
                     System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
-                // If a stop request came through, kill the "backup begin" script.
-                if ( this.bMainLoopStopped && !this.bKillProcess(loProcess) )
+                if ( DateTime.Now >= ltdProcessTimeout && !this.bMainLoopStopped )
+                {
+                    liBackupBeginScriptErrors++;
+
+                    this.LogIt("");
+                    this.LogIt("The \"backup begin\" script timed-out.");
+                }
+
+                // If the process failed or a stop request came through, kill the "backup begin" script.
+                if ( (liBackupBeginScriptErrors > 0 || this.bMainLoopStopped) && !this.bKillProcess(loProcess) )
                     this.ShowError("The \"backup begin\" script could not be stopped."
                             , "Backup Failed");
 
                 if ( !this.bMainLoopStopped )
                 {
-                    liBackupBeginScriptErrors = loProcess.ExitCode;
+                    liBackupBeginScriptErrors += loProcess.ExitCode;
 
                     if ( 0 == liBackupBeginScriptErrors )
                     {
@@ -2982,15 +3064,23 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                         loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         loProcess.Start();
 
+                DateTime ltdProcessTimeout = DateTime.Now.AddMinutes(moProfile.iValue("-BackupDoneScriptTimeoutMins", 180));
+
                 // Wait for the "backup done" script to finish.
-                while ( !this.bMainLoopStopped && !loProcess.HasExited )
+                while ( !this.bMainLoopStopped && !loProcess.HasExited && DateTime.Now < ltdProcessTimeout )
                 {
                     System.Windows.Forms.Application.DoEvents();
                     System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
-                // If a stop request came through, kill the "backup done" script.
-                if ( this.bMainLoopStopped && !this.bKillProcess(loProcess) )
+                if ( DateTime.Now >= ltdProcessTimeout && !this.bMainLoopStopped )
+                {
+                    this.LogIt("");
+                    this.LogIt("The \"backup done\" script timed-out.");
+                }
+
+                // If the process failed or a stop request came through, kill the "backup done" script.
+                if ( (DateTime.Now >= ltdProcessTimeout || this.bMainLoopStopped) && !this.bKillProcess(loProcess) )
                     this.ShowError("The \"backup done\" script could not be stopped."
                             , "Backup Failed");
 
@@ -2998,18 +3088,21 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                 {
                     // The exit code is defined in the script as a combination of two integers:
                     // a bit field of found backup devices and a count of copy failures (99 max).
-                    liBackupDoneScriptCopyFailuresWithBitField = loProcess.ExitCode;
+                    if ( DateTime.Now < ltdProcessTimeout )
+                        liBackupDoneScriptCopyFailuresWithBitField = loProcess.ExitCode;
+                    else
+                        liBackupDoneScriptCopyFailuresWithBitField = 100 * this.iCurrentBackupDevicesBitField() + 1;
 
-                    double  ldCompositeResult = liBackupDoneScriptCopyFailuresWithBitField / 100.0;
-                    int     liCurrentBackupDevicesBitField = (int)ldCompositeResult;   // The integer part is the bit field.
+                    double ldCompositeResult = liBackupDoneScriptCopyFailuresWithBitField / 100.0;
 
-                    // The fractional part (x 100) is the number of copy failures.
+                    int liCurrentBackupDevicesBitField = (int)ldCompositeResult;// The integer part is the bit field.
+                                                                                // The fractional part (x 100) is the number of copy failures.
                     int liBackupDoneScriptCopyFailures = (int)Math.Round(100 * (ldCompositeResult - liCurrentBackupDevicesBitField));
 
                     // Compare the bit field of current backup devices to the bit field of devices selected by the user.
                     List<char> loMissingBackupDevices = this.oMissingBackupDevices(liCurrentBackupDevicesBitField);
 
-                    if (0 == liBackupDoneScriptCopyFailures && 0 == loMissingBackupDevices.Count)
+                    if ( 0 == liBackupDoneScriptCopyFailures && DateTime.Now < ltdProcessTimeout && 0 == loMissingBackupDevices.Count )
                     {
                         this.LogIt("The \"backup done\" script finished successfully.");
                     }
@@ -3061,6 +3154,8 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
 
         public void BackupFailedScript()
         {
+            bool lbScriptFailed = false;
+
             // Before the "backup failed" script can be initialized,
             // -BackupFailedScriptPathFile and -BackupFailedScriptHelp
             // must be initialized first.
@@ -3259,21 +3354,30 @@ echo del %FileSpec%                                                             
                         loProcess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                         loProcess.Start();
 
+                DateTime ltdProcessTimeout = DateTime.Now.AddMinutes(moProfile.iValue("-BackupFailedScriptTimeoutMins", 1));
+
                 // Wait for the "backup failed" script to finish.
-                while ( !this.bMainLoopStopped && !loProcess.HasExited )
+                while ( !this.bMainLoopStopped && !loProcess.HasExited && DateTime.Now < ltdProcessTimeout )
                 {
                     System.Windows.Forms.Application.DoEvents();
                     System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
-                // If a stop request came through, kill the "backup failed" script.
-                if ( this.bMainLoopStopped && !this.bKillProcess(loProcess) )
-                    this.ShowError("The \"backup failed\" script could not be stopped."
-                            , "Backup Failed");
+                if ( DateTime.Now >= ltdProcessTimeout && !this.bMainLoopStopped )
+                {
+                    lbScriptFailed = true;
+
+                    this.LogIt("");
+                    this.LogIt("The \"backup failed\" script timed-out.");
+                }
+
+                // If the process failed or a stop request came through, kill the "backup failed" script.
+                if ( (lbScriptFailed || this.bMainLoopStopped) && !this.bKillProcess(loProcess) )
+                    this.ShowError("The \"backup failed\" script could not be stopped.", "Backup Failed");
 
                 if ( !this.bMainLoopStopped )
                 {
-                    if ( 0 == loProcess.ExitCode )
+                    if ( !lbScriptFailed && 0 == loProcess.ExitCode )
                     {
                         this.LogIt("The \"backup failed\" script finished successfully.");
                     }
