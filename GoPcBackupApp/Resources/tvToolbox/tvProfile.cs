@@ -142,7 +142,7 @@ namespace tvToolbox
     /// Author:     George Schiro (GeoCode@Schiro.name)
     /// </p>
     /// <p>
-    /// Version:    2.22
+    /// Version:    2.23
     /// Copyright:  1996 - 2121
     /// </p>
     /// </summary>
@@ -2708,6 +2708,7 @@ Copy and proceed from there?
                         {
                             loStreamReader = new StreamReader(lsPathFile);
                             lsFileAsStream = loStreamReader.ReadToEnd();
+                            this.sLoadedPathFile = lsPathFile;
                         }
                         catch (IOException ex)
                         {
@@ -2728,6 +2729,7 @@ Copy and proceed from there?
 
                                 loStreamReader = new StreamReader(lsPathFile);
                                 lsFileAsStream = loStreamReader.ReadToEnd();
+                                this.sLoadedPathFile = lsPathFile;
 	                        }
                         }
                         finally
@@ -2799,8 +2801,6 @@ Copy and proceed from there?
                     }
                 }
                 while ( liDoOver-- > 0 );
-
-                this.sLoadedPathFile = lsPathFile;
 
                 if ( !this.bLockProfileFile(lsPathFile) )
                     this.bExit = true;
@@ -2937,11 +2937,16 @@ Copy and proceed from there?
             {
                 string      lsBlockKey = null;
                 string      lsBlockValue = "";
+                string      lsBlockEnd = null;
+                string      lsBlockExc = null;
                 Hashtable   loMergeKeysMap = new Hashtable();
 
                 foreach ( string lsItem in asCommandLineArray )
                 {
-                    if ( !lsItem.TrimStart().StartsWith(mcsArgMark) )
+                    bool lbIsArg;
+
+                    if ( !(lbIsArg = lsItem.TrimStart().StartsWith(mcsArgMark))
+                            && (null == lsBlockEnd || !lsItem.Contains(lsBlockEnd)) )
                     {
                         if ( null != lsBlockKey )
                         {
@@ -2953,46 +2958,64 @@ Copy and proceed from there?
                     }
                     else
                     {
-                        string  lsKey;
-                        string  lsValue;
-                        object  loValue;
-                        int     liPos = lsItem.IndexOf(mcsAsnMark);
+                        string  lsKey   = null;
+                        string  lsValue = null;
+                        object  loValue = null;
+                        int     liPos   = 0;
 
-                        if ( -1 == liPos )
+                        if ( !lbIsArg )
                         {
-                            lsKey = lsItem.Trim();
-                            loValue = true;
+                            // lsBlockEnd must be in lsItem.
+
+                            liPos = lsItem.IndexOf(lsBlockEnd);
+                            lsBlockValue += lsItem.Substring(0, liPos) + this.sNewLine;
+                            lsKey = lsBlockKey;
+                            lsValue = mcsBlockEndMark;
+
+                            // This is the excess after the end of the block.
+                            // This will be discarded (at least for now).
+                            lsBlockExc = lsItem.Substring(liPos + lsBlockEnd.Length);
                         }
                         else
                         {
-                            bool lbQteMark1 = false;
-                            bool lbQteMark2 = false;
+                            liPos = lsItem.IndexOf(mcsAsnMark);
 
-                            lsKey = lsItem.Substring(0, liPos).Trim();
-                            lsValue = lsItem.Substring(liPos + 1).Trim();
-
-                            if ( lsValue.StartsWith(mcsQteMark1) && lsValue.EndsWith(mcsQteMark1) )
-                                lbQteMark1 = true;
-                            else
-                            if ( lsValue.StartsWith(mcsQteMark2) && lsValue.EndsWith(mcsQteMark2) )
-                                lbQteMark2 = true;
-
-                            if ( !lbQteMark1 && !lbQteMark2 )
+                            if ( -1 == liPos )
                             {
-                                // This is intentionally not trimmed.
-                                loValue = lsItem.Substring(liPos + 1);
+                                lsKey = lsItem.Trim();
+                                loValue = true;
                             }
                             else
                             {
-                                // First, remove quotation marks (if any).
-                                if ( lsValue.Length < 2 )
-                                    loValue = "";
+                                bool lbQteMark1 = false;
+                                bool lbQteMark2 = false;
+
+                                lsKey = lsItem.Substring(0, liPos).Trim();
+                                lsValue = lsItem.Substring(liPos + 1).Trim();
+
+                                if ( lsValue.StartsWith(mcsQteMark1) && lsValue.EndsWith(mcsQteMark1) )
+                                    lbQteMark1 = true;
                                 else
-                                    loValue = lsValue.Substring(1, lsValue.Length - 2);
-                            }
-                        }
+                                if ( lsValue.StartsWith(mcsQteMark2) && lsValue.EndsWith(mcsQteMark2) )
+                                    lbQteMark2 = true;
 
-                        lsValue = (null == loValue ? "" : loValue.ToString());
+                                if ( !lbQteMark1 && !lbQteMark2 )
+                                {
+                                    // This is intentionally not trimmed.
+                                    loValue = lsItem.Substring(liPos + 1);
+                                }
+                                else
+                                {
+                                    // First, remove quotation marks (if any).
+                                    if ( lsValue.Length < 2 )
+                                        loValue = "";
+                                    else
+                                        loValue = lsValue.Substring(1, lsValue.Length - 2);
+                                }
+                            }
+
+                            lsValue = (null == loValue ? "" : loValue.ToString());
+                        }
 
                         if ( null != lsBlockKey )
                         {
@@ -3000,6 +3023,8 @@ Copy and proceed from there?
                             {
                                 lsBlockKey = null;
                                 loValue = lsBlockValue;
+                                lsBlockEnd = null;
+                                lsBlockExc = null;
                             }
                             else
                             {
@@ -3010,6 +3035,7 @@ Copy and proceed from there?
                         {
                             lsBlockKey = lsKey;
                             lsBlockValue = "";
+                            lsBlockEnd = lsBlockKey + mcsAsnMark + mcsBlockEndMark;
                         }
 
                         if ( null == lsBlockKey )
@@ -3177,7 +3203,7 @@ Copy and proceed from there?
             {
                 if ( !lbAlreadyThere )
                 {
-                    lsFileAsStream = this.sXml(true, false);
+                    lsFileAsStream = this.sXml(true, false) + this.sNewLine;
                 }
                 else
                 {
@@ -3212,7 +3238,7 @@ Copy and proceed from there?
                                 }
 
                     // Replace entities since they have no impact on subsequent successful XML reads.
-                    lsFileAsStream = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + this.sNewLine + XDocument.Parse(loXmlDocument.InnerXml).ToString().Replace("&#xD;&#xA;", this.sNewLine);
+                    lsFileAsStream = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + this.sNewLine + XDocument.Parse(loXmlDocument.InnerXml).ToString().Replace("&#xD;&#xA;", this.sNewLine) + this.sNewLine;
                 }
             }
             else
@@ -3478,14 +3504,15 @@ Copy and proceed from there?
                 }
                 else
                 {
-                    string lsPreviousPathFile = asPathFile;
-
                     // Use a new pathfile (perhaps).
                     asPathFile = this.sDefaultPathFile;
                     this.Save(asPathFile);
 
-                    if ( this.bSaveEnabled )
-                        File.Delete(lsPreviousPathFile);
+                    if ( this.bSaveEnabled && this.sLoadedPathFile != asPathFile )
+                    {
+                        File.Delete(this.sLoadedPathFile);
+                        this.sLoadedPathFile = asPathFile;
+                    }
                 }
             }
 

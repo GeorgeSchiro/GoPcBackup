@@ -155,6 +155,13 @@ After clicking "GoPC" in the system tray and the "Toggle Backup Timer" icon you 
 ![Next Backup Waiting ](https://raw.github.com/GeorgeSchiro/GoPcBackup/master/Project/Screenshots/Shot11.png)
 
 
+Requirements
+============
+
+
+-   .Net Framework 3.5+
+
+
 Command-Line Usage
 ==================
 
