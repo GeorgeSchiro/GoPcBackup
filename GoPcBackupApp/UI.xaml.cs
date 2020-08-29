@@ -1578,7 +1578,7 @@ Give the new software a try. When you're confident everything works as expected,
             {
                 if ((bool)loCheckBox.IsChecked)
                 {
-                    loSelectedBackupDevices.Add("-Device", loSelectedBackupDevices.sSwapHyphens(loCheckBox.Content.ToString()));
+                    loSelectedBackupDevices.Add("-Device", loCheckBox.Content.ToString());
                     lsSelectedDrives += loCheckBox.Content.ToString().Substring(0, 5);
                 }
             }
