@@ -818,8 +818,15 @@ Notes:
                                 {
                                     try
                                     {
-                                        File.WriteAllText(lsStartupScriptPathFile, File.ReadAllText(lsStartupScriptPathFile)
-                                                .Replace(lsPreviousInstallationFolder, lsCurrentInstallationFolder));
+                                        if ( !String.IsNullOrEmpty(lsCurrentInstallationFolder) )
+                                            File.WriteAllText(lsStartupScriptPathFile, File.ReadAllText(lsStartupScriptPathFile)
+                                                    .Replace(lsPreviousInstallationFolder, lsCurrentInstallationFolder));
+                                    }
+                                    catch (ArgumentException ex)
+                                    {
+                                        // Ignore an empty lsPreviousInstallationFolder.
+                                        if ( !String.IsNullOrEmpty(lsPreviousInstallationFolder) )
+                                            throw ex;
                                     }
                                     catch (IOException ex)
                                     {
@@ -828,13 +835,35 @@ Notes:
                                             throw ex;
                                     }
 
-                                    loProfile["-InstallationFolder"] = lsCurrentInstallationFolder;
-                                    loProfile.Save();
+                                    if ( !String.IsNullOrEmpty(lsCurrentInstallationFolder) )
+                                    {
+                                        loProfile["-InstallationFolder"] = lsCurrentInstallationFolder;
+                                        loProfile.Save();
+                                    }
                                 }
 
                     // Fetch source code.
                     if ( loProfile.bValue("-FetchSource", false) )
                         tvFetchResource.ToDisk(Application.ResourceAssembly.GetName().Name, "GoPcBackup.zip", null);
+
+                    // Updates start here.
+                    if ( loProfile.bFileJustCreated )
+                    {
+                        loProfile["-Update2020-12-19"] = true;
+                        loProfile.Save();
+                    }
+                    else
+                    {
+                        if ( !loProfile.bValue("-Update2020-12-19", false) )
+                        {
+                            // Force use of latest version of 7-Zip.
+                            loProfile["-ZipToolInit"] = true;
+
+                            loProfile["-Update2020-12-19"] = true;
+                            loProfile.Save();
+                        }
+                    }
+                    // Updates end here.
 
                     if ( !loProfile.bExit )
                     {
@@ -1021,6 +1050,21 @@ Notes:
             catch {}
 
             return lsLogPathFileBase;
+        }
+
+        /// <summary>
+        /// Returns a path\file specification relative to the current
+        /// profile. If the current profile itself contains a relative
+        /// path, the current profile's EXE path will be used instead.
+        /// </summary>
+        private string sRelativeToProfilePathFile(string asPathFile)
+        {
+            string lsRelativeToProfilePathFile = moProfile.sRelativeToProfilePathFile(asPathFile);
+
+            if ( null != lsRelativeToProfilePathFile && String.IsNullOrEmpty(Path.GetPathRoot(lsRelativeToProfilePathFile)) )
+                lsRelativeToProfilePathFile = Path.Combine(Path.GetDirectoryName(moProfile.sExePathFile), asPathFile);
+
+            return lsRelativeToProfilePathFile;
         }
 
         /// <summary>
@@ -1916,7 +1960,7 @@ No file cleanup will be done until you update the configuration.
                 else
                     this.LogIt("The \"backup begin\" script is disabled.");
 
-                string  lsZipToolFileListPathFile = moProfile.sRelativeToProfilePathFile(this.ZipToolFileListPathFile);
+                string  lsZipToolFileListPathFile = this.sRelativeToProfilePathFile(this.ZipToolFileListPathFile);
                 string  lsBackupPathFiles1 = null;      // The first file specification in the set (for logging).
                 int     liFileCount = 0;                // The number of file specifications in the current set.
 
@@ -1926,7 +1970,7 @@ No file cleanup will be done until you update the configuration.
                     if ( this.bMainLoopStopped )
                         break;
 
-                    string lsProcessPathFile = moProfile.sRelativeToProfilePathFile(moProfile.sValue("-ZipToolEXE", msZipToolExeFilenamesArray[0]));
+                    string lsProcessPathFile = this.sRelativeToProfilePathFile(moProfile.sValue("-ZipToolEXE", msZipToolExeFilenamesArray[0]));
 
                     // Increment the backup set counter.
                     miBackupSetsRun++;
@@ -1968,7 +2012,7 @@ No file cleanup will be done until you update the configuration.
                                 {
                                     // Backup the backup as well (1st backup set only) and use the parent filespec (ie. not the current).
                                     loBackupFileListStreamWriter.WriteLine(this.sExeRelativePath(lsProcessPathFile
-                                            , Path.Combine(Path.GetDirectoryName(moProfile.sLoadedPathFile), moProfile.sValue("-BackupFileSpec", "*"))));
+                                            , this.sRelativeToProfilePathFile(moProfile.sValue("-BackupFileSpec", "*"))));
 
                                     // Also, make an extra - easily accessible - backup of just the profile file. The assignment is required
                                     // to create the backup copy (it's a side effect of the property call). The pathfile name is discarded.
@@ -2349,7 +2393,7 @@ cd ""{1}""
                         // If -StartTime is within the current minute, start the task.
                         // If -StartDays is specified, run the task on those days only.
                         lbDoTask = DateTime.MinValue != ldtTaskStartTime && (int)ldtTasksStarted.TimeOfDay.TotalMinutes == (int)ldtTaskStartTime.TimeOfDay.TotalMinutes
-                                && ("" == lsTaskDaysOfWeek || this.bListIncludesDay(lsTaskDaysOfWeek, ldtTasksStarted));
+                                && (String.IsNullOrEmpty(lsTaskDaysOfWeek) || this.bListIncludesDay(lsTaskDaysOfWeek, ldtTasksStarted));
                     }
 
                     if ( lbDoTask )
@@ -2419,10 +2463,10 @@ cd ""{1}""
                                 string      lsWindowTitle = loAddTask.sValue("-CommandWindowTitle", "");
                                 Process[]   loProcessesArray = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(loProcess.StartInfo.FileName));
                                             // If there's exactly one matching process and no given window title to compare, we're done.
-                                            lbFound = (1 == loProcessesArray.Length && "" == lsWindowTitle );
+                                            lbFound = (1 == loProcessesArray.Length && String.IsNullOrEmpty(lsWindowTitle) );
 
                                             // If no window title has been given to compare, there's nothing else to do.
-                                            if ( !lbFound && "" != lsWindowTitle )
+                                            if ( !lbFound && !String.IsNullOrEmpty(lsWindowTitle) )
                                             {
                                                 // If no matching processes have been found so far, get them all to compare.
                                                 if ( 0 == loProcessesArray.Length )
@@ -2529,7 +2573,7 @@ cd ""{1}""
                                 loRangeRegex = new Regex(lsRangeRegexArray[i]);
                                 lsRangeArray[i] = loRangeRegex.Match(   // Double the day name lists to handle range wraparounds.
                                         "sunday,monday,tuesday,wednesday,thursday,friday,saturday,sunday,monday,tuesday,wednesday,thursday,friday,saturday").Value;
-                                if ( "" == lsRangeArray[i] )
+                                if ( String.IsNullOrEmpty(lsRangeArray[i]) )
                                     lsRangeArray[i] = loRangeRegex.Match("sun,mon,tue,wed,thu,fri,sat,sun,mon,tue,wed,thu,fri,sat").Value;
                             }
 
