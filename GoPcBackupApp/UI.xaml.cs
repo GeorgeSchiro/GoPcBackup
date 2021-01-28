@@ -809,8 +809,11 @@ Give the new software a try. When you're confident everything works as expected,
         {
             this.DisplayBackupRunning();
 
-            Process.Start(moProfile.sValue("-WindowsExplorer"
-                    , "explorer.exe"), Path.GetDirectoryName(moProfile.sLoadedPathFile));
+            string  lsPath = Path.GetDirectoryName(moProfile.sLoadedPathFile);
+                    if ( String.IsNullOrEmpty(lsPath) )
+                        lsPath = Directory.GetCurrentDirectory();
+
+            Process.Start(moProfile.sValue("-WindowsExplorer", "explorer.exe"), lsPath);
         }
 
         private void btnShowHelp_Click(object sender, RoutedEventArgs e)
@@ -1673,13 +1676,16 @@ Give the new software a try. When you're confident everything works as expected,
                     )
             {
                 try
-                {   // Don't use "Path.Combine()" here since we want
+                {
+                    string  lsPath = Path.GetDirectoryName(moProfile.sLoadedPathFile);
+                            if ( String.IsNullOrEmpty(lsPath) )
+                                lsPath = Directory.GetCurrentDirectory();
+                    // Don't use "Path.Combine()" here since we want
                     // to test for path separators in the filename.
-                    string lsPathfile = Path.GetDirectoryName(moProfile.sLoadedPathFile)
-                                            + Path.DirectorySeparatorChar + BackupOutputFilename.Text;
-                    FileStream loFileStream = File.Create(lsPathfile);
-                               loFileStream.Close();
-                    File.Delete(lsPathfile);
+                    string  lsPathfile = lsPath + Path.DirectorySeparatorChar + BackupOutputFilename.Text;
+                            FileStream loFileStream = File.Create(lsPathfile);
+                                       loFileStream.Close();
+                            File.Delete(lsPathfile);
                 }
                 catch
                 {
