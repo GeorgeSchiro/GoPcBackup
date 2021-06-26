@@ -231,6 +231,17 @@ Options and Features
             Set this switch True and the task will start each time "GoPcBackup.exe"
             starts. If the task EXE is already running, it will not be started again.
 
+        -RerunMins=0
+
+            Set this value to greater than zero to have this task run again every
+            this many minutes, indefinitely.
+
+        -RerunLimit=0
+
+            Set this value to greater than zero to have this task run again this
+            many times (once every -RerunMins, see above). This value is ignored
+            if -RerunMins is zero.
+
         -StartTime= NO DEFAULT VALUE
 
             Set this to the time of day to run the task (eg. 3:00am, 9:30pm, etc).
@@ -240,6 +251,11 @@ Options and Features
             Set this to days of the week to run the task (eg. Monday, Friday, etc).
             This value may include a comma-separated list of days as well as ranges
             of days. Leave this blank and the task will run every day at -StartTime.
+
+        -TaskDisabled=False
+
+            Set this switch True to skip this task indefinitely (ie. until this
+            switch is removed or set False again).
 
         -TimeoutMinutes=0
 
@@ -526,6 +542,11 @@ Options and Features
             IMPORTANT! Every empty folder found within the given recursive
             subfolder (at any level above the starting path) will also be
             removed.
+
+        -RemoveRecurseFolder=False
+
+            Set this switch True and the file cleanup process will remove 
+            empty recurse folders as well.
 
 
         Here's a single line example:

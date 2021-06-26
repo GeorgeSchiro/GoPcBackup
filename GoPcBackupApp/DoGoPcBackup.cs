@@ -201,6 +201,17 @@ A brief description of each feature follows.
             Set this switch True and the task will start each time ""{EXE}""
             starts. If the task EXE is already running, it will not be started again.
 
+        -RerunMins=0
+
+            Set this value to greater than zero to have this task run again every
+            this many minutes, indefinitely.
+
+        -RerunLimit=0
+
+            Set this value to greater than zero to have this task run again this
+            many times (once every -RerunMins, see above). This value is ignored
+            if -RerunMins is zero.
+
         -StartTime= NO DEFAULT VALUE
 
             Set this to the time of day to run the task (eg. 3:00am, 9:30pm, etc).
@@ -210,6 +221,11 @@ A brief description of each feature follows.
             Set this to days of the week to run the task (eg. Monday, Friday, etc).
             This value may include a comma-separated list of days as well as ranges
             of days. Leave this blank and the task will run every day at -StartTime.
+
+        -TaskDisabled=False
+
+            Set this switch True to skip this task indefinitely (ie. until this
+            switch is removed or set False again).
 
         -TimeoutMinutes=0
 
@@ -496,6 +512,11 @@ A brief description of each feature follows.
             IMPORTANT! Every empty folder found within the given recursive
             subfolder (at any level above the starting path) will also be
             removed.
+
+        -RemoveRecurseFolder=False
+
+            Set this switch True and the file cleanup process will remove 
+            empty recurse folders as well.
 
 
         Here's a single line example:
@@ -944,40 +965,31 @@ Notes:
             }
             else
             {
-                tvProfile loProfile = null;
+                // Use the backup profile.
 
-                if ( null != aoProfile.sLoadedPathFile )
-                {
-                    loProfile = aoProfile;
-                }
-                else
-                {
-                    // The default profile was likely attempted but failed to load
-                    // (due to contention). Try loading the backup profile instead.
-
-                    string  lsPath = Path.GetDirectoryName(aoProfile.sDefaultPathFile);
-                    string  lsFilename = Path.GetFileName(aoProfile.sDefaultPathFile);
-                    string  lsExt = Path.GetExtension(aoProfile.sDefaultPathFile);
-                    string  lsBackupPathFile = Path.Combine(lsPath, lsFilename) + ".backup" + lsExt;
-
-                    loProfile = new tvProfile(lsBackupPathFile, tvProfileFileCreateActions.NoFileCreate);
-                    loProfile.LoadFromCommandLineArray(args, tvProfileLoadActions.Merge);
-                }
+                string      lsPath = Path.GetDirectoryName(aoProfile.sDefaultPathFile);
+                string      lsFilename = Path.GetFileName(aoProfile.sDefaultPathFile);
+                string      lsExt = Path.GetExtension(aoProfile.sDefaultPathFile);
+                string      lsBackupPathFile = Path.Combine(lsPath, lsFilename) + ".backup" + lsExt;
+                tvProfile   loProfile = new tvProfile(lsBackupPathFile, tvProfileFileCreateActions.NoFileCreate);
+                            loProfile.LoadFromCommandLineArray(args, tvProfileLoadActions.Merge);
 
                 // Arguments were passed, so start a new "-RunOnce" instance.
-                loProfile.LoadFromCommandLine("-ActivateAlreadyRunningInstance -RunOnce -SaveProfile=False -AddTasks=\"\" -CleanupFiles=False", tvProfileLoadActions.Merge);
+                loProfile.LoadFromCommandLine("-ActivateAlreadyRunningInstance -RunOnce -SaveProfile=False -StartupTasksDisabled -BackupBeginScriptEnabled=False -BackupDoneScriptEnabled=False -BackupFailedScriptEnabled=False", tvProfileLoadActions.Merge);
 
                 bool            lbBackupResult = false;
+                bool            lbCleanupResult = false;
                 DoGoPcBackup    loDoDa = new DoGoPcBackup(loProfile);
-                                loDoDa.CleanupFiles();
-                                lbBackupResult = loDoDa.BackupFiles();
+                                lbCleanupResult = loDoDa.CleanupFiles();
+                                if ( lbCleanupResult )
+                                    lbBackupResult = loDoDa.BackupFiles();
 
                 if ( loProfile.bValue("-RunOncePrompts", true) && !loProfile.bValue("-NoPrompts", false) )
                 {
-                    if ( lbBackupResult )
-                        tvMessageBox.Show(null, "Backup finished successfully.");
+                    if ( lbBackupResult && lbCleanupResult )
+                        tvMessageBox.Show(null, "Backup/Cleanup finished successfully.");
                     else
-                        tvMessageBox.ShowError(null, "Backup failed. Check log for errors.");
+                        tvMessageBox.ShowError(null, "Backup/Cleanup failed. Check log for errors.");
                 }
             }
         }
@@ -996,7 +1008,7 @@ Notes:
                 if ( null == aoProfile )
                     aoProfile = new tvProfile();
 
-                loStreamWriter = new StreamWriter(aoProfile.sRelativeToProfilePathFile(DoGoPcBackup.sLogPathFile(aoProfile)), true);
+                loStreamWriter = new StreamWriter(DoGoPcBackup.sLogPathFile(aoProfile), true);
                 loStreamWriter.WriteLine(DateTime.Now.ToString(aoProfile.sValueNoTrim(
                         "-LogEntryDateTimeFormatPrefix", "yyyy-MM-dd hh:mm:ss:fff tt  "))
                         + asMessageText);
@@ -1040,10 +1052,10 @@ Notes:
 
             try
             {
-                lsLogPathFileBase = aoProfile.sValue("-LogPathFile"
-                        , Path.Combine(lsPath, Path.GetFileNameWithoutExtension(aoProfile.sLoadedPathFile) + lsLogFile));
+                lsLogPathFileBase = aoProfile.sRelativeToProfilePathFile(aoProfile.sValue("-LogPathFile"
+                        , Path.Combine(lsPath, Path.GetFileNameWithoutExtension(aoProfile.sLoadedPathFile) + lsLogFile)));
 
-                lsPath = Path.GetDirectoryName(aoProfile.sRelativeToProfilePathFile(lsLogPathFileBase));
+                lsPath = Path.GetDirectoryName(lsLogPathFileBase);
                 if ( !Directory.Exists(lsPath) )
                     Directory.CreateDirectory(lsPath);
             }
@@ -1057,7 +1069,7 @@ Notes:
         /// profile. If the current profile itself contains a relative
         /// path, the current profile's EXE path will be used instead.
         /// </summary>
-        private string sRelativeToProfilePathFile(string asPathFile)
+        public string sRelativeToProfilePathFile(string asPathFile)
         {
             string lsRelativeToProfilePathFile = moProfile.sRelativeToProfilePathFile(asPathFile);
 
@@ -1156,6 +1168,12 @@ Notes:
                     // Stop the background task timer.
                     if ( null != moBackgroundLoopTimer )
                         moBackgroundLoopTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                }
+                else
+                {
+                    // Start the background task timer.
+                    if ( null != moBackgroundLoopTimer )
+                        moBackgroundLoopTimer.Change(0, moProfile.iValue("-BackgroundLoopSleepMS", 200));
                 }
             }
         }
@@ -1911,6 +1929,7 @@ No file cleanup will be done until you update the configuration.
                 this.bMainLoopStopped = false;
 
             bool    lbBackupFiles = false;
+                    moProfile.Remove("-Previous1stArchiveOk");
             int     liBackupBeginScriptErrors = 0;          // The error count returned by the "backup begin" script.
             int     liBackupDoneScriptFileCopyFailures = 0; // The copy failures count returned by the "backup done" script.
             int     liCurrentBackupDevicesBitField = 0;     // The current backup devices returned by the "backup done" script.
@@ -2142,6 +2161,18 @@ cd ""{1}""
 
                     System.Windows.Forms.Application.DoEvents();
 
+                    // Cache arguments passed to subsequent scripts.
+                    tvProfile   loArgs = new tvProfile();
+                                loArgs.Add("-BackupOutputPathFile"          , msCurrentBackupOutputPathFile                                             );
+                                loArgs.Add("-BackupOutputFilename"          , Path.GetFileName(msCurrentBackupOutputPathFile)                           );
+                                loArgs.Add("-BackupBaseOutputFilename"      , Path.GetFileName(this.sBackupOutputPathFileBase())                        );
+                                loArgs.Add("-LocalArchivePath"              , this.sArchivePath()                                                       );
+                                loArgs.Add("-VirtualMachineHostArchivePath" , moProfile.sValue("-VirtualMachineHostArchivePath", "")                    );
+                                loArgs.Add("-LogPathFile"                   , moProfile.sRelativeToProfilePathFile(DoGoPcBackup.sLogPathFile(moProfile)));
+
+                                moProfile["-LastBackupArgs"] = loArgs.sCommandBlock();
+                                moProfile.Save();
+
                     loProcess.Start();
 
                     // Start output to console also.
@@ -2198,6 +2229,9 @@ cd ""{1}""
                         }
                         else
                         {
+                            if ( 1 == miBackupSetsRun )
+                                moProfile["-Previous1stArchiveOk"] = true;
+
                             // The backup process finished without error.
                             this.LogIt(string.Format("The backup to \"{0}\" was successful."
                                     , Path.GetFileName(msCurrentBackupOutputPathFile)));
@@ -2240,7 +2274,17 @@ cd ""{1}""
                 this.ShowError(ex.Message, "Backup Failed");
             }
 
-            if ( lbBackupFiles && !this.bMainLoopStopped )
+            if ( null != this.oUI )
+            this.oUI.bBackupRunning = false;
+
+            if ( this.bMainLoopStopped )
+            {
+                this.LogIt("Backup process stopped.");
+                this.bMainLoopStopped = false;
+                lbBackupFiles = false;
+            }
+            else
+            if ( lbBackupFiles )
             {
                 this.LogIt("");
 
@@ -2271,8 +2315,6 @@ cd ""{1}""
                     this.SetBackupFailed();
 
                     lbBackupFiles = false;
-                    if ( null != this.oUI )
-                    this.oUI.bBackupRunning = false;
 
                     this.ShowError("The backup failed. Check the log for errors." + lsSysTrayMsg
                             , "Backup Failed");
@@ -2291,13 +2333,6 @@ cd ""{1}""
                             , "-CurrentBackupFinished"
                             );
                 }
-            }
-
-            if ( this.bMainLoopStopped )
-            {
-                this.LogIt("Backup process stopped.");
-                this.bMainLoopStopped = false;
-                lbBackupFiles = false;
             }
 
             // Turn on the lock that was turned off when we started.
@@ -2353,20 +2388,62 @@ cd ""{1}""
             {
                 if ( null == moAddTasksProfile )
                 {
-                    moAddTasksProfile = moProfile.oProfile("-AddTasks").oOneKeyProfile("-Task");
-                    moAddTasksProcessArray = new Process[moAddTasksProfile.Count];
-                }
-                
-                for (int i=0; i < moAddTasksProfile.Count; ++i)
-                {
-                    // Convert the current task from a command-line string to a profile oject.
-                    tvProfile loAddTask = new tvProfile(moAddTasksProfile[i].ToString());
+                    tvProfile   loAddTasksProfile = moProfile.oProfile("-AddTasks").oOneKeyProfile("-Task");
+                                moAddTasksProcessArray = new Process[loAddTasksProfile.Count];
 
-                    bool lbDoTask = false;
+                    moAddTasksProfile = new tvProfile();
+
+                    // Build moAddTasksProfile from loAddTasksProfile, including calculated reruns.
+                    foreach (DictionaryEntry loEntry in loAddTasksProfile)
+                    {
+                        tvProfile   loAddTask = new tvProfile(loEntry.Value.ToString());
+                        int         liRerunMins = loAddTask.iValue("-RerunMins", 0);
+
+                        moAddTasksProfile.Add(loEntry);
+
+                        if ( 0 != liRerunMins )
+                        {
+                            DateTime    ldtTaskStartTime = loAddTask.dtValue("-StartTime", DateTime.MinValue);
+                                        if ( DateTime.MinValue != ldtTaskStartTime )
+                                            ldtTaskStartTime = ldtTaskStartTime.AddSeconds(loAddTask.iValue("-DelaySecs", 0));
+                            DateTime    ldtTaskStartTimeTomorrow = ldtTaskStartTime.AddDays(1);
+                            int         liRerunLimit = loAddTask.iValue("-RerunLimit", 0);
+                                        loAddTask.Remove("-DelaySecs");
+                                        loAddTask.Remove("-RerunMins");
+                                        loAddTask.Remove("-RerunLimit");
+                                        loAddTask.Remove("-OnStartup");
+                                        loAddTask.Remove("-UnloadOnExit");
+                            int         liRerunCount = 0;
+
+                            do
+                            {
+                                ldtTaskStartTime = ldtTaskStartTime.AddMinutes(liRerunMins);
+
+                                if ( ldtTaskStartTime < ldtTaskStartTimeTomorrow )
+                                {
+                                    loAddTask["-StartTime"] = ldtTaskStartTime.ToString("hh:mm:ss tt");
+                                    loAddTask["-IsRerun"] = true;
+
+                                    moAddTasksProfile.Add("-Task", loAddTask.ToString());
+                                }
+                            }
+                            while  ( (++liRerunCount < liRerunLimit || 0 == liRerunLimit) && ldtTaskStartTime < ldtTaskStartTimeTomorrow );
+                        }
+                    }
+                }
+
+                int liProcessCount = 0;
+
+                foreach (DictionaryEntry loEntry in moAddTasksProfile)
+                {
+                    tvProfile loAddTask = new tvProfile(loEntry.Value.ToString());
+
+                    bool lbDoTask = !loAddTask.bValue("-TaskDisabled", false);
 
                     if ( abStartup )
                     {
-                        lbDoTask = loAddTask.bValue("-OnStartup", false) && !moProfile.bValue("-StartupTasksDisabled", false);
+                        if ( lbDoTask )
+                            lbDoTask = loAddTask.bValue("-OnStartup", false) && !moProfile.bValue("-StartupTasksDisabled", false);
 
                         if ( loAddTask.bValue("-OnStartup", false) && !lbDoTask )
                             this.LogIt(String.Format("Skipping startup task: {0}", loAddTask.sCommandLine()));
@@ -2390,10 +2467,11 @@ cd ""{1}""
                                         ldtTaskStartTime = ldtTaskStartTime.AddSeconds(loAddTask.iValue("-DelaySecs", 0));
                         string      lsTaskDaysOfWeek = loAddTask.sValue("-StartDays", "");
 
-                        // If -StartTime is within the current minute, start the task.
-                        // If -StartDays is specified, run the task on those days only.
-                        lbDoTask = DateTime.MinValue != ldtTaskStartTime && (int)ldtTasksStarted.TimeOfDay.TotalMinutes == (int)ldtTaskStartTime.TimeOfDay.TotalMinutes
-                                && (String.IsNullOrEmpty(lsTaskDaysOfWeek) || this.bListIncludesDay(lsTaskDaysOfWeek, ldtTasksStarted));
+                        if ( lbDoTask )
+                            lbDoTask = DateTime.MinValue != ldtTaskStartTime && (int)ldtTasksStarted.TimeOfDay.TotalMinutes == (int)ldtTaskStartTime.TimeOfDay.TotalMinutes
+                                    && (String.IsNullOrEmpty(lsTaskDaysOfWeek) || this.bListIncludesDay(lsTaskDaysOfWeek, ldtTasksStarted));
+                                    // If -StartTime is within the current minute, start the task.
+                                    // If -StartDays is specified, run the task only on those days.
                     }
 
                     if ( lbDoTask )
@@ -2417,7 +2495,9 @@ cd ""{1}""
                                 loProcess.StartInfo.RedirectStandardError   =  lbWaitForExitOverride | loAddTask.bValue("-RedirectStandardError", false);
                                 loProcess.StartInfo.RedirectStandardOutput  =  lbWaitForExitOverride | loAddTask.bValue("-RedirectStandardOutput", false);
 
-                                moAddTasksProcessArray[i] = loProcess;
+                                // Leave reruns out of managed processes.
+                                if ( !loAddTask.bValue("-IsRerun", false) )
+                                    moAddTasksProcessArray[liProcessCount++] = loProcess;
 
                         try
                         {
@@ -2542,17 +2622,18 @@ cd ""{1}""
 
         public void KillAddedTasks()
         {
-            if ( null != moAddTasksProfile )
-                for (int i=0; i < moAddTasksProfile.Count; ++i)
-                {
-                    tvProfile loAddedTask = new tvProfile(moAddTasksProfile[i].ToString());
+            tvProfile loAddTasksProfile = moProfile.oProfile("-AddTasks").oOneKeyProfile("-Task");
 
-                    if ( loAddedTask.bValue("-UnloadOnExit", false) && null != moAddTasksProcessArray[i] )
-                    {
-                        this.LogIt(String.Format("Stopping Task: {0}", loAddedTask.sCommandLine()));
-                        this.bKillProcess(moAddTasksProcessArray[i]);
-                    }
+            for (int i=0; i < loAddTasksProfile.Count; ++i)
+            {
+                tvProfile loAddedTask = new tvProfile(loAddTasksProfile[i].ToString());
+
+                if ( loAddedTask.bValue("-UnloadOnExit", false) && null != moAddTasksProcessArray[i] )
+                {
+                    this.LogIt(String.Format("Stopping Task: {0}", loAddedTask.sCommandLine()));
+                    this.bKillProcess(moAddTasksProcessArray[i]);
                 }
+            }
         }
 
         private bool bListIncludesDay(string asDaysOfWeekRangeList, DateTime adtDay)
@@ -2833,11 +2914,6 @@ exit  %Errors%
 
         public int iBackupDoneScriptCopyFailuresWithBitField()
         {
-            // Run the "backup done" script with current (ie. fresh arguments).
-            return this.iBackupDoneScriptCopyFailuresWithBitField(false);
-        }
-        public int iBackupDoneScriptCopyFailuresWithBitField(bool abRerunLastArgs)
-        {
             if ( null == moProfile["-PreviousBackupOutputPathFile"] || !File.Exists(moProfile["-PreviousBackupOutputPathFile"].ToString()) )
             {
                 this.LogIt("");
@@ -3059,25 +3135,6 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                 this.LogIt("");
                 this.LogIt("Running \"backup done\" script ...");
 
-                // Cache the arguments to be passed to the script.
-                tvProfile  loArgs = new tvProfile();
-                            if ( abRerunLastArgs )
-                            {
-                                loArgs.LoadFromCommandLine(moProfile.sValue("-BackupDoneArgs", ""), tvProfileLoadActions.Append);
-                            }
-                            else
-                            {
-                                loArgs.Add("-BackupOutputPathFile"          , msCurrentBackupOutputPathFile                                             );
-                                loArgs.Add("-BackupOutputFilename"          , Path.GetFileName(msCurrentBackupOutputPathFile)                           );
-                                loArgs.Add("-BackupBaseOutputFilename"      , Path.GetFileName(this.sBackupOutputPathFileBase())                        );
-                                loArgs.Add("-LocalArchivePath"              , this.sArchivePath()                                                       );
-                                loArgs.Add("-VirtualMachineHostArchivePath" , moProfile.sValue("-VirtualMachineHostArchivePath", "")                    );
-                                loArgs.Add("-LogPathFile"                   , moProfile.sRelativeToProfilePathFile(DoGoPcBackup.sLogPathFile(moProfile)));
-
-                                moProfile["-BackupDoneArgs"] = loArgs.sCommandBlock();
-                                moProfile.Save();
-                            }
-
                 // Update the output text cache.
                 if ( null != this.oUI )
                 this.oUI.Dispatcher.BeginInvoke((Action)(() =>
@@ -3086,6 +3143,10 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                 }
                 ));
                 System.Windows.Forms.Application.DoEvents();
+
+                // Load cached arguments.
+                tvProfile   loArgs = new tvProfile();
+                            loArgs.LoadFromCommandLine(moProfile.sValue("-LastBackupArgs", ""), tvProfileLoadActions.Append);
 
                 // Run the "backup done" script.
                 Process loProcess = new Process();
@@ -3357,17 +3418,6 @@ echo del %FileSpec%                                                             
                 this.LogIt("");
                 this.LogIt("Running \"backup failed\" script ...");
 
-                // Cache the arguments to be passed to the script.
-                tvProfile  loArgs = new tvProfile();
-                                loArgs.Add("-BackupOutputPathFile"          , msCurrentBackupOutputPathFile                                          );
-                                loArgs.Add("-BackupOutputFilename"          , Path.GetFileName(msCurrentBackupOutputPathFile)                        );
-                                loArgs.Add("-BackupBaseOutputFilename"      , Path.GetFileName(this.sBackupOutputPathFileBase())                     );
-                                loArgs.Add("-LocalArchivePath"              , this.sArchivePath()                                                    );
-                                loArgs.Add("-VirtualMachineHostArchivePath" , moProfile.sValue("-VirtualMachineHostArchivePath", "")                 );
-
-                                moProfile["-BackupFailedArgs"] = loArgs.sCommandBlock();
-                                moProfile.Save();
-
                 // Update the output text cache.
                 if ( null != this.oUI )
                 this.oUI.Dispatcher.BeginInvoke((Action)(() =>
@@ -3376,6 +3426,10 @@ echo del %FileSpec%                                                             
                 }
                 ));
                 System.Windows.Forms.Application.DoEvents();
+
+                // Load cached arguments.
+                tvProfile   loArgs = new tvProfile();
+                            loArgs.LoadFromCommandLine(moProfile.sValue("-LastBackupArgs", ""), tvProfileLoadActions.Append);
 
                 // Run the "backup failed" script.
                 Process loProcess = new Process();
@@ -3725,7 +3779,7 @@ echo del %FileSpec%                                                             
             {
                 // Only check for file cleanup if either there is no recursion
                 // or the base path contains the recursion subfolder. An empty
-                // recursion subfolder matches everything from the base path up.
+                // lsRecurseFolder matches everything from the base path up.
                 if ( !lbRecurse || (lbRecurse && (lsPath + lsDirectorySeparatorChar).Contains(lsRecurseFolder)) )
                 {
                     IOrderedEnumerable<FileSystemInfo> loFileSysInfoList = null;
@@ -3928,13 +3982,15 @@ echo del %FileSpec%                                                             
                             // since the recurse folder will always have a trailing separator.
                             string lsSubfolderPlus = lsSubfolder + lsDirectorySeparatorChar;
 
-                            // Remove empty subfolders in the recurse folder only (ie.
-                            // do not remove the recurse folder itself). In other words,
-                            // lsSubfolderPlus may contain lsRecurseFolder, but it can't
-                            // end with it (unless lsRecurseFolder is just a backslash).
+                            // If -RemoveRecurseFolder is false, remove empty subfolders
+                            // in the recurse folder only (ie. do not remove the recurse
+                            // folder itself). In other words, lsSubfolderPlus may contain
+                            // lsRecurseFolder, but it can't end with it (unless lsRecurseFolder
+                            // is just a backslash).
                             if (              lsSubfolderPlus.Contains(lsRecurseFolder)
                                     && (     !lsSubfolderPlus.EndsWith(lsRecurseFolder)
-                                        || lsDirectorySeparatorChar == lsRecurseFolder)
+                                        || lsDirectorySeparatorChar == lsRecurseFolder
+                                        || aoProfile.bValue("-RemoveRecurseFolder", false))
                                     )
                             {
                                 // These are used to judge the subfolder emptiness.

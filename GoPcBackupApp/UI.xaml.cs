@@ -185,6 +185,13 @@ namespace GoPcBackup
 
                     this.PopulateTimerDisplay(mcsStoppedText);
                 }
+                else
+                {
+                    if ( null != moMainLoopTimer )
+                        moMainLoopTimer.Start();
+
+                    this.PopulateTimerDisplay(mcsWaitingText);
+                }
             }
         }
         private bool mbMainLoopStopped = false;
@@ -248,6 +255,8 @@ namespace GoPcBackup
                     // Indicate that the backup has run at least once.
                     mbBackupRan = true;
                 }
+
+                System.Windows.Forms.Application.DoEvents();
             }
         }
         private bool mbBackupRunning;
@@ -727,7 +736,7 @@ Other keys will be upgraded.
                         foreach(DictionaryEntry loEntry in loNewProfile)
                             moProfile.Add(loEntry);
 
-                        moProfile.Save();
+                        moProfile.Save(moDoGoPcBackup.sRelativeToProfilePathFile(moProfile.sLoadedPathFile));
 
                         // Reset the configuration panels with the new profile content.
                         this.GetSetConfigurationDefaults(true);
@@ -826,7 +835,7 @@ Give the new software a try. When you're confident everything works as expected,
             this.chkUseTimer_SetChecked((bool)this.chkUseTimer.IsChecked);
         }
 
-        // This kludge is necessary becuase use of the "Checked" and "Unchecked"
+        // This kludge is necessary because use of the "Checked" and "Unchecked"
         // event handlers oddly disable rendering of the check in the box.
         private void chkUseTimer_SetChecked(bool abValue)
         {
@@ -842,6 +851,7 @@ Give the new software a try. When you're confident everything works as expected,
             }
             else
             {
+                this.bMainLoopStopped = false;
                 this.GetSetConfigurationDefaults();
                 this.HideMiddlePanels();
                 this.MiddlePanelTimer.Visibility = Visibility.Visible;
@@ -1856,6 +1866,9 @@ Give the new software a try. When you're confident everything works as expected,
             return liSelectedBackupDevicesBitField;
         }
 
+        [DllImport("user32.dll")]
+        static extern bool SetForegroundWindow(IntPtr hWnd);
+
         // Show any missing selected backup devices in a pop-up message.
         private bool ShowMissingBackupDevices()
         {
@@ -1907,22 +1920,70 @@ Give the new software a try. When you're confident everything works as expected,
                 if ( tvMessageBoxResults.Yes == leShowMissingBackupDevices )
                     gridBackupDevices.Children.Clear();
 
-                if ( !this.bBackupRunning && lbDeviceReattached
-                        && tvMessageBoxResults.Yes == this.Show(
-                                      "The most recent backup " + (moProfile.bValue("-PreviousBackupOk", false)
-                                    ? "was successful, then a backup device was attached."
-                                    : "failed and then a backup device was reattached.")
-                                    + " Attached backup devices should be updated."
-                                    + " The backup scripts update attached backup devices."
-                                    + "\r\n\r\nShall we rerun the backup scripts?"
-                                , "Device Reattached"
-                                , tvMessageBoxButtons.YesNo
-                                , tvMessageBoxIcons.Question
-                                , tvMessageBoxCheckBoxTypes.DontAsk
-                                , "-DeviceReattached"
-                                )
-                            )
-                    this.RerunBackupScripts();
+                if ( !this.bBackupRunning && lbDeviceReattached )
+                {
+                    // Get all backup sets.
+                    tvProfile loBackupSetsProfile = moProfile.oOneKeyProfile("-BackupSet");
+
+                    // Only bother asking if there is only one backup set.
+                    if ( 1 == loBackupSetsProfile.Count )
+                    {
+                        // Display the log for easy perusal.
+                        Process loDisplayLog = new Process();
+                                loDisplayLog.StartInfo.FileName = moProfile.sValue("-DisplayLogCommand", "notepad.exe");
+                                loDisplayLog.StartInfo.Arguments = DoGoPcBackup.sLogPathFile(moProfile);
+                                loDisplayLog.StartInfo.UseShellExecute = true;
+                                loDisplayLog.Start();
+
+                                System.Windows.Forms.Application.DoEvents();
+                                System.Threading.Thread.Sleep(moProfile.iValue("-DisplayLogSleepMS", 200));
+                                SetForegroundWindow(loDisplayLog.MainWindowHandle);
+                                System.Windows.Forms.SendKeys.SendWait(moProfile.sValue("-DisplayLogEOFkeys", "^{END}"));
+
+                        this.ShowMe(false);
+                        this.HideMiddlePanels();
+                        this.DisplayBackupRunning(true);
+
+                        if ( !moProfile.bValue("-Previous1stArchiveOk", false) )
+                        {
+                            if ( tvMessageBoxResults.Yes == this.Show(
+                                              "The most recent backup failed (see log) and then a backup device"
+                                            + " was reattached. Attached backup devices should be updated."
+                                            + " The backup scripts update attached backup devices."
+                                            + "\r\n\r\nShall we rerun the backup scripts anyway?"
+                                        , "Device Reattached"
+                                        , tvMessageBoxButtons.YesNo
+                                        , tvMessageBoxIcons.Question
+                                        , tvMessageBoxCheckBoxTypes.DontAsk
+                                        , "-DeviceReattachedPrevious1stArchiveNotOk"
+                                        )
+                                    )
+                                this.RerunBackupScripts();
+                            else
+                                moProfile.Remove("-PreviousBackupDevicesMissing");
+                        }
+                        else
+                        {
+                            if ( tvMessageBoxResults.Yes == this.Show(
+                                              "The most recent backup " + (moProfile.bValue("-PreviousBackupOk", false)
+                                            ? "was successful, then a backup device was attached."
+                                            : "failed (see log) and then a backup device was reattached.")
+                                            + " Attached backup devices should be updated."
+                                            + " The backup scripts update attached backup devices."
+                                            + String.Format("\r\n\r\nShall we rerun the backup scripts{0}?", moProfile.bValue("-PreviousBackupOk", false) ? "" : " anyway")
+                                        , "Device Reattached"
+                                        , tvMessageBoxButtons.YesNo
+                                        , tvMessageBoxIcons.Question
+                                        , tvMessageBoxCheckBoxTypes.DontAsk
+                                        , "-DeviceReattached" + (moProfile.bValue("-PreviousBackupOk", false) ? "PreviousBackupOk" : "PreviousBackupNotOk")
+                                        )
+                                    )
+                                this.RerunBackupScripts();
+                            else
+                                moProfile.Remove("-PreviousBackupDevicesMissing");
+                        }
+                    }
+                }
             }
 
             mbInShowMissingBackupDevices = false;
@@ -2127,7 +2188,6 @@ Give the new software a try. When you're confident everything works as expected,
         {
             this.DisplayBackupRunning(false);
         }
-
         private void DisplayBackupRunning(bool abShowBackupRan)
         {
             if ( this.bBackupRunning || (abShowBackupRan && mbBackupRan) )
@@ -2342,7 +2402,7 @@ If you would prefer to finish this setup at another time, you can close now and 
                     // The exit code is defined in the script as a combination of two integers-
                     // a bit field of found backup devices and a count of copy failures (99 max).
                     // The integer part of the composite number is the bit field.
-                    double ldCompositeResult = moDoGoPcBackup.iBackupDoneScriptCopyFailuresWithBitField(true) / 100.0;
+                    double ldCompositeResult = moDoGoPcBackup.iBackupDoneScriptCopyFailuresWithBitField() / 100.0;
 
                     // The fractional part (x 100) is the actual number of copy failures.
                     int liCopyFailures = (int)Math.Round(100 * (ldCompositeResult - (int)ldCompositeResult));
