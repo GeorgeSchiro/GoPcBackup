@@ -219,12 +219,18 @@ Options and Features
 
             Set this switch True and nothing will be displayed when the task runs.
 
+            Note: This switch applies only to console applications.
+                  It is ignored for other app types (ie. windows apps).
+
         -DelaySecs=0
 
             Set this value to greater than zero to delay this task by that number of
-            seconds past its scheduled start time (or at startup). If -OnStartup is
+            seconds - during startup only (ie. -OnStartup is true). If -OnStartup is
             true (see below) this delay will be in addition to the general startup
             tasks delay (if any, see -StartupTasksDelaySecs below).
+
+            Note: Task delays are cumulative. Each task delayed causes subsequent
+                  tasks to be delayed as well (again, during startup only).
 
         -OnStartup=False
 
@@ -307,8 +313,8 @@ Options and Features
     overwritten from the content of -BackupBeginScriptHelp. Once used this switch
     will be reset to False.
 
-    Note: the content of -BackupBeginScriptHelp will also be overwritten from the
-    default value embedded in the executable file.
+    Note: The content of -BackupBeginScriptHelp will also be overwritten
+          from the default value embedded in the executable file.
 
 -BackupBeginScriptPathFile=GoPcBackupBegin.cmd
 
@@ -338,8 +344,8 @@ Options and Features
     overwritten from the content of -BackupDoneScriptHelp. Once used this switch
     will be reset to False.
 
-    Note: the content of -BackupDoneScriptHelp will also be overwritten from the
-    default value embedded in the executable file.
+    Note: The content of -BackupDoneScriptHelp will also be overwritten
+          from the default value embedded in the executable file.
 
 -BackupDoneScriptPathFile=GoPcBackupDone.cmd
 
@@ -369,8 +375,8 @@ Options and Features
     overwritten from the content of -BackupFailedScriptHelp. Once used this switch
     will be reset to False.
 
-    Note: the content of -BackupFailedScriptHelp will also be overwritten from the
-    default value embedded in the executable file.
+    Note: The content of -BackupFailedScriptHelp will also be overwritten
+          from the default value embedded in the executable file.
 
 -BackupFailedScriptPathFile=GoPcBackupFailed.cmd
 
@@ -508,7 +514,7 @@ Options and Features
             (see -AgeDays above). Wildcards are expected but not required
             (you can reference a single file if you like).
 
-            Note: the -ApplyDeletionLimit switch (see above) applies to
+            Note: The -ApplyDeletionLimit switch (see above) applies to
                   each occurrence of this value separately. In other words,
                   each -FilesToDelete file specification is evaluated for
                   a deletion limit count as a separate collection of files
@@ -727,6 +733,13 @@ Options and Features
     Set this switch True and the list of deleted files will be displayed in a 
     pop-up window.
 
+-ShowLogAfterReattachment=False
+
+    Set this switch True to display the full process log file (see -LogPathFile
+    above) whenever a backup device is reattached. This can be helpful to decide
+    if the "backup done" script should be rerun (see -BackupDoneScriptPathFile
+    above) after a missing backup device has been reattached to this PC.
+
 -ShowProfile=False
 
     Set this switch True to immediately display the entire contents of the profile
@@ -823,11 +836,6 @@ Options and Features
     Set this switch True and the zip compression tool will be automatically
     overwritten from the content embedded in the executable file. Once used
     this switch will be reset to False.
-
--ZipToolLastRunCmdPathFile=Run Last Backup.cmd
-
-    This is a script file (text), which contains a copy of the last ZIP tool
-    command line executed.
 
 
 Notes:

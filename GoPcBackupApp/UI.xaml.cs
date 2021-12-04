@@ -460,7 +460,7 @@ namespace GoPcBackup
 
             if ( !moProfile.bValue("-AllConfigWizardStepsCompleted", false) )
             {
-                if ( moProfile.bValue("-LicenseAccepted", false) )
+                if ( moProfile.bValue("-LicenseAccepted", false) || !moProfile.bSaveEnabled )
                 {
                     this.DisplayWizard();
                 }
@@ -482,7 +482,7 @@ namespace GoPcBackup
                                 , lsLicenseCaption), lsLicenseCaption, tvMessageBoxIcons.Information, 3000);
 
                         loLicense = new ScrollingText(moDoGoPcBackup.sFileAsStream(
-                                              moProfile.sRelativeToProfilePathFile(lsLicensePathFile))
+                                              moProfile.sRelativeToExePathFile(lsLicensePathFile))
                                             , lsLicenseCaption, true);
                         loLicense.TextBackground = Brushes.LightYellow;
                         loLicense.OkButtonText = "Accept";
@@ -736,7 +736,7 @@ Other keys will be upgraded.
                         foreach(DictionaryEntry loEntry in loNewProfile)
                             moProfile.Add(loEntry);
 
-                        moProfile.Save(moDoGoPcBackup.sRelativeToProfilePathFile(moProfile.sLoadedPathFile));
+                        moProfile.Save();
 
                         // Reset the configuration panels with the new profile content.
                         this.GetSetConfigurationDefaults(true);
@@ -1666,14 +1666,14 @@ Give the new software a try. When you're confident everything works as expected,
                                                     lsProgramsFolderPrefix.Split(Path.DirectorySeparatorChar)[1]);
 
                 if ( !Directory.Exists(this.FolderToBackup.Text) )
-                    lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
+                    lsMessage += (String.IsNullOrEmpty(lsMessage) ? "" : Environment.NewLine + Environment.NewLine)
                             + "Step 1. Select a backup folder that exists."
                             ;
                 if (this.FolderToBackup.Text == Path.GetPathRoot(lsSystemFolderPrefix)
                         || this.FolderToBackup.Text.StartsWith(lsSystemFolderPrefix)
                         || this.FolderToBackup.Text.StartsWith(lsProgramsFolderPrefix)
                         )
-                    lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
+                    lsMessage += (String.IsNullOrEmpty(lsMessage) ? "" : Environment.NewLine + Environment.NewLine)
                             + "Step 1. Select a backup folder that is not the system root,"
                             + " not in the system folder and not in the program files folder."
                             ;
@@ -1699,7 +1699,7 @@ Give the new software a try. When you're confident everything works as expected,
                 }
                 catch
                 {
-                    lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
+                    lsMessage += (String.IsNullOrEmpty(lsMessage) ? "" : Environment.NewLine + Environment.NewLine)
                             + "Step 2a. Type a backup filename that is valid for output files."
                             ;
                 }
@@ -1714,14 +1714,14 @@ Give the new software a try. When you're confident everything works as expected,
                 }
                 catch
                 {
-                    lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
+                    lsMessage += (String.IsNullOrEmpty(lsMessage) ? "" : Environment.NewLine + Environment.NewLine)
                             + "Step 2b. Select or type a valid archive folder name."
                             ;
                 }
 
                 if ( (bool)this.UseVirtualMachineHostArchive.IsChecked && !this.VirtualMachineHostArchivePath.Text.StartsWith("\\\\") )
                 {
-                    lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
+                    lsMessage += (String.IsNullOrEmpty(lsMessage) ? "" : Environment.NewLine + Environment.NewLine)
                             + "Step 2c. Select or type a valid VM host archive share name."
                             ;
                 }
@@ -1729,7 +1729,7 @@ Give the new software a try. When you're confident everything works as expected,
                 if ( (bool)this.UseConnectVirtualMachineHost.IsChecked 
                         && ("" == this.VirtualMachineHostUsername.Text || "" == this.VirtualMachineHostPassword.Text ) )
                 {
-                    lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
+                    lsMessage += (String.IsNullOrEmpty(lsMessage) ? "" : Environment.NewLine + Environment.NewLine)
                             + "Step 2d. Select or type a valid VM host archive share username and password."
                             ;
                 }
@@ -1749,7 +1749,7 @@ Give the new software a try. When you're confident everything works as expected,
                 DateTime ldtBackupTime;
 
                 if ( !DateTime.TryParse(BackupTime.Text, out ldtBackupTime) )
-                    lsMessage += (null == lsMessage ? "" : Environment.NewLine + Environment.NewLine)
+                    lsMessage += (String.IsNullOrEmpty(lsMessage) ? "" : Environment.NewLine + Environment.NewLine)
                             + "Step 4. Select a valid backup time."
                             ;
             }
@@ -1771,7 +1771,7 @@ Give the new software a try. When you're confident everything works as expected,
                 moProfile.Save();
             }
 
-            return null == lsMessage;
+            return String.IsNullOrEmpty(lsMessage);
         }
 
         private bool bValidateConfigDetailsValues(bool abVerifyAllTabs)
@@ -1791,7 +1791,7 @@ Give the new software a try. When you're confident everything works as expected,
             if ( null != lsMessage )
                 this.ShowWarning(lsMessage, lsCaption);
 
-            return null == lsMessage;
+            return String.IsNullOrEmpty(lsMessage);
         }
 
         private void ConfigWizardTabs_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1928,17 +1928,20 @@ Give the new software a try. When you're confident everything works as expected,
                     // Only bother asking if there is only one backup set.
                     if ( 1 == loBackupSetsProfile.Count )
                     {
-                        // Display the log for easy perusal.
-                        Process loDisplayLog = new Process();
-                                loDisplayLog.StartInfo.FileName = moProfile.sValue("-DisplayLogCommand", "notepad.exe");
-                                loDisplayLog.StartInfo.Arguments = DoGoPcBackup.sLogPathFile(moProfile);
-                                loDisplayLog.StartInfo.UseShellExecute = true;
-                                loDisplayLog.Start();
+                        if ( moProfile.bValue("-ShowLogAfterReattachment", false) )
+                        {
+                            // Display the entire log for easy perusal.
+                            Process loDisplayLog = new Process();
+                                    loDisplayLog.StartInfo.FileName = moProfile.sValue("-DisplayLogCommand", "notepad.exe");
+                                    loDisplayLog.StartInfo.Arguments = DoGoPcBackup.sLogPathFile(moProfile);
+                                    loDisplayLog.StartInfo.UseShellExecute = true;
+                                    loDisplayLog.Start();
 
-                                System.Windows.Forms.Application.DoEvents();
-                                System.Threading.Thread.Sleep(moProfile.iValue("-DisplayLogSleepMS", 200));
-                                SetForegroundWindow(loDisplayLog.MainWindowHandle);
-                                System.Windows.Forms.SendKeys.SendWait(moProfile.sValue("-DisplayLogEOFkeys", "^{END}"));
+                                    System.Windows.Forms.Application.DoEvents();
+                                    System.Threading.Thread.Sleep(moProfile.iValue("-DisplayLogSleepMS", 200));
+                                    SetForegroundWindow(loDisplayLog.MainWindowHandle);
+                                    System.Windows.Forms.SendKeys.SendWait(moProfile.sValue("-DisplayLogEOFkeys", "^{END}"));
+                        }
 
                         this.ShowMe(false);
                         this.HideMiddlePanels();
@@ -2363,7 +2366,7 @@ If you would prefer to finish this setup at another time, you can close now and 
                         {
                             tvProfile loBackupDoneArgs = new tvProfile(moProfile.sValue("-BackupDoneArgs", ""));
                             if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = loBackupDoneArgs["-LocalArchivePath"].ToString() != moDoGoPcBackup.sArchivePath();
-                            if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = Path.GetDirectoryName(loBackupDoneArgs["-LogPathFile"].ToString()) != Path.GetDirectoryName(moProfile.sRelativeToProfilePathFile(DoGoPcBackup.sLogPathFile(moProfile)));
+                            if ( !lbLastRunArgsUnstable ) lbLastRunArgsUnstable = Path.GetDirectoryName(loBackupDoneArgs["-LogPathFile"].ToString()) != Path.GetDirectoryName(DoGoPcBackup.sLogPathFile(moProfile));
                         }
                         catch {}
 
