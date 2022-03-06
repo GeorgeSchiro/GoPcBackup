@@ -3307,36 +3307,52 @@ Copy and proceed from there?
                 {
                     string      lsXmlXpath = this.sXmlXpath;
                     XmlDocument loXmlDocument = new XmlDocument();
-                                loXmlDocument.Load(this.sActualPathFile);
-                    XmlNode     loXmlNode = loXmlDocument.SelectSingleNode("configuration/appSettings");
-                                if ( null != loXmlNode )
+                                try
                                 {
-                                    // Replace all application settings already there.
-                                    this.sXmlXpath = "add";
-                                    loXmlNode.InnerXml = this.sXml(false, false);
-                                    this.sXmlXpath = lsXmlXpath;
+                                    this.UnlockProfileFile();
+                                    loXmlDocument.Load(this.sActualPathFile);
                                 }
-                                else
+                                catch (XmlException)
                                 {
-                                    loXmlNode = loXmlDocument.SelectSingleNode("configuration");
-                                    if ( null == loXmlNode )
+                                    tvProfile   loProfie = new tvProfile(this.sCommandLine());
+                                                this.Load(this.sActualPathFile, tvProfileLoadActions.Overwrite);
+                                                this.LoadFromCommandLine(loProfie.sCommandLine(), tvProfileLoadActions.Merge);
+
+                                    lsFileAsStream = this.sXml(true, false) + this.sNewLine;
+                                }
+
+                    if ( null == lsFileAsStream )
+                    {
+                        XmlNode     loXmlNode = loXmlDocument.SelectSingleNode("configuration/appSettings");
+                                    if ( null != loXmlNode )
                                     {
-                                        throw new Exception("XML configuration tags missing. Can't continue.");
+                                        // Replace all application settings already there.
+                                        this.sXmlXpath = "add";
+                                        loXmlNode.InnerXml = this.sXml(false, false);
+                                        this.sXmlXpath = lsXmlXpath;
                                     }
                                     else
                                     {
-                                        // Add an application settings section.
-                                        this.sXmlXpath = "appSettings/add";
-                                        XmlDocumentFragment loXmlDocumentFragment = loXmlDocument.CreateDocumentFragment();
-                                                            loXmlDocumentFragment.InnerXml = this.sXml(false, false);
+                                        loXmlNode = loXmlDocument.SelectSingleNode("configuration");
+                                        if ( null == loXmlNode )
+                                        {
+                                            throw new Exception("XML configuration tags missing. Can't continue.");
+                                        }
+                                        else
+                                        {
+                                            // Add an application settings section.
+                                            this.sXmlXpath = "appSettings/add";
+                                            XmlDocumentFragment loXmlDocumentFragment = loXmlDocument.CreateDocumentFragment();
+                                                                loXmlDocumentFragment.InnerXml = this.sXml(false, false);
 
-                                        loXmlDocument.DocumentElement.InsertBefore(loXmlDocumentFragment, loXmlDocument.DocumentElement.FirstChild);
-                                        this.sXmlXpath = lsXmlXpath;
+                                            loXmlDocument.DocumentElement.InsertBefore(loXmlDocumentFragment, loXmlDocument.DocumentElement.FirstChild);
+                                            this.sXmlXpath = lsXmlXpath;
+                                        }
                                     }
-                                }
 
-                    // Replace entities since they have no impact on subsequent successful XML reads.
-                    lsFileAsStream = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + this.sNewLine + XDocument.Parse(loXmlDocument.InnerXml).ToString().Replace("&#xD;&#xA;", this.sNewLine) + this.sNewLine;
+                        // Replace entities since they have no impact on subsequent successful XML reads.
+                        lsFileAsStream = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + this.sNewLine + XDocument.Parse(loXmlDocument.InnerXml).ToString().Replace("&#xD;&#xA;", this.sNewLine) + this.sNewLine;
+                    }
                 }
             }
             else
@@ -3461,7 +3477,7 @@ Copy and proceed from there?
                     try
                     {
                         if ( -1 != this.sInputCommandLineArray[0].IndexOf(".vshost.")
-                                || this.sRelativeToProfilePathFile(this.sInputCommandLineArray[0]) == this.sExePathFile )
+                                || this.sRelativeToExePathFile(this.sInputCommandLineArray[0]) == this.sExePathFile )
                         {
                             lsFirstArg = this.sInputCommandLineArray[1];
                         }
@@ -3494,6 +3510,8 @@ Copy and proceed from there?
             {
                 // Load the referenced profile file.
                 tvProfile   loNewProfile = new tvProfile();
+                            loNewProfile.bDefaultFileReplaced = true;
+                            loNewProfile.bEnableFileLock = false;
                             loNewProfile.sInputCommandLineArray = this.sInputCommandLineArray;
                             loNewProfile.eFileCreateAction = this.eFileCreateAction;
                             loNewProfile.bUseXmlFiles = this.bUseXmlFiles;
@@ -3528,8 +3546,6 @@ Copy and proceed from there?
                     this.LoadFromCommandLineArray(loNewProfile.sCommandLineArray(), tvProfileLoadActions.Overwrite);
                     this.bDefaultFileReplaced = true;
                 }
-
-                loNewProfile.UnlockProfileFile();
             }
         }
 
@@ -3601,7 +3617,12 @@ Copy and proceed from there?
                 if ( this.bDefaultFileReplaced )
                 {
                     // Reuse the replacement pathfile.
-                    this.Save();
+                    string  lsTmpPathfile = this.sRelativeToProfilePathFile(Guid.NewGuid().ToString());
+                            this.Save(lsTmpPathfile);           // This allows for an XmlDocument.Load()
+                            File.Delete(this.sLoadedPathFile);  // of the original file during the save.
+                            File.Move(lsTmpPathfile, this.sLoadedPathFile);
+
+                    this.sActualPathFile = this.sLoadedPathFile;
                 }
                 else
                 {
