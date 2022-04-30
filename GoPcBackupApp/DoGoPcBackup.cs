@@ -672,10 +672,9 @@ A brief description of each feature follows.
 
 -SaveSansCmdLine=True
 
-    Set this switch False to leave the profile file untouched after a command line
-    has been passed to the EXE and merged with the profile. When true, everything
-    but command line keys will be saved. When false, not even status information
-    will be written to the profile file (ie. ""{INI}"").
+    Set this switch False to allow merged command-lines to be written to
+    the profile file (ie. ""{INI}""). When True, everything
+    but command-line keys will be saved.
 
 -SelectedBackupDevices= NO DEFAULT VALUE
 
@@ -911,9 +910,14 @@ Notes:
                             if ( loProfile.bValue("-RunOncePrompts", true) && !loProfile.bValue("-NoPrompts", false) )
                             {
                                 if ( lbBackupResult )
+                                {
                                     tvMessageBox.Show(null, "Backup finished successfully.");
+                                }
                                 else
+                                {
+                                    Environment.ExitCode = 1;
                                     tvMessageBox.ShowError(null, "Backup failed. Check log for errors.");
+                                }
                             }
                         }
                         else
@@ -941,6 +945,7 @@ Notes:
             }
             catch (SecurityException ex)
             {
+                Environment.ExitCode = 1;
                 DoGoPcBackup.LogIt(loProfile, DoGoPcBackup.sExceptionMessage(ex));
 
                 if ( null == loProfile || !loProfile.bValue("-NoPrompts", false) )
@@ -948,6 +953,7 @@ Notes:
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 DoGoPcBackup.LogIt(loProfile, DoGoPcBackup.sExceptionMessage(ex));
 
                 if ( null == loProfile || !loProfile.bValue("-NoPrompts", false) )
@@ -1487,6 +1493,7 @@ Notes:
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 this.ShowError(ex.Message, "Cleanup Failed");
             }
 
@@ -1576,6 +1583,7 @@ Notes:
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 this.ShowError(ex.Message, "Backup Failed");
             }
 
@@ -1741,6 +1749,7 @@ Notes:
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 this.ShowError(string.Format("File Write Failure: \"{0}\"\r\n"
                         , lsDeletedFileListOutputPathFile) + ex.Message
                         , "Failed Writing File"
@@ -1778,6 +1787,7 @@ Notes:
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 lbKillProcess = false;
                 this.LogIt(String.Format("Orderly bKillProcess() Failed on PID={0} (\"{1}\")", liProcessId, ex.Message));
             }
@@ -1801,6 +1811,7 @@ Notes:
                 }
                 catch (Exception ex)
                 {
+                    Environment.ExitCode = 1;
                     lbKillProcess = false;
                     this.LogIt(String.Format("Forced bKillProcess() Failed on PID={0} (\"{1}\")", liProcessId, ex.Message));
                 }
@@ -1904,6 +1915,7 @@ No file cleanup will be done until you update the configuration.
                 }
                 catch (Exception ex)
                 {
+                    Environment.ExitCode = 1;
                     this.ShowError(string.Format("File Read Failure: \"{0}\"\r\n"
                             , asSourcePathFile) + ex.Message
                             , "Failed Reading File"
@@ -1917,6 +1929,7 @@ No file cleanup will be done until you update the configuration.
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 this.ShowError(ex.Message);
             }
 
@@ -2082,6 +2095,7 @@ No file cleanup will be done until you update the configuration.
                     }
                     catch (Exception ex)
                     {
+                        Environment.ExitCode = 1;
                         lbBackupFiles = false;
                         if ( null != this.oUI )
                         this.oUI.bBackupRunning = false;
@@ -2113,6 +2127,7 @@ No file cleanup will be done until you update the configuration.
                                 }
                                 catch (Exception ex)
                                 {
+                                    Environment.ExitCode = 1;
                                     lbBackupFiles = false;
                                     if ( null != this.oUI )
                                     this.oUI.bBackupRunning = false;
@@ -2277,6 +2292,7 @@ cd ""{1}""
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 lbBackupFiles = false;
                 if ( null != this.oUI )
                 this.oUI.bBackupRunning = false;
@@ -2647,6 +2663,7 @@ cd ""{1}""
                         }
                         catch (Exception ex)
                         {
+                            Environment.ExitCode = 1;
                             this.ShowError(ex.Message, String.Format("Failed starting task: {0}", lsCommandEXE));
                         }
                     }
@@ -2654,6 +2671,7 @@ cd ""{1}""
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 this.ShowError(ex.Message, "Add Tasks Failed");
             }
         }
@@ -2842,6 +2860,7 @@ exit  %Errors%
                     }
                     catch (Exception ex)
                     {
+                        Environment.ExitCode = 1;
                         this.ShowError(string.Format("File Write Failure: \"{0}\"\r\n"
                                 , lsBackupBeginScript) + ex.Message
                                 , "Failed Writing File"
@@ -2942,6 +2961,7 @@ exit  %Errors%
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 ++liBackupBeginScriptErrors;
                 this.SetBackupFailed();
                 this.ShowError(ex.Message, "Failed Running \"Backup Begin\" Script");
@@ -3155,6 +3175,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                     }
                     catch (Exception ex)
                     {
+                        Environment.ExitCode = 1;
                         this.ShowError(string.Format("File Write Failure: \"{0}\"\r\n"
                                 , lsBackupDoneScript) + ex.Message
                                 , "Failed Writing File"
@@ -3280,6 +3301,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 ++liBackupDoneScriptCopyFailuresWithBitField;
                 this.SetBackupFailed();
                 this.ShowError(ex.Message, "Failed Running \"Backup Done\" Script");
@@ -3438,6 +3460,7 @@ echo del %FileSpec%                                                             
                     }
                     catch (Exception ex)
                     {
+                        Environment.ExitCode = 1;
                         this.ShowError(string.Format("File Write Failure: \"{0}\"\r\n"
                                 , lsBackupFailedScript) + ex.Message
                                 , "Failed Writing File"
@@ -3532,6 +3555,7 @@ echo del %FileSpec%                                                             
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 this.SetBackupFailed();
                 this.ShowError(ex.Message, "Failed Running \"Backup Failed\" Script");
             }
@@ -3618,6 +3642,7 @@ echo del %FileSpec%                                                             
                 }
                 catch (Exception ex)
                 {
+                    Environment.ExitCode = 1;
                     this.ShowError(string.Format("File Write Failure: \"{0}\"\r\n"
                             , lsDeletedFileListOutputPathFile) + ex.Message
                             , "Failed Writing File"
@@ -3741,6 +3766,7 @@ echo del %FileSpec%                                                             
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 this.ShowError(ex.Message, "Unanticipated Error");
 
                 lbCleanupFiles = false;
@@ -3848,6 +3874,7 @@ echo del %FileSpec%                                                             
                                 }
                                 catch (Exception ex)
                                 {
+                                    Environment.ExitCode = 1;
                                     if ( !lbDisplayFileDeletionErrors )
                                         this.LogIt(string.Format("Folder: \"{0}\"\r\n", lsPath) + ex.Message);
                                     else
@@ -3932,6 +3959,7 @@ echo del %FileSpec%                                                             
                                     }
                                     catch (Exception ex)
                                     {
+                                        Environment.ExitCode = 1;
                                         if ( !lbDisplayFileDeletionErrors )
                                             this.LogIt(string.Format("File: \"{0}\"\r\n", loFileSysInfo.FullName) + ex.Message);
                                         else
@@ -3964,6 +3992,7 @@ echo del %FileSpec%                                                             
                                     }
                                     catch (Exception ex)
                                     {
+                                        Environment.ExitCode = 1;
                                         if ( !lbDisplayFileDeletionErrors )
                                             this.LogIt(string.Format("Folder: \"{0}\"\r\n", lsPath) + ex.Message);
                                         else
@@ -3992,6 +4021,7 @@ echo del %FileSpec%                                                             
                                 }
                                 catch (Exception ex)
                                 {
+                                    Environment.ExitCode = 1;
                                     if ( !lbDisplayFileDeletionErrors )
                                         this.LogIt(string.Format("Folder: \"{0}\"\r\n", lsSubfolder) + ex.Message);
                                     else
@@ -4042,6 +4072,7 @@ echo del %FileSpec%                                                             
                                             }
                                             catch (Exception ex)
                                             {
+                                                Environment.ExitCode = 1;
                                                 if ( !lbDisplayFileDeletionErrors )
                                                     this.LogIt(string.Format("Folder: \"{0}\"\r\n", lsSubfolder) + ex.Message);
                                                 else
@@ -4091,6 +4122,7 @@ echo del %FileSpec%                                                             
                                     }
                                     catch (Exception ex)
                                     {
+                                        Environment.ExitCode = 1;
                                         if ( !lbDisplayFileDeletionErrors )
                                             this.LogIt(string.Format("Folder: \"{0}\"\r\n", lsSubfolder) + ex.Message);
                                         else
@@ -4108,6 +4140,7 @@ echo del %FileSpec%                                                             
             }
             catch (Exception ex)
             {
+                Environment.ExitCode = 1;
                 this.ShowError(ex.Message, "Unanticipated Error");
 
                 lbCleanupPathFileSpec = false;

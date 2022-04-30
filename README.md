@@ -702,10 +702,9 @@ Options and Features
 
 -SaveSansCmdLine=True
 
-    Set this switch False to leave the profile file untouched after a command line
-    has been passed to the EXE and merged with the profile. When true, everything
-    but command line keys will be saved. When false, not even status information
-    will be written to the profile file (ie. "GoPcBackup.exe.txt").
+    Set this switch False to allow merged command-lines to be written to
+    the profile file (ie. "GoPcBackup.exe.txt"). When True, everything
+    but command-line keys will be saved.
 
 -SelectedBackupDevices= NO DEFAULT VALUE
 
