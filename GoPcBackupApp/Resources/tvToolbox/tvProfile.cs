@@ -141,7 +141,7 @@ namespace tvToolbox
     /// Author:     George Schiro (GeoCode@Schiro.name)
     /// </p>
     /// <p>
-    /// Version:    2.27
+    /// Version:    2.28
     /// Copyright:  1996 - 2121
     /// </p>
     /// </summary>
@@ -1267,10 +1267,15 @@ namespace tvToolbox
         {
             get
             {
-                if ( this.bAddStandardDefaults || this.ContainsKey("-SaveProfile") )
+                if ( this.bAddStandardDefaults || this.ContainsKey(mcsSaveKey) )
                 {
                     if ( mbSaveEnabled )
-                        mbSaveEnabled = this.bValue("-SaveProfile", mbSaveEnabled);
+                    {
+                        if ( mbInputCommandLineArraySaveEnabledSet )
+                            mbSaveEnabled = mbInputCommandLineArraySaveEnabled;
+                        else
+                            mbSaveEnabled = this.bValue(mcsSaveKey, mbSaveEnabled);
+                    }
                 }
 
                 return mbSaveEnabled;
@@ -1298,7 +1303,7 @@ namespace tvToolbox
                 if ( mbSaveSansCmdLine && null == moInputCommandLineProfile )
                 {
                     moInputCommandLineProfile = new tvProfile();
-                    moInputCommandLineProfile.LoadFromCommandLineArray(this.msInputCommandLineArray, tvProfileLoadActions.Append);
+                    moInputCommandLineProfile.LoadFromCommandLineArray(this.sInputCommandLineArray, tvProfileLoadActions.Append);
 
                     moMatchCommandLineProfile = new tvProfile();
 
@@ -1583,8 +1588,26 @@ namespace tvToolbox
             set
             {
                 msInputCommandLineArray = value;
+
+                string lsSaveKey = mcsSaveKey.ToLower();
+
+                if ( null != msInputCommandLineArray )
+                    foreach(string lsItem in msInputCommandLineArray)
+                    {
+                        string[] lsKeyValueArray = lsItem.ToLower().Split(mccAsnMark);
+
+                        if ( lsKeyValueArray[0].Trim() == lsSaveKey )
+                        {
+                            mbInputCommandLineArraySaveEnabledSet = true;
+                            mbInputCommandLineArraySaveEnabled = 1 == lsKeyValueArray.Length || "true" == lsKeyValueArray[1].Trim();
+                            this[mcsSaveKey] = mbInputCommandLineArraySaveEnabled;
+                            break;
+                        }
+                    }
             }
         }
+        private bool     mbInputCommandLineArraySaveEnabledSet;
+        private bool     mbInputCommandLineArraySaveEnabled;
         private string[] msInputCommandLineArray;
 
         /// <summary>
@@ -2701,14 +2724,15 @@ namespace tvToolbox
                             Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), lsFilnameOnly);
                     string  lsNewExePathFile = Path.Combine(lsNewPath, Path.GetFileName(this.sExePathFile));
                     bool    lbHasArgs = false;
-                            foreach ( string lsItem in this.sInputCommandLineArray )
-                            {
-                                if ( lsItem.Trim().StartsWith(mcsArgMark) )
+                            if ( null != this.sInputCommandLineArray )
+                                foreach ( string lsItem in this.sInputCommandLineArray )
                                 {
-                                    lbHasArgs = true;
-                                    break;
+                                    if ( lsItem.Trim().StartsWith(mcsArgMark) )
+                                    {
+                                        lbHasArgs = true;
+                                        break;
+                                    }
                                 }
-                            }
 
                     // If the EXE is not already in a folder with a matching name and if
                     // the EXE is not already installed in a typical installation folder, 
@@ -3809,29 +3833,30 @@ Copy and proceed from there?
 
 
         private const string        mcsLoadSaveDefaultExtension = ".txt";
-        private const char          mccArgMark = '-';
-        private const string        mcsArgMark = "-";
-        private const char          mccAsnMark = '=';
-        private const string        mcsAsnMark = "=";
+        private const char          mccArgMark      = '-';
+        private const string        mcsArgMark      = "-";
+        private const char          mccAsnMark      = '=';
+        private const string        mcsAsnMark      = "=";
         private const string        mcsBlockBegMark = "[";
         private const string        mcsBlockEndMark = "]";
-        private const char          mccNulMark = '\u0000';
-        private string              mcsNulMark = '\u0000'.ToString();
-        private const char          mccQteMark1 = '\"';
-        private const string        mcsQteMark1 = "\"";
-        private const char          mccQteMark2 = '\'';
-        private const string        mcsQteMark2 = "'";
-        private const char          mccSpcMark = ' ';
-        private const string        mcsSpcMark = " ";
-        private const char          mccSplitMark = '\u0001';
-        private string              mcsSplitMark = '\u0001'.ToString();
+        private const char          mccNulMark      = '\u0000';
+        private string              mcsNulMark      = '\u0000'.ToString();
+        private const char          mccQteMark1     = '\"';
+        private const string        mcsQteMark1     = "\"";
+        private const char          mccQteMark2     = '\'';
+        private const string        mcsQteMark2     = "'";
+        private const char          mccSpcMark      = ' ';
+        private const string        mcsSpcMark      = " ";
+        private const char          mccSplitMark    = '\u0001';
+        private string              mcsSplitMark    = '\u0001'.ToString();
+        private string              mcsSaveKey      = "-SaveProfile";
         private FileStream          moFileStreamProfileFileLock;
         private tvProfile           moInputCommandLineProfile;
         private tvProfile           moMatchCommandLineProfile;
         private static int          mciIntSizeInBytes = 4;
-        private static string       mcsWinFormsAssm = "System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
-        private static string       mcsWinFormsAppType = "System.Windows.Forms.Application";
-        private static string       mcsWinFormsMsgBoxType = "System.Windows.Forms.MessageBox";
+        private static string       mcsWinFormsAssm         = "System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+        private static string       mcsWinFormsAppType      = "System.Windows.Forms.Application";
+        private static string       mcsWinFormsMsgBoxType   = "System.Windows.Forms.MessageBox";
 
 
         private class tvProfileKeyComparer : IComparer

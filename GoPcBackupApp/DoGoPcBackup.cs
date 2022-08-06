@@ -55,6 +55,7 @@ namespace GoPcBackup
 
         private bool                mbAddTasksStartupDelayDone;
         private bool                mbHasNoDeletionGroups;
+        private int                 miAddTasksNextTotalMinutes          = int.MinValue;
         private int                 miBackupSets;
         private int                 miBackupSetsGood;
         private int                 miBackupSetsRun;
@@ -937,9 +938,9 @@ Notes:
                                 loMain.Run(loUI);
                             }
                             catch (ObjectDisposedException) {}
-                        }
 
-                        GC.KeepAlive(loMutex);
+                            GC.KeepAlive(loMutex);
+                        }
                     }
                 }
             }
@@ -2398,16 +2399,13 @@ cd ""{1}""
         }
         public void DoAddTasks(bool abStartup)
         {
-            if ( !abStartup )
-            {
-                // Start all scheduled tasks at the top of the minute.
-                if ( 0 != DateTime.Now.Second )
-                    return;
+            // Resetting this once per day gets us back to the top.
+            if ( DateTime.Now.TimeOfDay.TotalSeconds < 1 )
+                miAddTasksNextTotalMinutes = int.MinValue;
 
-                // Pause the background task timer 1 second to guarantee we won't run the same tasks twice in the same minute.
-                if ( null != moBackgroundLoopTimer )
-                    moBackgroundLoopTimer.Change(1000, moProfile.iValue("-BackgroundLoopSleepMS", 200));
-            }
+            // Do nothing until the next task time (if not just starting up).
+            if ( !abStartup && DateTime.Now.TimeOfDay.TotalMinutes < miAddTasksNextTotalMinutes )
+                return;
 
             try
             {
@@ -2483,15 +2481,43 @@ cd ""{1}""
                     }
                 }
 
-                int liProcessCount = 0;
+                DateTime    ldtTasksStarted = DateTime.Now;
+                int         liTasksStartedTotalMinutes = (int)ldtTasksStarted.TimeOfDay.TotalMinutes;
+                int         liProcessCount = 0;
+
+                miAddTasksNextTotalMinutes = int.MaxValue;
 
                 foreach (DictionaryEntry loEntry in moAddTasksProfile)
                 {
                     tvProfile loAddTask = new tvProfile(loEntry.Value.ToString());
 
-                    bool lbDoTask = !loAddTask.bValue("-TaskDisabled", false);
+                    bool        lbDoTask            = !loAddTask.bValue("-TaskDisabled", false);
+                    DateTime    ldtTaskStartTime    = loAddTask.dtValue("-StartTime", DateTime.MinValue);
+                    int         liTaskTotalMinutes  = (int)ldtTaskStartTime.TimeOfDay.TotalMinutes;
+                    string      lsTaskDaysOfWeek    = loAddTask.sValue("-StartDays", "");
+                    string      lsCommandEXE        = loAddTask.sValue("-CommandEXE", "add task -CommandEXE missing");
+                    string      lsCommandArgs       = loAddTask.sValue("-CommandArgs", "");
 
-                    if ( abStartup )
+                    // Get the next task time.
+                    if ( lbDoTask
+                            && liTaskTotalMinutes > liTasksStartedTotalMinutes
+                            && liTaskTotalMinutes < miAddTasksNextTotalMinutes
+                            && (String.IsNullOrEmpty(lsTaskDaysOfWeek) || this.bListIncludesDay(lsTaskDaysOfWeek, ldtTasksStarted))
+                            )
+                        miAddTasksNextTotalMinutes = liTaskTotalMinutes;
+
+                    if ( !abStartup )
+                    {
+                        if ( lbDoTask )
+                            lbDoTask = DateTime.MinValue != ldtTaskStartTime && liTaskTotalMinutes == liTasksStartedTotalMinutes
+                                    && (String.IsNullOrEmpty(lsTaskDaysOfWeek) || this.bListIncludesDay(lsTaskDaysOfWeek, ldtTasksStarted));
+                                    // If -StartTime is within the current minute, start the task.
+                                    // If -StartDays is specified, run the task only on those days.
+                                    //
+                                    // Note: there is no risk of running the same task twice within the same minute since
+                                    //       the next run-through must wait for a subsequent minute for a subsequent task.
+                    }
+                    else
                     {
                         if ( lbDoTask )
                             lbDoTask = loAddTask.bValue("-OnStartup", false) && !moProfile.bValue("-StartupTasksDisabled", false);
@@ -2510,28 +2536,14 @@ cd ""{1}""
                         if ( lbDoTask && 0 != loAddTask.iValue("-DelaySecs", 0) )
                             System.Threading.Thread.Sleep(1000 * loAddTask.iValue("-DelaySecs", 0));
                     }
-                    else
-                    {
-                        DateTime    ldtTasksStarted = DateTime.Now;
-                        DateTime    ldtTaskStartTime = loAddTask.dtValue("-StartTime", DateTime.MinValue);
-                        string      lsTaskDaysOfWeek = loAddTask.sValue("-StartDays", "");
-
-                        if ( lbDoTask )
-                            lbDoTask = DateTime.MinValue != ldtTaskStartTime && (int)ldtTasksStarted.TimeOfDay.TotalMinutes == (int)ldtTaskStartTime.TimeOfDay.TotalMinutes
-                                    && (String.IsNullOrEmpty(lsTaskDaysOfWeek) || this.bListIncludesDay(lsTaskDaysOfWeek, ldtTasksStarted));
-                                    // If -StartTime is within the current minute, start the task.
-                                    // If -StartDays is specified, run the task only on those days.
-                    }
 
                     if ( lbDoTask )
                     {
-                        string  lsCommandEXE = loAddTask.sValue("-CommandEXE", "add task -CommandEXE missing");
-
                         Process loProcess = new Process();
-                                loProcess.ErrorDataReceived += new DataReceivedEventHandler(this.BackupProcessOutputHandler);
+                                loProcess.ErrorDataReceived  += new DataReceivedEventHandler(this.BackupProcessOutputHandler);
                                 loProcess.OutputDataReceived += new DataReceivedEventHandler(this.BackupProcessOutputHandler);
-                                loProcess.StartInfo.FileName = lsCommandEXE;
-                                loProcess.StartInfo.Arguments = loAddTask.sValue("-CommandArgs", "");
+                                loProcess.StartInfo.FileName  = lsCommandEXE;
+                                loProcess.StartInfo.Arguments = lsCommandArgs;
                                 loProcess.StartInfo.WorkingDirectory = Path.GetDirectoryName(moProfile.sExePathFile);
                                 loAddTask.bValue("-UnloadOnExit", false);
 
