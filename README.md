@@ -274,6 +274,10 @@ Options and Features
             Set this switch True and the task executable will be removed from memory
             (if it's still running) when "GoPcBackup.exe" exits.
 
+        -WindowStyle=Normal
+
+            Alternatively, you can set this to "Minimized" or "Maximized".
+
 
         Here's an example:
 

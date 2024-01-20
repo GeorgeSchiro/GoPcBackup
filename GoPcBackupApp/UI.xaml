@@ -45,14 +45,14 @@
 
             <DockPanel LastChildFill="True">
                 <Canvas>
-                        <Button Name="btnShowHelp" Click="btnShowHelp_Click"
-                                ToolTip="Show Detailed Help"
-                                Style="{StaticResource MainCanvasImageButton}"
-                                HorizontalAlignment="Left"
-                                >
-                            <Image Source="Resources\images\Help.png" />
-                        </Button>
-                    </Canvas>
+                    <Button Name="btnShowHelp" Click="btnShowHelp_Click"
+                            ToolTip="Show Detailed Help"
+                            Style="{StaticResource MainCanvasImageButton}"
+                            HorizontalAlignment="Left"
+                            >
+                        <Image Source="Resources\images\Help.png" />
+                    </Button>
+                </Canvas>
                 <Grid Name="TopPanel" DockPanel.Dock="Top" Height="100" Width="200" Margin="10">
                     <Image Name="LogoImage" Source="Resources\images\GoPC.png" HorizontalAlignment="Center" Height="0" Width="0" />
                 </Grid>
@@ -62,19 +62,19 @@
                             GO
                         </Button>
                         <Button Name="btnSetup" Click="btnSetup_Click" ToolTip="Toggle Setup Wizard" Margin="5,10,5,10" Style="{StaticResource MainCanvasImageButton}">
-                             <Image Source="Resources\images\SetupWizard.png" />
+                            <Image Source="Resources\images\SetupWizard.png" />
                         </Button>
                         <Button Name="btnConfigureDetails" Click="btnConfigureDetails_Click" ToolTip="Toggle Setup Details" Margin="5,10,5,10" Style="{StaticResource MainCanvasImageButton}">
-                             <Image Source="Resources\images\SetupDetails.png" />
+                            <Image Source="Resources\images\SetupDetails.png" />
                         </Button>
                         <Button Name="btnShowTimer" Click="btnShowTimer_Click" ToolTip="Toggle Backup Timer" Margin="5,10,5,10" Style="{StaticResource MainCanvasImageButton}">
-                             <Image Source="Resources\images\ShowTimer.png" />
+                            <Image Source="Resources\images\ShowTimer.png" />
                         </Button>
                         <Button Name="btnShowBackupLogs" Click="btnShowBackupLogs_Click" ToolTip="Show Logs" Margin="5,10,5,10" Style="{StaticResource MainCanvasImageButton}">
-                             <Image Source="Resources\images\ShowLogs.png" />
+                            <Image Source="Resources\images\ShowLogs.png" />
                         </Button>
                         <Button Name="btnShowArchive" Click="btnShowArchive_Click" ToolTip="Show Backup Archive" Margin="5,10,5,10" Style="{StaticResource MainCanvasImageButton}">
-                             <Image Source="Resources\images\ShowArchive.png" />
+                            <Image Source="Resources\images\ShowArchive.png" />
                         </Button>
                     </StackPanel>
                     <StackPanel Name="CloseButtonPanel" Orientation="Horizontal" HorizontalAlignment="Right">
@@ -82,10 +82,10 @@
                             <CheckBox Name="chkUseTimer" Content="Use Timer" ToolTip="Start Timer after Reopen" Click="chkUseTimer_Click" Style="{StaticResource MainCanvasCheckBox}" />
                             <CheckBox Name="chkCloseAndExit" Content="Full Exit" ToolTip="Exit GoPC after Close" Style="{StaticResource MainCanvasCheckBox}" />
                         </StackPanel>
-                            <Button Name="btnClose" Click="mnuExit_Click" ToolTip="Exit to System Tray" HorizontalAlignment="Right" Style="{StaticResource MainCanvasImageButton}">
-                                <Image Source="Resources\images\Exit.png" />
-                            </Button>
-                        </StackPanel>
+                        <Button Name="btnClose" Click="mnuExit_Click" ToolTip="Exit to System Tray" HorizontalAlignment="Right" Style="{StaticResource MainCanvasImageButton}">
+                            <Image Source="Resources\images\Exit.png" />
+                        </Button>
+                    </StackPanel>
                 </Grid>
                 <Grid Name="MiddlePanelConfigWizard" Visibility="Hidden"> <!-- This 'Visibility="Hidden"' kludge is necessary to have the panel sized correctly. -->
                     <Border Style="{StaticResource ConfigWizardBorder}">
@@ -157,7 +157,7 @@
     <Label Grid.Row="1" Grid.Column="0">Local Archive:</Label>    
     <TextBox Width="300" Grid.Row="1" Grid.Column="1" Name="ArchivePath"    Style="{StaticResource ConfigWizardTextSelected}"  />
     <Button Name="btnSetupStep2" Grid.Row="1" Grid.Column="2" Click="btnSetupStep2_Click" Margin="10,0,0,0"  Height="25" Style="{StaticResource ConfigWizardButton}">
-    Select Archive
+        Select Archive
     </Button>
 </Grid>  
 <CheckBox Grid.Row="0" Grid.Column="1" Margin="90,20,10,10" Name="UseVirtualMachineHostArchive" Content='Back up to the virtual machine host (uses backup scripts).'
@@ -176,7 +176,7 @@
     <Label Grid.Row="0" Grid.Column="0">VM Host Archive:</Label>    
     <TextBox Width="300" Grid.Row="0" Grid.Column="1" Name="VirtualMachineHostArchivePath" Style="{StaticResource ConfigWizardTextSelected}"  />
     <Button Name="btnSetupStep3" Grid.Row="0" Grid.Column="2" Click="btnSetupStep3_Click" Margin="10,0,0,0"  Height="25" Style="{StaticResource ConfigWizardButton}">
-    Select Archive
+        Select Archive
     </Button>
 </Grid>                                
 <CheckBox Grid.Row="2" Grid.Column="1" Margin="90,10,10,10" Name="UseConnectVirtualMachineHost" Content="Force reconnect to virtual machine host before each backup." Visibility="Hidden" 

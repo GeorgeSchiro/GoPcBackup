@@ -245,6 +245,10 @@ A brief description of each feature follows.
             Set this switch True and the task executable will be removed from memory
             (if it's still running) when ""{EXE}"" exits.
 
+        -WindowStyle=Normal
+
+            Alternatively, you can set this to ""Minimized"" or ""Maximized"".
+
 
         Here's an example:
 
@@ -2547,10 +2551,11 @@ cd ""{1}""
                                 loProcess.StartInfo.WorkingDirectory = Path.GetDirectoryName(moProfile.sExePathFile);
                                 loAddTask.bValue("-UnloadOnExit", false);
 
-                                // The following subset of parameters are overridden when -TimeoutMinutes is set. This is
-                                // necessary to guarantee IO redirection is handled properly (ie. output goes to the log).
+                                // The following subset of parameters (mostly) are overridden when -TimeoutMinutes is set.
+                                // This is necessary to guarantee IO redirection is handled properly (ie. goes to the log).
                         bool    lbWaitForExitOverride = (loAddTask.iValue("-TimeoutMinutes", 0) > 0);
                                 loProcess.StartInfo.CreateNoWindow          =  lbWaitForExitOverride | loAddTask.bValue("-CreateNoWindow", false);
+                                loProcess.StartInfo.WindowStyle             =  (ProcessWindowStyle)Enum.Parse(typeof(ProcessWindowStyle), loAddTask.sValue("-WindowStyle", "Normal"));
                                 loProcess.StartInfo.UseShellExecute         = !lbWaitForExitOverride & loAddTask.bValue("-UseShellExecute", true);
                                 loProcess.StartInfo.RedirectStandardInput   =  lbWaitForExitOverride | loAddTask.bValue("-RedirectStandardInput", false);
                                 loProcess.StartInfo.RedirectStandardError   =  lbWaitForExitOverride | loAddTask.bValue("-RedirectStandardError", false);
