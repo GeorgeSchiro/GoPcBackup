@@ -858,17 +858,17 @@ Notes:
                                             File.WriteAllText(lsStartupScriptPathFile, File.ReadAllText(lsStartupScriptPathFile)
                                                     .Replace(lsPreviousInstallationFolder, lsCurrentInstallationFolder));
                                     }
-                                    catch (ArgumentException ex)
+                                    catch (ArgumentException)
                                     {
                                         // Ignore an empty lsPreviousInstallationFolder.
                                         if ( !String.IsNullOrEmpty(lsPreviousInstallationFolder) )
-                                            throw ex;
+                                            throw;
                                     }
                                     catch (IOException ex)
                                     {
                                         // Ignore IO conflicts since mcsStartupScript is likely running.
                                         if ( !ex.Message.Contains("being used by another process") )
-                                            throw ex;
+                                            throw;
                                     }
 
                                     if ( !String.IsNullOrEmpty(lsCurrentInstallationFolder) )
@@ -951,7 +951,7 @@ Notes:
             catch (SecurityException ex)
             {
                 Environment.ExitCode = 1;
-                DoGoPcBackup.LogIt(loProfile, DoGoPcBackup.sExceptionMessage(ex));
+                DoGoPcBackup.LogIt(loProfile, DoGoPcBackup.sExceptionMessage(ex, false));
 
                 if ( null == loProfile || !loProfile.bValue("-NoPrompts", false) )
                     tvFetchResource.NetworkSecurityStartupErrorMessage();
@@ -959,7 +959,7 @@ Notes:
             catch (Exception ex)
             {
                 Environment.ExitCode = 1;
-                DoGoPcBackup.LogIt(loProfile, DoGoPcBackup.sExceptionMessage(ex));
+                DoGoPcBackup.LogIt(loProfile, DoGoPcBackup.sExceptionMessage(ex, false));
 
                 if ( null == loProfile || !loProfile.bValue("-NoPrompts", false) )
                     tvFetchResource.ErrorMessage(null, ex.Message);
@@ -1110,9 +1110,9 @@ Notes:
         /// <summary>
         /// Returns the full message string from the given exception object.
         /// </summary>
-        private static string sExceptionMessage(Exception ex)
+        private static string sExceptionMessage(Exception ex, bool abIncludeStackTrace)
         {
-            return ex.Message + (null == ex.InnerException ? "": "; " + ex.InnerException.Message) + "\r\n" + ex.StackTrace;
+            return ex.Message + (null == ex.InnerException ? "": "; " + ex.InnerException.Message) + "\r\n" + (abIncludeStackTrace ? ex.StackTrace : "");
         }
 
         /// <summary>
@@ -1848,7 +1848,7 @@ Notes:
         {
             if ( !this.bNoPrompts )
             {
-                ScrollingText   loErrors = new ScrollingText(asFileAsStream, asCaption);
+                ScrollingText   loErrors = new ScrollingText(this.oUI, asFileAsStream, asCaption);
                                 loErrors.Show();
 
                                 if ( null != this.oUI )
@@ -1869,7 +1869,7 @@ Notes:
 
                     if ( null != lsFileAsStream && !this.bNoPrompts )
                     {
-                        ScrollingText   loFileList = new ScrollingText(lsFileAsStream, "Deleted File List");
+                        ScrollingText   loFileList = new ScrollingText(this.oUI, lsFileAsStream, "Deleted File List");
                                         loFileList.TextBackground = Brushes.LightYellow;
                                         loFileList.TextFontFamily = new FontFamily("Courier New");
                                         loFileList.Show();
@@ -2188,14 +2188,12 @@ cd ""{1}""
                     ));
                     System.Windows.Forms.Application.DoEvents();
 
-                    System.Windows.Forms.Application.DoEvents();
-
                     // Cache arguments passed to subsequent scripts.
                     tvProfile   loArgs = new tvProfile();
                                 loArgs.Add("-BackupOutputPathFile"          , msCurrentBackupOutputPathFile                         );
                                 loArgs.Add("-BackupOutputFilename"          , Path.GetFileName(msCurrentBackupOutputPathFile)       );
                                 loArgs.Add("-BackupBaseOutputFilename"      , Path.GetFileName(this.sBackupOutputPathFileBase())    );
-                                loArgs.Add("-LocalArchivePath"              , this.sArchivePath()                                   );
+                                loArgs.Add("-ArchivePath"                   , this.sArchivePath()                                   );
                                 loArgs.Add("-VirtualMachineHostArchivePath" , moProfile.sValue("-VirtualMachineHostArchivePath", ""));
                                 loArgs.Add("-LogPathFile"                   , DoGoPcBackup.sLogPathFile(moProfile)                  );
 
@@ -2784,24 +2782,24 @@ cd ""{1}""
 ::
 :: You can access parameters prior to backup via the DOS shell command-line:
 ::
-:: %1 = ""MainhostArchive""
+:: %1 = ""VirtualMachineHostArchivePath""
 ::
-::      This is the full UNC specification of the Mainhost archive share.
+::      This is the full UNC specification of the host archive share.
 ::
-:: %2 = ""MainhostShareUsername""
+:: %2 = ""HostShareUsername""
 ::
-::      This is the username needed to connect to the Mainhost network share.
+::      This is the username needed to connect to the host network share.
 ::
-:: %3 = ""MainhostSharePassword""
+:: %3 = ""HostSharePassword""
 ::
-::      This is the password needed to connect to the Mainhost network share.
+::      This is the password needed to connect to the host network share.
 ::
 ::
 :: Note: All arguments will be passed with double quotation marks included.
 ::       So don't use quotes here unless you want ""double double"" quotes.
 ::
 ::
-:: The following example defines a network connection to the Mainhost using
+:: The following example defines a network connection to the host using
 :: ""pw123"" as the password and ""anyone"" as the share username.
 ::
 :: Example:
@@ -2814,24 +2812,27 @@ cd ""{1}""
 :: The ""Errors"" environment variable is used to keep count of errors to be returned.
 set Errors=0
 
+set VirtualMachineHostArchivePath=%1
+set HostShareUsername=%2
+
 :: Initialize the ""backup begin"" script log file. It's for this run only.
-echo.                                      > ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo. > ""{BackupBeginScriptOutputPathFile}"" 2>&1
 "
 +
 (!lbUseMainhostArchive || !lbUseConnectMainhost ? "" :
 @"
 echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
-echo Connect to Mainhost archive:                                           >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo Connect to host archive:                                               >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
-echo net use %1  [password not shown]  /user:[username not shown]           >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
-     net use %1  %3  /user:%2                                               >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo net use %VirtualMachineHostArchivePath%  [password not shown]  /user:[username not shown] >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+     net use %VirtualMachineHostArchivePath%  %3  /user:%HostShareUsername% >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
 
-     :: Ignore Mainhost connection errors.
+     :: Ignore host connection errors.
      ::if ERRORLEVEL 1 set /A Errors += 1
-echo Note: 'net use %1' errors are ignored.                                 >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
+echo Note: 'net use %VirtualMachineHostArchivePath%' errors are ignored.    >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupBeginScriptOutputPathFile}"" 2>&1
 
-:: Here is some sample network connection script that may be helpful (replace brackets with darts):
+:: Here is sample network connection script that may be helpful (replace brackets with darts):
 ::
 :: echo Disconnect drive Z:                                                    ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
 :: echo.                                                                       ]] ""{BackupBeginScriptOutputPathFile}"" 2>&1
@@ -3051,13 +3052,13 @@ if %1=="""" goto :EOF
 ::      This is the backup filename with no path and no date. It's just
 ::      the base output filename name with the filename extension.
 ::
-:: %4 = ""LocalArchivePath""
+:: %4 = ""ArchivePath""
 ::
 ::      This is the local archive folder.
 ::
-:: %5 = ""VirtualMachineHostArchive""
+:: %5 = ""VirtualMachineHostArchivePath""
 ::
-::      This is the virtual machine host archive share name.
+::      This is the full UNC specification of the host archive share.
 ::
 :: %6 = ""LogPathFile""
 ::
@@ -3083,8 +3084,18 @@ if %1=="""" goto :EOF
 ::
 ::                      ^^  Replace brackets with darts.
 
-:: The ""CopyFailures"" environment variable is used to keep count of errors to be returned.
+:: The ""CopyCount"" environment variable keeps count of the number of copies made (to devices).
+set CopyCount=0
+
+:: The ""CopyFailures"" environment variable keeps count of the number of errors to be returned.
 set CopyFailures=0
+
+set BackupOutputPathFile=%1
+set BackupOutputFilename=%2
+set BackupBaseOutputFilename=%3
+set ArchivePath=%4
+set VirtualMachineHostArchivePath=%5
+set LogPathFile=%6
 
 :: Initialize the ""backup done"" script log file. It's for this run only.
 echo.                    > ""{BackupDoneScriptOutputPathFile}"" 2>&1
@@ -3092,14 +3103,28 @@ echo.                    > ""{BackupDoneScriptOutputPathFile}"" 2>&1
 +
 (!lbUseMainhostArchive ? "" :
 @"
+
 :: This references the backup destination copy on the VM host:
-set FileSpec=%5\%2
+set FileSpec=%VirtualMachineHostArchivePath%\%BackupOutputFilename%
 
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This copies the backup to the virtual machine host archive:            >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-echo copy %1 %5                                                             >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-     copy %1 %5                                                             >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo copy %BackupOutputPathFile% %VirtualMachineHostArchivePath%            >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     copy %BackupOutputPathFile% %VirtualMachineHostArchivePath%            >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %FileSpec% echo   Error: %FileSpec% is not there.         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+
+     if not exist %FileSpec% set /A CopyFailures += 1
+
+
+:: This references the backup destination copy on the VM host (base name):
+set FileSpec=%VirtualMachineHostArchivePath%\%BackupBaseOutputFilename%
+
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo This copies the backup to the virtual machine host archive (base name):>> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo copy %BackupOutputPathFile% %FileSpec%                                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     copy %BackupOutputPathFile% %FileSpec%                                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      if not exist %FileSpec% echo   Error: %FileSpec% is not there.         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 
      if not exist %FileSpec% set /A CopyFailures += 1
@@ -3107,12 +3132,10 @@ echo copy %1 %5                                                             >> "
 )
 +
 @"
+
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo The following copies the backup (base name) to each attached backup    >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo device with the file ""{BackupDriveToken}"" at its root.               >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-
-set BackupOutputPathFile=%1
-set BackupBaseOutputFilename=%3
 
 set BackupDeviceDecimalBitField=0
 set BackupDevicePositionExponent=23
@@ -3133,11 +3156,14 @@ echo CompositeResult=%CompositeResult%                                      >> "
 
 exit  %CompositeResult%
 
+
 :DoCopy
 set /A BackupDevicePositionExponent -= 1
 dir %1 > nul 2> nul
 if ERRORLEVEL 1 goto :EOF
 if not exist %1\""{BackupDriveToken}"" goto :EOF
+
+set /A CopyCount += 1
 
 :: Determine the bit position (and the corresponding decimal value) from the exponent.
 set BitFieldDevicePosition=1
@@ -3156,11 +3182,23 @@ echo.                                                                       >> "
 echo del %FileSpec%                                                         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      del %FileSpec%                                                         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      if exist %FileSpec% echo   Error: %FileSpec% is still there.           >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
-
-     if exist %FileSpec% set /A CopyFailures += 1
-
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo This copies the current backup to %1                                   >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo copy %BackupOutputPathFile% %FileSpec%                                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     copy %BackupOutputPathFile% %FileSpec%                                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+     if not exist %FileSpec% echo   Error: %FileSpec% is not there.         >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+
+     if not exist %FileSpec% set /A CopyFailures += 1
+
+if not %CopyCount%==1 goto :EOF
+
+
+:: This references the backup destination copy in the local archive folder (%ArchivePath%):
+set FileSpec=%ArchivePath%\%BackupBaseOutputFilename%
+
+echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
+echo This copies the current backup to %ArchivePath%:                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo.                                                                       >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
 echo copy %BackupOutputPathFile% %FileSpec%                                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
      copy %BackupOutputPathFile% %FileSpec%                                 >> ""{BackupDoneScriptOutputPathFile}"" 2>&1
@@ -3232,7 +3270,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                                 , loArgs.sValue("-BackupOutputPathFile"         , "")
                                 , loArgs.sValue("-BackupOutputFilename"         , "")
                                 , loArgs.sValue("-BackupBaseOutputFilename"     , "")
-                                , loArgs.sValue("-LocalArchivePath"             , "")
+                                , loArgs.sValue("-ArchivePath"                  , "")
                                 , loArgs.sValue("-VirtualMachineHostArchivePath", "")
                                 , loArgs.sValue("-LogPathFile"                  , "")
                                 , ""
@@ -3389,13 +3427,13 @@ if %1=="""" goto :EOF
 ::      This is the backup filename with no path and no date. It's just
 ::      the base output filename name with the filename extension.
 ::
-:: %4 = ""LocalArchivePath""
+:: %4 = ""ArchivePath""
 ::
 ::      This is the local archive folder.
 ::
-:: %5 = ""VirtualMachineHostArchive""
+:: %5 = ""VirtualMachineHostArchivePath""
 ::
-::      This is the virtual machine host archive share name.
+::      This is the full UNC specification of the host archive share.
 ::
 ::
 :: Note: All arguments will be passed with double quotation marks included.
@@ -3517,7 +3555,7 @@ echo del %FileSpec%                                                             
                                 , loArgs.sValue("-BackupOutputPathFile"         , "")
                                 , loArgs.sValue("-BackupOutputFilename"         , "")
                                 , loArgs.sValue("-BackupBaseOutputFilename"     , "")
-                                , loArgs.sValue("-LocalArchivePath"             , "")
+                                , loArgs.sValue("-ArchivePath"                  , "")
                                 , loArgs.sValue("-VirtualMachineHostArchivePath", "")
                                 , ""
                                 , ""
@@ -3784,9 +3822,8 @@ echo del %FileSpec%                                                             
             catch (Exception ex)
             {
                 Environment.ExitCode = 1;
-                this.ShowError(ex.Message, "Unanticipated Error");
-
-                lbCleanupFiles = false;
+                this.ShowError(ex.Message, "Unanticipated File Cleanup Error");
+                throw;
             }
 
             if ( this.bMainLoopStopped )
@@ -4155,12 +4192,11 @@ echo del %FileSpec%                                                             
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Environment.ExitCode = 1;
-                this.ShowError(ex.Message, "Unanticipated Error");
-
-                lbCleanupPathFileSpec = false;
+                this.LogIt("Unanticipated file cleanup error (level 2).");
+                throw;
             }
 
             return lbCleanupPathFileSpec;

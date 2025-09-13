@@ -481,7 +481,7 @@ namespace GoPcBackup
                                         + "\r\n\r\nPlease accept it if you would like to use this software."
                                 , lsLicenseCaption), lsLicenseCaption, tvMessageBoxIcons.Information, 3000);
 
-                        loLicense = new ScrollingText(moDoGoPcBackup.sFileAsStream(
+                        loLicense = new ScrollingText(this, moDoGoPcBackup.sFileAsStream(
                                               moProfile.sRelativeToExePathFile(lsLicensePathFile))
                                             , lsLicenseCaption, true);
                         loLicense.TextBackground = Brushes.LightYellow;
@@ -2253,7 +2253,7 @@ If you would prefer to finish this setup at another time, you can close now and 
                 }
             }
 
-            ScrollingText   loHelp = new ScrollingText(moProfile["-Help"].ToString(), "Backup Help", true);
+            ScrollingText   loHelp = new ScrollingText(this, moProfile["-Help"].ToString(), "Backup Help", true);
                             loHelp.TextBackground = Brushes.Khaki;
                             loHelp.Show();
 

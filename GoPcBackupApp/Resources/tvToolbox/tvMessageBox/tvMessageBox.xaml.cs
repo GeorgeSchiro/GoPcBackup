@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Input;
 using tvToolbox;
@@ -47,11 +47,12 @@ public enum tvMessageBoxResults
 public partial class tvMessageBox : Window
 {
     public tvMessageBoxResults eTvMessageBoxResult = tvMessageBoxResults.None;
+    public Window  oParentWindow;
 
     private const string msProfilePromptKeyPrefix = "-MsgBoxPrompt";
     private const string msProfilePromptKeySuffix = "Answer";
 
-    private bool mbIsShowWait = false;
+    private bool    mbIsShowWait = false;
 
 
     public tvMessageBox()
@@ -74,17 +75,38 @@ public partial class tvMessageBox : Window
     private bool mbDialogAccepted = false;
 
 
+    private string sMessageText
+    {
+        get
+        {
+            return this.MessageText.Text;
+        }
+        set
+        {
+            this.MessageText.Text = value.Replace("-", "\u2011");   // convert to non-breaking hyphen
+        }
+    }
+    
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        // This kludge is necessary to center in screen
-        // since the dimensions were wrong to start with.
-        this.Top = (System.Windows.SystemParameters.PrimaryScreenHeight - this.FirstBorder.ActualHeight) / 2;
-        this.Left = (System.Windows.SystemParameters.PrimaryScreenWidth - this.FirstBorder.ActualWidth) / 2;
-
         // This kludge is necessary to have
         // the drag rectangle sized correctly.
         this.Height = this.FirstBorder.ActualHeight;
         this.Width = this.FirstBorder.ActualWidth;
+
+        if ( null != this.oParentWindow )
+        {
+            this.WindowStartupLocation = WindowStartupLocation.Manual;
+            this.Top  = this.oParentWindow.Top  + (this.oParentWindow.Height - this.Height) / 2;
+            this.Left = this.oParentWindow.Left + (this.oParentWindow.Width  - this.Width)  / 2;
+        }
+        else
+        {
+            // This kludge is necessary to center in screen
+            // since the dimensions were wrong to start with.
+            this.Top  = (System.Windows.SystemParameters.PrimaryScreenHeight - this.FirstBorder.ActualHeight) / 2;
+            this.Left = (System.Windows.SystemParameters.PrimaryScreenWidth  - this.FirstBorder.ActualWidth)  / 2;
+        }
     }
 
     private void btnOK_Click(object sender, RoutedEventArgs e)
@@ -127,6 +149,10 @@ public partial class tvMessageBox : Window
         {
             case Key.Enter:
                 this.bDialogAccepted = true;
+                break;
+
+            case Key.Escape:
+                this.Close();
                 break;
         }
     }
@@ -190,10 +216,10 @@ public partial class tvMessageBox : Window
         }
     }
 
-    public static tvMessageBoxResults Show(Window aoWindow, string asMessageText)
+    public static tvMessageBoxResults Show(Window aoParentWindow, string asMessageText)
     {
         return tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , null
                 , tvMessageBoxButtons.OK
@@ -203,13 +229,13 @@ public partial class tvMessageBox : Window
     }
 
     public static tvMessageBoxResults Show(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             )
     {
         return tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , asMessageCaption
                 , tvMessageBoxButtons.OK
@@ -218,14 +244,14 @@ public partial class tvMessageBox : Window
     }
 
     public static tvMessageBoxResults Show(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , tvMessageBoxButtons aeTvMessageBoxButtons
             , tvMessageBoxIcons aeTvMessageBoxIcon
             )
     {
         return tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , null
                 , aeTvMessageBoxButtons
@@ -235,7 +261,7 @@ public partial class tvMessageBox : Window
     }
 
     public static tvMessageBoxResults ShowModeless(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             , tvMessageBoxButtons aeTvMessageBoxButtons
@@ -243,7 +269,7 @@ public partial class tvMessageBox : Window
             )
     {
         return tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , asMessageCaption
                 , aeTvMessageBoxButtons
@@ -253,7 +279,7 @@ public partial class tvMessageBox : Window
     }
 
     public static tvMessageBoxResults ShowModeless(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             , tvMessageBoxButtons aeTvMessageBoxButtons
@@ -264,7 +290,7 @@ public partial class tvMessageBox : Window
             )
     {
         return tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , asMessageCaption
                 , aeTvMessageBoxButtons
@@ -278,7 +304,7 @@ public partial class tvMessageBox : Window
     }
 
     public static tvMessageBoxResults Show(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             , tvMessageBoxButtons aeTvMessageBoxButtons
@@ -289,7 +315,7 @@ public partial class tvMessageBox : Window
             )
     {
         return tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , asMessageCaption
                 , aeTvMessageBoxButtons
@@ -303,7 +329,7 @@ public partial class tvMessageBox : Window
     }
 
     public static tvMessageBoxResults Show(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             , tvMessageBoxButtons aeTvMessageBoxButtons
@@ -311,7 +337,7 @@ public partial class tvMessageBox : Window
             )
     {
         return tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , asMessageCaption
                 , aeTvMessageBoxButtons
@@ -321,7 +347,7 @@ public partial class tvMessageBox : Window
     }
 
     public static tvMessageBoxResults Show(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             , tvMessageBoxButtons aeTvMessageBoxButtons
@@ -330,7 +356,7 @@ public partial class tvMessageBox : Window
             )
     {
         return tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , asMessageCaption
                 , aeTvMessageBoxButtons
@@ -344,7 +370,7 @@ public partial class tvMessageBox : Window
     }
 
     public static tvMessageBoxResults Show(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             , tvMessageBoxButtons aeTvMessageBoxButtons
@@ -356,7 +382,7 @@ public partial class tvMessageBox : Window
             )
     {
         return tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , asMessageCaption
                 , aeTvMessageBoxButtons
@@ -370,7 +396,7 @@ public partial class tvMessageBox : Window
     }
 
     public static tvMessageBoxResults Show(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             , tvMessageBoxButtons aeTvMessageBoxButtons
@@ -423,8 +449,8 @@ public partial class tvMessageBox : Window
         {
             // No caption provided. Let's try to get one another way.
 
-            if ( null != aoWindow )             // Try window title first.
-                asMessageCaption = aoWindow.Title;
+            if ( null != aoParentWindow )             // Try window title first.
+                asMessageCaption = aoParentWindow.Title;
             else
             if ( null != Application.Current && null != Application.Current.MainWindow )  // Next try for application name.
                 asMessageCaption = Application.Current.MainWindow.Name;
@@ -432,22 +458,23 @@ public partial class tvMessageBox : Window
                 asMessageCaption = System.IO.Path.GetFileNameWithoutExtension(Application.ResourceAssembly.Location);
         }
 
-        if ( null != aoWindow )
-            aoWindow.Cursor = null;             // Turn off wait cursor in parent window.
+        if ( null != aoParentWindow )
+            aoParentWindow.Cursor = null;             // Turn off wait cursor in parent window.
 
         tvMessageBox    loMsgBox = new tvMessageBox();
-                        loMsgBox.MessageText.Text = asMessageText;
+                        loMsgBox.oParentWindow = aoParentWindow;
+                        loMsgBox.sMessageText = asMessageText;
 
                         // Use some parent window attributes, if available.
-                        if ( null != aoWindow )
+                        if ( null != aoParentWindow )
                         {
                             // Use the parent window's icon.
-                            loMsgBox.Icon = aoWindow.Icon;
+                            loMsgBox.Icon = aoParentWindow.Icon;
 
                             // Use the given asMessageCaption as the MsgBox title, if not null.
                             // Otherwise use the parent window title with an added question mark.
                             loMsgBox.Title = null != asMessageCaption
-                                    ? asMessageCaption : aoWindow.Title + "?";
+                                    ? asMessageCaption : aoParentWindow.Title + "?";
                         }
 
                         // Display the MsgBox header / title (ie. the caption), if provided.
@@ -518,7 +545,7 @@ public partial class tvMessageBox : Window
     }
 
     public static void ShowBriefly(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             , tvMessageBoxIcons aeTvMessageBoxIcon
@@ -526,18 +553,19 @@ public partial class tvMessageBox : Window
             )
     {
         tvMessageBox    loMsgBox = new tvMessageBox();
-                        loMsgBox.MessageText.Text = asMessageText;
+                        loMsgBox.oParentWindow = aoParentWindow;
+                        loMsgBox.sMessageText = asMessageText;
 
                         // Use some parent window attributes, if available.
-                        if ( null != aoWindow )
+                        if ( null != aoParentWindow )
                         {
                             // Use the parent window's icon.
-                            loMsgBox.Icon = aoWindow.Icon;
+                            loMsgBox.Icon = aoParentWindow.Icon;
 
                             // Use the given asMessageCaption as the MsgBox title, if not null.
                             // Otherwise use the parent window title with an added question mark.
                             loMsgBox.Title = null != asMessageCaption
-                                    ? asMessageCaption : aoWindow.Title + "?";
+                                    ? asMessageCaption : aoParentWindow.Title + "?";
                         }
 
                         // Display the MsgBox header / title (ie. the caption), if provided.
@@ -568,21 +596,22 @@ public partial class tvMessageBox : Window
         }
     }
 
-    public void ShowWait(Window aoWindow, string asMessageText, int aiStayOpenAtLeastMS)
+    public void ShowWait(Window aoParentWindow, string asMessageText, int aiStayOpenAtLeastMS)
     {
+        this.oParentWindow = aoParentWindow;
         this.Cursor = Cursors.Wait;
         mbIsShowWait = true;
         this.BottomPanel.Height = 35;
-        this.MessageText.Text = asMessageText;
+        this.sMessageText = asMessageText;
 
         // Use some parent window attributes, if available.
-        if ( null != aoWindow )
+        if ( null != aoParentWindow )
         {
             // Use the parent window's icon.
-            this.Icon = aoWindow.Icon;
+            this.Icon = aoParentWindow.Icon;
 
             // Use the parent window title with an added message.
-            this.Title = aoWindow.Title + " - wait ...";
+            this.Title = aoParentWindow.Title + " - wait ...";
         }
 
         this.Show();
@@ -599,10 +628,10 @@ public partial class tvMessageBox : Window
         }
     }
 
-    public static void ShowError(Window aoWindow, Exception aoException)
+    public static void ShowError(Window aoParentWindow, Exception aoException)
     {
         tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , aoException.Message
                 , null
                 , tvMessageBoxButtons.OK
@@ -610,10 +639,10 @@ public partial class tvMessageBox : Window
                 );
     }
 
-    public static void ShowError(Window aoWindow, string asMessageText)
+    public static void ShowError(Window aoParentWindow, string asMessageText)
     {
         tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , null
                 , tvMessageBoxButtons.OK
@@ -621,21 +650,21 @@ public partial class tvMessageBox : Window
                 );
     }
 
-    public static void ShowError(Window aoWindow, string asMessageText, string asMessageCaption)
+    public static void ShowError(Window aoParentWindow, string asMessageText, string asMessageCaption)
     {
-        tvMessageBox.Show(aoWindow, asMessageText, asMessageCaption
+        tvMessageBox.Show(aoParentWindow, asMessageText, asMessageCaption
                 , tvMessageBoxButtons.OK, tvMessageBoxIcons.Error);
     }
 
     public static void ShowModelessError(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             , tvProfile aoProfile
             )
     {
         tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , asMessageCaption
                 , tvMessageBoxButtons.OK
@@ -645,7 +674,7 @@ public partial class tvMessageBox : Window
     }
 
     public static void ShowModelessError(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             , tvProfile aoProfile
@@ -653,7 +682,7 @@ public partial class tvMessageBox : Window
             )
     {
         tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , asMessageCaption
                 , tvMessageBoxButtons.OK
@@ -666,10 +695,10 @@ public partial class tvMessageBox : Window
                 );
     }
 
-    public static void ShowWarning(Window aoWindow, string asMessageText)
+    public static void ShowWarning(Window aoParentWindow, string asMessageText)
     {
         tvMessageBox.Show(
-                  aoWindow
+                  aoParentWindow
                 , asMessageText
                 , null
                 , tvMessageBoxButtons.OK
@@ -677,21 +706,21 @@ public partial class tvMessageBox : Window
                 );
     }
 
-    public static void ShowWarning(Window aoWindow, string asMessageText, string asMessageCaption)
+    public static void ShowWarning(Window aoParentWindow, string asMessageText, string asMessageCaption)
     {
-        tvMessageBox.Show(aoWindow, asMessageText, asMessageCaption
+        tvMessageBox.Show(aoParentWindow, asMessageText, asMessageCaption
                 , tvMessageBoxButtons.OK, tvMessageBoxIcons.Warning);
     }
 
     public static void ResetAllPrompts(
-              Window aoWindow
+              Window aoParentWindow
             , string asMessageText
             , string asMessageCaption
             , tvProfile aoProfile
             )
     {
         if ( tvMessageBoxResults.Yes == tvMessageBox.Show(
-                      aoWindow
+                      aoParentWindow
                     , asMessageText
                     , asMessageCaption
                     , tvMessageBoxButtons.YesNo
