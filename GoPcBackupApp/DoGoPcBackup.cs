@@ -2214,7 +2214,7 @@ cd ""{1}""
                     while ( !this.bMainLoopStopped && !loProcess.HasExited && DateTime.Now < ltdProcessTimeout )
                     {
                         System.Windows.Forms.Application.DoEvents();
-                        System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
+                        Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                     }
 
                     if ( DateTime.Now >= ltdProcessTimeout && !this.bMainLoopStopped )
@@ -2530,13 +2530,13 @@ cd ""{1}""
                         if ( lbDoTask && !mbAddTasksStartupDelayDone )
                         {
                             if ( 0 != moProfile.iValue("-StartupTasksDelaySecs", 0) )
-                                System.Threading.Thread.Sleep(1000 * moProfile.iValue("-StartupTasksDelaySecs", 0));
+                                Thread.Sleep(1000 * moProfile.iValue("-StartupTasksDelaySecs", 0));
 
                             mbAddTasksStartupDelayDone = true;
                         }
 
                         if ( lbDoTask && 0 != loAddTask.iValue("-DelaySecs", 0) )
-                            System.Threading.Thread.Sleep(1000 * loAddTask.iValue("-DelaySecs", 0));
+                            Thread.Sleep(1000 * loAddTask.iValue("-DelaySecs", 0));
                     }
 
                     if ( lbDoTask )
@@ -2933,7 +2933,7 @@ exit  %Errors%
                 while ( !this.bMainLoopStopped && !loProcess.HasExited && DateTime.Now < ltdProcessTimeout )
                 {
                     System.Windows.Forms.Application.DoEvents();
-                    System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
+                    Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
                 if ( DateTime.Now >= ltdProcessTimeout && !this.bMainLoopStopped )
@@ -3289,7 +3289,7 @@ echo copy %BackupOutputPathFile% %FileSpec%                                 >> "
                 while ( !this.bMainLoopStopped && !loProcess.HasExited && DateTime.Now < ltdProcessTimeout )
                 {
                     System.Windows.Forms.Application.DoEvents();
-                    System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
+                    Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
                 if ( DateTime.Now >= ltdProcessTimeout && !this.bMainLoopStopped )
@@ -3574,7 +3574,7 @@ echo del %FileSpec%                                                             
                 while ( !this.bMainLoopStopped && !loProcess.HasExited && DateTime.Now < ltdProcessTimeout )
                 {
                     System.Windows.Forms.Application.DoEvents();
-                    System.Threading.Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
+                    Thread.Sleep(moProfile.iValue("-MainLoopSleepMS", 100));
                 }
 
                 if ( DateTime.Now >= ltdProcessTimeout && !this.bMainLoopStopped )
@@ -3951,7 +3951,7 @@ echo del %FileSpec%                                                             
                         foreach (FileSystemInfo loFileSysInfo in loFileSysInfoList)
                         {
                             System.Windows.Forms.Application.DoEvents();
-                            System.Threading.Thread.Sleep(moProfile.iValue("-CleanupLoopSleepMS", 1));
+                            Thread.Sleep(moProfile.iValue("-CleanupLoopSleepMS", 1));
                             if ( this.bMainLoopStopped )
                                 break;
 

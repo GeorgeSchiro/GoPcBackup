@@ -12,7 +12,7 @@ using System.Windows;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("George Schiro")]
 [assembly: AssemblyProduct("GoPcBackup")]
-[assembly: AssemblyCopyright("Copyright Â© George Schiro 2013-2121")]
+[assembly: AssemblyCopyright("Copyright © George Schiro 2013-2121")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -25,6 +25,6 @@ using System.Windows;
 //
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
-[assembly: AssemblyVersion("5.4")]
-[assembly: AssemblyFileVersion("5.4")]
+[assembly: AssemblyVersion("5.5")]
+[assembly: AssemblyFileVersion("5.5")]
 [assembly: NeutralResourcesLanguageAttribute("en-US")]
